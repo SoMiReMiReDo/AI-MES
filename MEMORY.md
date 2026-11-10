@@ -1,6 +1,6 @@
 # MESagent 项目记忆
 
-更新：2026-11-10（Asia/Shanghai）｜阶段：规划｜版本：v0.1
+更新：2026-11-11（Asia/Shanghai）｜阶段：规划｜版本：v0.1
 
 ## 已确认
 
@@ -15,7 +15,7 @@
 - 尚无 ASP.NET Core API、业务 WebUI、Agent、数据库模型、Docker 配置和业务测试。
 - `docs/` 既有内容是 OpenMES 的学习和开发参考资料，其 Laravel/React 实现不属于 MESagent。
 - 已只读核查本地 OpenMES v0.25.0 后台并验证工单到成品批次的下钻；[沿用建议](docs/planning/01-current-state.md#4-本地-openmes-后台核查与沿用建议) 优先参考看板、追溯、异常和审计界面，晶圆执行规则由 C# 业务层设计，待确认。
-- 当前目录未初始化 Git 仓库。已有 `.gitignore` 不代表已有版本库。
+- 已初始化 Git 并推送公开仓库 [SoMiReMiReDo/AI-MES](https://github.com/SoMiReMiReDo/AI-MES)：`main` 为默认分支，`dev/backend` 为后端开发分支。
 - 本轮仅新增记忆及规划文档、更新根 README；未修改现有代码或启动系统。
 
 ## v0.1 建议，尚未冻结
@@ -50,3 +50,4 @@
 | 2026-11-10 | 聚焦半导体晶圆、批次与设备追踪 | 用户确认 |
 | 2026-11-10 | 当前只规划，不开发 | 用户确认 |
 | 2026-11-10 | .NET/React/Agent Framework/PostgreSQL 方案 | v0.1 建议，待验证 |
+| 2026-11-11 | 公开仓库 AI-MES，`main` + `dev/backend` 分支 | 用户确认 |
