@@ -1,0 +1,60 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="OpenMES 开发文档：架构、生产逻辑与源码拆解"><title>生产主链与事务边界 · OpenMES Atlas</title><link rel="stylesheet" href="assets/style.css"></head><body>
+<a class="skip" href="#main">跳到正文</a><aside class="sidebar" id="sidebar"><a class="brand" href="index.html"><span class="brand-mark">M</span><span>OpenMES <b>ATLAS</b></span></a><div class="sidebar-caption">DEVELOPER KNOWLEDGE BASE</div><button class="search-trigger" type="button">⌕ 搜索文档 <kbd>/</kbd></button><nav aria-label="主导航"><a class="nav-home " href="index.html">⌂ <span>文档概览</span></a><a class="nav-item " href="01-overview.html" ><span class="nav-num">01</span><span>项目全景与阅读地图</span></a><a class="nav-item " href="02-domain.html" ><span class="nav-num">02</span><span>领域对象与数据归属</span></a><a class="nav-item active" href="03-production.html" aria-current=page><span class="nav-num">03</span><span>生产主链与事务边界</span></a><a class="nav-item " href="04-quantity.html" ><span class="nav-num">04</span><span>两种流转与数量账本</span></a><a class="nav-item " href="05-material-quality.html" ><span class="nav-num">05</span><span>物料、质量与仓储闭环</span></a><a class="nav-item " href="06-machine-erp.html" ><span class="nav-num">06</span><span>设备信号与 ERP 集成</span></a><a class="nav-item " href="07-frontend-sync.html" ><span class="nav-num">07</span><span>前端入口与实时读模型</span></a><a class="nav-item " href="08-permissions-modules.html" ><span class="nav-num">08</span><span>权限、租户与扩展模块</span></a><a class="nav-item " href="09-planning-traceability.html" ><span class="nav-num">09</span><span>排程、绩效与追溯旁路</span></a><a class="nav-item " href="10-development.html" ><span class="nav-num">10</span><span>开发、验证与问题定位</span></a><a class="nav-item " href="11-evidence.html" ><span class="nav-num">11</span><span>来源基线与已知文档差异</span></a></nav><div class="sidebar-footer"><span class="status-dot"></span> 本地源码阅读基线<br><small>6048face · 2026.11.09</small><a href="../openmes-course/index.html">交互课程 ↗</a><a href="../README.md">Markdown 文档 ↗</a></div></aside>
+<div class="workspace"><header class="topbar"><button id="menu-toggle" aria-expanded="false" aria-controls="sidebar" aria-label="展开导航">☰</button><div>工程知识库 <span>/</span> 生产主链与事务边界</div><span class="top-tag">SOURCE VERIFIED · 静态核对</span><button id="theme-toggle" aria-label="切换明暗主题">◐</button></header><main id="main" tabindex="-1"><div class="article-meta">CHAPTER 03 <span>业务流程 · 实现契约 · 开发验收</span><a href="../developer/03-production.md">阅读 Markdown ↗</a></div><div class="chapter-jump" role="navigation" aria-label="本章导航"><a href="#section-2">使用逻辑</a><a href="#section-4">技术逻辑</a><a href="#section-12">API 完工请求契约</a><a href="#section-13">一次动作应检查哪些写入</a><a href="#section-14">事务、锁顺序与外部副作用</a><a href="#section-15">关键回归场景</a><a href="#section-16">源码依据</a></div><article class="prose"><h1 id="section-1">生产主链与事务边界</h1>
+<p>从一次完成工序请求追到产量回写，分清入口授权、领域约束与数据库提交。</p>
+<h2 id="section-2">使用逻辑</h2>
+<h3 id="section-3">在操作员界面复现一条生产链</h3>
+<p>选择一张分配给当前产线、已经接单且到达计划开工时间的工单，设定两道有明确顺序的步骤。用目标 10 件的独立批次复现时，记录工单 ID、批次 ID 和两道工序 ID，便于把页面变化和请求关联起来。</p>
+<div class="table-wrap"><table><thead><tr><th>操作</th><th>要观察的结果</th></tr></thead><tbody><tr><td>建批</td><td>出现新批次和按工单快照展开的工序，初始批次为 PENDING</td></tr><tr><td>开始第一道工序</td><td>工序变为 IN_PROGRESS，批次首次进入生产。配置了开工物料时触发分配</td></tr><tr><td>尝试提前开启第二道</td><td>在整批流转且启用顺序检查时，应等待前序满足条件</td></tr><tr><td>完成第一道</td><td>该工序关闭并推进后续可执行步骤。继续观察批次和工单状态</td></tr><tr><td>完成末道</td><td>批次满足完成条件后结算，回到工单核对计划、实产和剩余量</td></tr></tbody></table></div>
+<p>遇到提示时，按所处阶段处理。工单尚未到开工时间，核对排程。工位不匹配，核对分派或登录工位。已经开始但无法关闭，逐项检查文件确认、清单、输出与实绩工时。打开质检任务时还要区分正在等待检验和检验失败后产生的异常单。</p>
+<h2 id="section-4">技术逻辑</h2>
+<h3 id="section-5">请求执行链</h3>
+<div class="code-block"><span>text</span><pre><code>Web /operator/batch-step/{batchStep}/complete
+或 API /api/v1/batch-steps/{batchStep}/complete
+  → Controller / FormRequest：授权与输入形状
+  → BatchService.completeStep：事务与生产规则
+  → WorkOrder 行锁 → BatchStep 行锁 → 重新判断
+  → 写工序结果 → 聚合批次 → 推进后续 READY 工序
+  → 完批结算、物料耗用 → 工单状态汇总
+  → 提交后实时广播 → 页面读模型更新</code></pre></div>
+<h3 id="section-6">创建与接收</h3>
+<p>createWorkOrder 保存工单和工艺快照。接收动作的 Web 与 API 路径并不完全相同：主管 Web 使用服务的 applyTransition，API 控制器有自己的 transition。修改状态规则时，两条入口都需要核对。</p>
+<p>createBatch 在工单行锁内刷新快照、分配批次序号并生成 BatchStep。同一 variant_group 选择默认步骤，否则选择较小 step_number，其余先标为 SKIPPED；随后 promoteReadySteps 推进符合前置条件的步骤。</p>
+<h3 id="section-7">开工 startStep</h3>
+<p>服务在事务中依次检查工单能否生产、transfer 阻塞、工位路由、阻塞质检及 canStart。若是批次首次开工且开启 hold_on_material_shortage，还检查物料短缺。</p>
+<p>工序进入 IN_PROGRESS 后，服务更新批次状态，按配置分配开工或当前工序的物料，刷新工单状态，并在首次进入生产时触发质量任务。缺料阻塞开关默认关闭；不能把“系统存在库存”推导为“所有开工必然检查库存”。</p>
+<h3 id="section-8">完工 completeStep</h3>
+<div class="table-wrap"><table><thead><tr><th>检查</th><th>所保护的业务事实</th></tr></thead><tbody><tr><td>canComplete</td><td>必须是进行中的工序</td></tr><tr><td>completionBlocker</td><td>transfer 上游输入已关闭且本站无待处理数量</td></tr><tr><td>blockingDocuments</td><td>必须验证的文件已经确认</td></tr><tr><td>必填清单、类型输出、阅读确认</td><td>现场执行证据完整</td></tr><tr><td>actual_setup + actual_run ≤ actual_elapsed</td><td>人工确认工时内部一致</td></tr></tbody></table></div>
+<p>服务写入 DONE、时间、操作者和 passed_qty；然后更新批次并调用 finishBatchIfComplete。完批时分配 end 物料、结算产量、确认耗用并触发按单位数质检。</p>
+<h3 id="section-9">并发与重试</h3>
+<p>lockProductionStep 先锁工单再锁工序，避免并发报数时读到陈旧可用量与工单汇总。数据库事务负责多处写入的一致性，前端禁用按钮只能改善体验。</p>
+<p>重复完成通常会因工序状态不再可完成而被拒绝，不应宣称整个 API 使用统一幂等键。不同动作的防重复策略不同：库存过账看状态，机器读数看 event_id，人工数量更正看 expected 值。</p>
+<h3 id="section-10">验证入口</h3>
+<p>优先读 BatchStepTest 与 BatchServiceTest，覆盖先后顺序、重复动作、跨产线、完批产量。测试的存在只能说明仓库提供这些行为契约；本次未运行 OpenMES 业务测试。</p>
+<h3 id="section-11">对照 Web 和 API 的返回</h3>
+<div class="table-wrap"><table><thead><tr><th>动作</th><th>Web 的可观测结果</th><th>API 的可观测结果</th></tr></thead><tbody><tr><td>完成工序</td><td>操作员控制器验证所选产线，回到原页并带成功或错误消息</td><td>CompleteBatchStepRequest 检查工单访问权和参数形状，成功响应含更新后工序</td></tr><tr><td>服务拒绝完成</td><td>看页面 flash 与提交后的状态</td><td>控制器把捕获的异常变为 422，错误落在 errors.step</td></tr><tr><td>校验或授权拒绝</td><td>查请求是否进入控制器与所选产线校验</td><td>查 Form Request 的 403 或字段校验 422，结合响应体判断失败层</td></tr></tbody></table></div>
+<p>验证一次回滚时，可构造首道工序开工而领料不足的场景，观察失败后工序、批次、库存分配是否一起保留原值。查请求日志时按操作时间和工序 ID 对齐。对「点击后无响应」的工位问题，先确认响应与实际写入，再判断界面是否缺少刷新。</p>
+<h2 id="section-12">API 完工请求契约</h2>
+<p>普通 API 完工入口为 POST /api/v1/batch-steps/{batchStep}/complete，使用普通 v1 的认证路径。以下字段来自 CompleteBatchStepRequest；字段通过形状校验后，仍须满足服务内的工序状态、文件、清单、输出和工时约束。</p>
+<div class="table-wrap"><table><thead><tr><th>字段</th><th>请求约束</th><th>业务解释</th></tr></thead><tbody><tr><td>produced_qty</td><td>可空、数值、至少 0</td><td>完工产量输入；实际计产取决于模式、计数源与完批分支</td></tr><tr><td>actual_elapsed_minutes</td><td>可空、非负整数</td><td>操作员确认的总历时</td></tr><tr><td>actual_setup_minutes</td><td>可空、非负整数</td><td>操作员确认的准备时间</td></tr><tr><td>actual_run_minutes</td><td>可空、非负整数</td><td>操作员确认的运行时间</td></tr></tbody></table></div>
+<p>下面是字段示例，不是自动创建生产对象的脚本；替换 ID 前要先准备一条满足完成条件的运行中工序。</p>
+<div class="code-block"><span>json</span><pre><code>{
+  &quot;produced_qty&quot;: 10,
+  &quot;actual_elapsed_minutes&quot;: 25,
+  &quot;actual_setup_minutes&quot;: 5,
+  &quot;actual_run_minutes&quot;: 20
+}</code></pre></div>
+<p>成功控制器响应包含 message 和 data，data 加载 completedBy 与 batch.workOrder。服务内异常由该控制器返回 422，响应包含 message 与 errors.step。FormRequest 的字段错误则按字段返回；不要让客户端只识别一个固定英文错误字符串。JSON 中把 run 改成 21，可用于构造准备时间与运行时间合计超过总历时的失败场景。</p>
+<h2 id="section-13">一次动作应检查哪些写入</h2>
+<div class="table-wrap"><table><thead><tr><th>动作</th><th>首要写入对象</th><th>联动检查</th></tr></thead><tbody><tr><td>建批</td><td>Batch、BatchStep</td><td>批次序号、工单快照版本、路线选择、初始 READY</td></tr><tr><td>首次开工</td><td>BatchStep、Batch</td><td>操作者与开始时间、物料分配、质量触发、工单状态</td></tr><tr><td>分次报数</td><td>BatchStep 数量</td><td>下游可用量、末站汇总、工单阻塞与上限</td></tr><tr><td>完成步骤</td><td>BatchStep 状态与结果</td><td>下一步可执行性、是否已满足完批条件</td></tr><tr><td>批次结算</td><td>Batch、WorkOrder</td><td>物料耗用、质量任务、工单完成及库存草稿旁路</td></tr></tbody></table></div>
+<p>这张表用于建立验收断言，不意味着每种开关下都会触发全部副作用。调查某次请求时，要以实际经过的分支和提交结果为准。</p>
+<h2 id="section-14">事务、锁顺序与外部副作用</h2>
+<p>生产写路径先锁工单再锁工序，在锁内重读可用量并判断。新增一个会修改同一数量的入口时，必须对齐已有锁顺序；在加锁前读取的关系或可用量可能已经过时。仅给步骤加锁却在锁外更新工单汇总，仍可能丢失并发写入。</p>
+<p>事务保证受其覆盖的数据库写入一起提交或回滚，不能自动撤销 HTTP 请求、设备命令或已发送通知。扩展生产服务时，先确认现有事件何时派发、监听器是否延迟到提交后、失败是否被捕获。新增外部调用的可靠投递与补偿是设计工作，不应假设项目已有通用消息事务机制。</p>
+<h2 id="section-15">关键回归场景</h2>
+<div class="table-wrap"><table><thead><tr><th>场景</th><th>准备</th><th>必须观察的结果</th></tr></thead><tbody><tr><td>重复完成</td><td>同一步骤第一次成功后再次提交</td><td>不再次结算数量或耗用，返回不可完成原因</td></tr><tr><td>并发报数</td><td>两个连接同时消费同一剩余量</td><td>总通过与报废不超过输入量</td></tr><tr><td>未到计划时间</td><td>工单 planned_start_at 在未来</td><td>相关生产入口拒绝，执行记录不被推进</td></tr><tr><td>必填证据缺失</td><td>缺文件确认、清单或类型输出之一</td><td>完工失败，补齐对应项后才可继续</td></tr><tr><td>分配中失败</td><td>构造触发分配失败的领料条件</td><td>事务覆盖的状态和分配无部分残留</td></tr><tr><td>提交后通知失败</td><td>数据已提交但广播不可用</td><td>通过重新读取确认事实，另查广播日志</td></tr></tbody></table></div>
+<p>回滚验证不能只断言 HTTP 失败；至少比较工序状态、批次状态、工单数量及该场景关联的分配记录。并发验证需要两个真实数据库连接，第 10 章说明默认 SQLite 测试环境的局限。</p>
+<h2 id="section-16">源码依据</h2>
+<ul><li><a href="sources/d1c50a84cb580a7e.html#L48">backend/app/Http/Controllers/Api/V1/BatchStepController.php:48</a></li><li><a href="sources/9a49dc4d869aa274.html#L15">backend/app/Http/Requests/Api/V1/CompleteBatchStepRequest.php:15</a></li><li><a href="sources/1488eb91be109065.html#L35">backend/app/Services/WorkOrder/BatchService.php:35</a></li><li><a href="sources/1488eb91be109065.html#L704">backend/app/Services/WorkOrder/BatchService.php:704</a></li><li><a href="sources/db60ec1b349e8b02.html#L695">backend/app/Services/WorkOrder/WorkOrderService.php:695</a></li><li><a href="sources/28948c22d69be431.html#L1">backend/tests/Feature/Api/BatchStepTest.php:1</a></li><li><a href="sources/ac50772516733eda.html#L1">backend/tests/Unit/Services/BatchServiceTest.php:1</a></li><li><a href="sources/d0256d7e4bd733c3.html#L467">Web 建批 · 输入与选线</a></li><li><a href="sources/d0256d7e4bd733c3.html#L126">Web 完工 · 跳转与反馈</a></li><li><a href="sources/c6c774ac714481d5.html#L21">计划开工边界测试</a></li></ul></article><div class="page-nav"><a href="02-domain.html"><small>上一章</small>领域对象与数据归属</a><a href="04-quantity.html"><small>下一章 →</small>两种流转与数量账本</a></div></main><footer class="page-footer">OpenMES / 从业务行为理解源码 <span>本地文档 · 不连接生产数据</span></footer></div>
+<aside class="toc"><div>本页内容</div><a href="#section-2">使用逻辑</a><a href="#section-4">技术逻辑</a><a href="#section-12">API 完工请求契约</a><a href="#section-13">一次动作应检查哪些写入</a><a href="#section-14">事务、锁顺序与外部副作用</a><a href="#section-15">关键回归场景</a><a href="#section-16">源码依据</a></aside>
+<dialog id="search-dialog"><div class="search-head"><label for="search-input">搜索文档</label><button id="search-close" aria-label="关闭搜索">×</button></div><input id="search-input" placeholder="工单、事务、MachineCounter…" autocomplete="off"><div id="search-count" role="status">输入关键词搜索全部章节</div><div id="search-results"></div></dialog><script src="assets/search-data.js"></script><script src="assets/app.js"></script></body></html>

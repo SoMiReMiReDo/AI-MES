@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug MESagent",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/MESagent/bin/Debug/net10.0/MESagent.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/MESagent",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+<section class="module" id="module-3" aria-labelledby="module-3-title" style="background: var(--color-bg)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h2 class="module-title" id="module-3-title">工序怎样推进，产量怎样回写</h2>
+      <p class="module-subtitle">前一章把工单、批次和步骤分开了。现在沿着一条产线走两道工序，看看谁能接棒、产量何时入账。整批模式按已完成批次累计，转运模式用末工序通过量结算批次。</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h3 class="screen-heading">首道完工，第二道接棒</h3>
+        <p>把两道固定顺序的工序想成接力。建批时，系统从<span class="term" tabindex="0" data-definition="工单保存的工艺副本，建批时按这份记录生成步骤。">工艺快照</span>复制步骤，再调用 <code>promoteReadySteps</code>，把满足前置条件的步骤标为 <code>READY</code>。</p>
+        <div class="flow-steps" aria-label="两道工序的状态推进">
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">1</div><p>首道就绪<br><code>READY</code></p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">2</div><p>首道开工<br><code>IN_PROGRESS</code></p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">3</div><p>首道完工<br><code>DONE</code></p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">4</div><p>第二道条件满足<br>转为 <code>READY</code></p></div>
+        </div>
+        <div class="pattern-cards">
+          <div class="pattern-card">
+            <h3 class="pattern-title">工序步骤</h3>
+            <p class="pattern-desc">首道步骤已完工，第二道可以进入待开工状态。</p>
+          </div>
+          <div class="pattern-card">
+            <h3 class="pattern-title">批次</h3>
+            <p class="pattern-desc">此时批次可以仍在进行。最后一个有效步骤完成后，系统才结算整批产量。</p>
+          </div>
+          <div class="pattern-card">
+            <h3 class="pattern-title">工单</h3>
+            <p class="pattern-desc">工单按计划产量和阻塞状态判断能否完工。</p>
+          </div>
+        </div>
+        <details>
+          <summary>展开源码 · 完成步骤后如何推进三个层级</summary>
+          <p>建批和首次就绪判定见 <code>WorkOrderService.php:724–727</code> 和 <code>Batch.php:162</code>。</p>
+          <p><code>backend/app/Services/WorkOrder/BatchService.php:230–240</code></p>
+          <div class="translation-block">
+            <div class="translation-code">
+              <span class="translation-label">源码</span>
+              <pre><code><span class="code-line"><span class="code-comment">            // Update batch status</span></span>
+<span class="code-line">            $batch = $step-&gt;batch;</span>
+<span class="code-line">            $this-&gt;<span class="code-function">updateBatchStatus</span>($batch);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">            // The next step (prerequisites now met) becomes READY.</span></span>
+<span class="code-line">            $batch-&gt;<span class="code-function">promoteReadySteps</span>();</span>
+<span class="code-line"></span>
+<span class="code-line">            $this-&gt;<span class="code-function">finishBatchIfComplete</span>($batch, $step, $user, $data);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">            // Update work order status</span></span>
+<span class="code-line">            $this-&gt;workOrderService-&gt;<span class="code-function">updateWorkOrderStatus</span>($batch-&gt;workOrder);</span></code></pre>
+            </div>
+            <div class="translation-english">
+              <span class="translation-label">逐段读</span>
+              <div class="translation-lines">
+                <p class="tl">第 230–232 行，找到当前步骤所属的批次并更新批次状态。</p>
+                <p class="tl">第 234–235 行，把前置条件已经满足的步骤提升为就绪。</p>
+                <p class="tl">第 237 行，检查批次是否达到完工条件，达到后结算。</p>
+                <p class="tl">第 239–240 行，最后重新判断工单状态。</p>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="screen animate-in">
+        <h3 class="screen-heading">整批模式按已完成批次累计</h3>
+        <p><span class="term" tabindex="0" data-definition="以完整批次结算产量的生产方式。工单累计各已完工批次的实际产量。">整批模式</span>像等一整棒跑完再交接。假设工单计划 100 件，分成两个目标各 50 件的批次，每批实际产出等于目标，工单也没有阻塞。</p>
+        <div class="flow-steps" aria-label="整批模式的工单产量累计">
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">1</div><p>第一批首道完工<br><strong>工单累计 0 件</strong></p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">2</div><p>第一批末道完工<br><strong>工单累计 50 件</strong></p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">3</div><p>第二批末道完工<br><strong>工单累计 100 件，可完工</strong></p></div>
+        </div>
+        <details>
+          <summary>展开定位 · 批次产量与工单完工判定</summary>
+          <p><code>BatchService.php:660</code> 汇总所有已完工批次的 <code>produced_qty</code>（批次产量）。同一批的各道工序通过量是各站记录，累加会把经过多道工序的同一件产品重复计入。</p>
+          <p><code>WorkOrderService.php:798</code> 判断工单是否达到计划及是否存在阻塞。</p>
+        </details>
+      </section>
+
+      <section class="screen animate-in">
+        <h3 class="screen-heading">转运模式让下游先接一部分</h3>
+        <p><span class="term" tabindex="0" data-definition="允许上游先放行一部分数量，让下游在其他开工条件满足时按可用量加工。">转运模式</span>像把接力棒换成一筐零件，先送来一部分，下一站就可以处理这一部分。</p>
+        <div class="pattern-cards">
+          <div class="pattern-card">
+            <h3 class="pattern-title">上游放行 30 件</h3>
+            <p class="pattern-desc">其他开工条件都满足时，下游可以按这 30 件生产。</p>
+          </div>
+          <div class="pattern-card">
+            <h3 class="pattern-title">下游通过 25 件</h3>
+            <p class="pattern-desc">这次报废 2 件，余 3 件。可用量表示下游还能处理多少，在途量描述工序之间尚未结清的流转数量，要分别判断。</p>
+          </div>
+          <div class="pattern-card">
+            <h3 class="pattern-title">批次按末道通过量结算</h3>
+            <p class="pattern-desc">批次完工时，如果末道累计通过量仍是 25 件，产量就记 25 件。</p>
+          </div>
+        </div>
+        <details>
+          <summary>展开源码 · 两种模式从哪里取批次产量</summary>
+          <p>转运数量口径可对照 <code>BatchStep.php:349–364</code> 和 <code>BatchService.php:319</code>、<code>BatchService.php:689</code>。</p>
+          <p><code>backend/app/Services/WorkOrder/BatchService.php:616–621</code></p>
+          <div class="translation-block">
+            <div class="translation-code">
+              <span class="translation-label">源码</span>
+              <pre><code><span class="code-line"><span class="code-comment">            // Transfer flow: the batch produced exactly what left its last step.</span></span>
+<span class="code-line">            $producedQty = ProductionFlow::<span class="code-function">isTransfer</span>()</span>
+<span class="code-line">                ? (float) ($batch-&gt;<span class="code-function">lastEffectiveStep</span>()?-&gt;passed_qty ?? <span class="code-number">0</span>)</span>
+<span class="code-line">                : ($data[<span class="code-string">'produced_qty'</span>] ?? $batch-&gt;target_qty);</span>
+<span class="code-line">            $this-&gt;<span class="code-function">completeBatch</span>($batch, $producedQty);</span>
+<span class="code-line">            $this-&gt;allocationService-&gt;<span class="code-function">consumeForBatch</span>($batch);</span></code></pre>
+            </div>
+            <div class="translation-english">
+              <span class="translation-label">逐段读</span>
+              <div class="translation-lines">
+                <p class="tl">第 616–617 行，先判断当前是否为转运模式。</p>
+                <p class="tl">第 618 行，转运模式取最后一个有效步骤的通过量，缺省为 0。</p>
+                <p class="tl">第 619 行，整批模式取传入的产量，缺省时用批次目标量。</p>
+                <p class="tl">第 620–621 行，用算出的产量完成批次，然后处理批次物料消耗。</p>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="screen animate-in">
+        <h3 class="screen-heading">试着判断产量和开工条件</h3>
+        <div class="quiz-container" id="quiz-module3">
+          <div class="quiz-question-block" data-correct="option-b"
+               data-explanation-right="此时只有第一批已完工，所以累计 50 件。第二批要等末道完工后才入账。"
+               data-explanation-wrong="先找已经完工的批次。第二批首道完工只推进批内步骤，当前工单累计仍是 50 件。">
+            <h4 class="quiz-question">计划 100 件，两个整批各 50 件。第一批已产出 50 件并完工，第二批刚做完首道。工单累计多少？</h4>
+            <div class="quiz-options">
+              <button type="button" class="quiz-option" data-value="option-a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>0 件，要等两个批次都完工</span></button>
+              <button type="button" class="quiz-option" data-value="option-b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>50 件，只有第一批已完工</span></button>
+              <button type="button" class="quiz-option" data-value="option-c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>100 件，第二批首道已经完工</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="option-c"
+               data-explanation-right="工单按已完工批次的产量累计。两个步骤的通过量用来查看各工序的加工结果。"
+               data-explanation-wrong="同一件产品可能先后通过两道工序。工单应取该批结算的 45 件，合计步骤通过量会重复计数。">
+            <h4 class="quiz-question">同一个整批首道通过 48 件，第二道通过 45 件，结算的批次产量是 45 件。工单应记多少？</h4>
+            <div class="quiz-options">
+              <button type="button" class="quiz-option" data-value="option-a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>93 件，把每道工序的通过量相加</span></button>
+              <button type="button" class="quiz-option" data-value="option-b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>48 件，按首道通过量记账</span></button>
+              <button type="button" class="quiz-option" data-value="option-c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>45 件，按已完工批次的结算产量入账</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="option-a"
+               data-explanation-right="其余开工条件已满足，可以先用已经放行的 18 件。后续每次能处理多少，要看当时的可用量。"
+               data-explanation-wrong="看已向下游放行的数量。即使整批还有剩余，下游当前能按已放行的 18 件生产。">
+            <h4 class="quiz-question">转运批次目标 50 件，上游已放行 18 件，下游尚未处理且其余开工条件已满足。下游现在能处理多少？</h4>
+            <div class="quiz-options">
+              <button type="button" class="quiz-option" data-value="option-a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>18 件，按当前可用量生产</span></button>
+              <button type="button" class="quiz-option" data-value="option-b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>50 件，按批次目标量生产</span></button>
+              <button type="button" class="quiz-option" data-value="option-c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>0 件，要等整批全部放行</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+          <button type="button" class="quiz-check-btn" onclick="checkQuiz('quiz-module3')">查看反馈</button>
+          <button type="button" class="quiz-reset-btn" onclick="resetQuiz('quiz-module3')">重做本章小测</button>
+        </div>
+        <p>下一章看接棒前后还要做哪些交接，包括领料、质检和入库。<a href="#module-4">进入「车间边界与外部系统」</a></p>
+      </section>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,40 @@
+repository:
+  name: OpenMES
+  source_url: https://github.com/Mes-Open/OpenMes
+  local_path: /Users/seal/Desktop/myLog/program/SKhynix/OpenMes
+  snapshot: 6048facedb99b112caecd9f60089e753a53ca89d
+  snapshot_date: '2026-09-29'
+
+learning_kit:
+  kit_type: read-through
+  guided_explanation: openmes-implementation-guide.md
+  learning_path: LEARNING_PATH.md
+  source_map: 'openmes-implementation-guide.md#源码索引'
+  checkpoint_questions: 'openmes-implementation-guide.md#检查问题'
+
+# Commands run from repository.local_path.
+milestones:
+  - id: core-sources-present
+    command: >-
+      test -f backend/routes/web.php &&
+      test -f backend/routes/api.php &&
+      test -f backend/app/Services/WorkOrder/WorkOrderService.php &&
+      test -f backend/app/Services/WorkOrder/BatchService.php
+    expected_initial_state: pass
+  - id: http-and-test-entrypoints-present
+    command: >-
+      test -f backend/artisan &&
+      test -f backend/phpunit.xml &&
+      test -f backend/tests/Feature/Api/BatchStepTest.php &&
+      rg -q -F "Route::get('/health'" backend/routes/api.php
+    expected_initial_state: pass
+  - id: production-smoke
+    command: cd backend && php artisan test tests/Feature/Api/BatchStepTest.php --stop-on-failure
+    expected_initial_state: pass
+    skip_reason: 本轮环境缺少 PHP、Composer 及 backend/vendor/autoload.php。
+
+done_when:
+  - 能说明工单、批次与工序的关系。
+  - 能从操作员动作追到事务、状态更新与产量回写。
+  - 能解释整批流转与按量流转的区别。
+  - 环境检查通过，或有明确的跳过记录。

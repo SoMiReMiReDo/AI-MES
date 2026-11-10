@@ -1,0 +1,90 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="OpenMES 开发文档：架构、生产逻辑与源码拆解"><title>开发、验证与问题定位 · OpenMES Atlas</title><link rel="stylesheet" href="assets/style.css"></head><body>
+<a class="skip" href="#main">跳到正文</a><aside class="sidebar" id="sidebar"><a class="brand" href="index.html"><span class="brand-mark">M</span><span>OpenMES <b>ATLAS</b></span></a><div class="sidebar-caption">DEVELOPER KNOWLEDGE BASE</div><button class="search-trigger" type="button">⌕ 搜索文档 <kbd>/</kbd></button><nav aria-label="主导航"><a class="nav-home " href="index.html">⌂ <span>文档概览</span></a><a class="nav-item " href="01-overview.html" ><span class="nav-num">01</span><span>项目全景与阅读地图</span></a><a class="nav-item " href="02-domain.html" ><span class="nav-num">02</span><span>领域对象与数据归属</span></a><a class="nav-item " href="03-production.html" ><span class="nav-num">03</span><span>生产主链与事务边界</span></a><a class="nav-item " href="04-quantity.html" ><span class="nav-num">04</span><span>两种流转与数量账本</span></a><a class="nav-item " href="05-material-quality.html" ><span class="nav-num">05</span><span>物料、质量与仓储闭环</span></a><a class="nav-item " href="06-machine-erp.html" ><span class="nav-num">06</span><span>设备信号与 ERP 集成</span></a><a class="nav-item " href="07-frontend-sync.html" ><span class="nav-num">07</span><span>前端入口与实时读模型</span></a><a class="nav-item " href="08-permissions-modules.html" ><span class="nav-num">08</span><span>权限、租户与扩展模块</span></a><a class="nav-item " href="09-planning-traceability.html" ><span class="nav-num">09</span><span>排程、绩效与追溯旁路</span></a><a class="nav-item active" href="10-development.html" aria-current=page><span class="nav-num">10</span><span>开发、验证与问题定位</span></a><a class="nav-item " href="11-evidence.html" ><span class="nav-num">11</span><span>来源基线与已知文档差异</span></a></nav><div class="sidebar-footer"><span class="status-dot"></span> 本地源码阅读基线<br><small>6048face · 2026.11.09</small><a href="../openmes-course/index.html">交互课程 ↗</a><a href="../README.md">Markdown 文档 ↗</a></div></aside>
+<div class="workspace"><header class="topbar"><button id="menu-toggle" aria-expanded="false" aria-controls="sidebar" aria-label="展开导航">☰</button><div>工程知识库 <span>/</span> 开发、验证与问题定位</div><span class="top-tag">SOURCE VERIFIED · 静态核对</span><button id="theme-toggle" aria-label="切换明暗主题">◐</button></header><main id="main" tabindex="-1"><div class="article-meta">CHAPTER 10 <span>业务流程 · 实现契约 · 开发验收</span><a href="../developer/10-development.md">阅读 Markdown ↗</a></div><div class="chapter-jump" role="navigation" aria-label="本章导航"><a href="#section-2">使用逻辑</a><a href="#section-4">技术逻辑</a><a href="#section-11">环境初始化的可复现步骤</a><a href="#section-12">容器开发与长驻进程</a><a href="#section-13">分层验证命令</a><a href="#section-14">从缺陷报告到修复提交</a><a href="#section-15">文档站维护命令与验收</a><a href="#section-16">源码依据</a></div><article class="prose"><h1 id="section-1">开发、验证与问题定位</h1>
+<p>用现有测试约束修改范围；区分文档站验证、业务测试和生产环境验证。</p>
+<h2 id="section-2">使用逻辑</h2>
+<h3 id="section-3">用一个改动串起开发和验收</h3>
+<p>假设需求是「工序还有待处理量时，完工错误消息要显示剩余数量」。先在隔离数据里准备两道工序、transfer 模式和能操作该产线的账号。完成上游并在下游只报一部分。点击完工，记录工序 ID、当前剩余量、提交内容、返回消息和提交后状态。处理剩余量后再点完工，检查错误消失并完成工序。这样同时拿到一个失败样本和一个成功样本。</p>
+<div class="table-wrap"><table><thead><tr><th>提交前要回答的问题</th><th>可复核产物</th></tr></thead><tbody><tr><td>用户在什么页面、什么状态触发</td><td>操作顺序、角色、配置和最小数据</td></tr><tr><td>拒绝来自哪个层</td><td>Web flash 或字段错误、API 响应、服务规则</td></tr><tr><td>成功后有哪些状态与数量变化</td><td>工序、批次和工单的前后值</td></tr><tr><td>别的角色与入口是否受影响</td><td>对象权限用例以及 Web/API 对照</td></tr><tr><td>是否涉及实际部署能力</td><td>锁、WebSocket、设备或 ERP 的环境要求</td></tr></tbody></table></div>
+<p>准备可复用数据时，按产品、工单、批次和工序记录标识，避免只保存截图。对支持不同流转模式的逻辑，记录测试时启用的模式和设置。</p>
+<h2 id="section-4">技术逻辑</h2>
+<h3 id="section-5">本地开发</h3>
+<p>从 OpenMES 的 backend 目录准备环境与依赖：</p>
+<div class="code-block"><span>bash</span><pre><code>composer install
+npm ci
+# 按 .env.example 配置本地数据库与应用环境
+php artisan key:generate
+php artisan migrate
+npm run build
+composer run dev</code></pre></div>
+<p>上述命令是操作说明，本次没有执行数据库迁移或启动 OpenMES。composer run dev 启动 Laravel、队列监听、日志与 Vite。容器部署从仓库根使用 docker compose up -d；环境变量与端口以当前 Compose 为准。</p>
+<h3 id="section-6">按变化选择测试</h3>
+<div class="table-wrap"><table><thead><tr><th>修改范围</th><th>首先验证</th></tr></thead><tbody><tr><td>工序规则</td><td>Feature/Api/BatchStepTest、Unit/Services/BatchServiceTest</td></tr><tr><td>transfer 与数量</td><td>Feature/Web/Operator/StepQuantityFlowTest</td></tr><tr><td>设备计数</td><td>Feature/Machine/MachineCounterTest</td></tr><tr><td>仓储过账</td><td>Feature/Warehouse/StockDocumentServiceTest</td></tr><tr><td>ERP 导入</td><td>Feature/Api/V1/Erp 下对应测试</td></tr><tr><td>实时同步</td><td>Feature/Sync 下投影、提交后广播与权限测试</td></tr><tr><td>前端逻辑</td><td>Vitest colocated 测试；需要浏览器行为时再跑 E2E</td></tr></tbody></table></div>
+<div class="code-block"><span>bash</span><pre><code># backend 目录；Inertia feature tests 前先构建资源
+npm run build
+php artisan test --filter=BatchStepTest
+npm test
+# 仓库根目录；先有正在运行的隔离测试实例
+E2E_BASE_URL=http://localhost:8080 npx playwright test</code></pre></div>
+<p>根目录 npm test 是占位失败命令。phpunit.xml 默认 SQLite :memory:、sync 队列、null 广播；它不能充分证明 PostgreSQL 行锁、长驻 worker 和实际 WebSocket 的正确性。并发问题需要补 PostgreSQL 场景验证。Playwright 配置为单 worker。</p>
+<h3 id="section-7">故障定位表</h3>
+<div class="table-wrap"><table><thead><tr><th>现象</th><th>优先核对</th></tr></thead><tbody><tr><td>不能开工</td><td>工单计划时间 / hold、前序、工位、阻塞质检、缺料开关</td></tr><tr><td>工单数量偏大</td><td>中间工序是否误当成品、设备重复事件、绑定与基线</td></tr><tr><td>完批但未完单</td><td>计划短缺、报废、其他进行中批次、阻塞状态</td></tr><tr><td>现场页面没更新</td><td>快照 HTTP 状态、session、频道授权、Reverb、提交后事件</td></tr><tr><td>完工但没有入库</td><td>仓储开关、自动草稿条件、生成日志、单据是否过账</td></tr><tr><td>模块直接刷新白屏</td><td>moduleAssets、页面注册顺序、provider 与构建产物</td></tr></tbody></table></div>
+<h3 id="section-8">文档维护流程</h3>
+<p>编辑 developer/*.md，然后运行 python3 tools/build_portal.py。生成站点是派生产物，应优先修改 Markdown。源码更新后重新核对相关证据和 baseline.json；新基线不是只替换日期。</p>
+<p>本次验证记录见 VALIDATION.md。原学习课程与重建里程碑继续独立保留，不作为本次开发文档中心的强制阅读顺序。</p>
+<h3 id="section-9">让每类测试覆盖一个风险</h3>
+<p>PHPUnit Feature 用于校验请求、角色和数据库结果，Unit 可定位领域计算及分支。前端测试适合验证状态映射和错误显示。Playwright 的现场意义是验证浏览器路径和操作反馈。例如跨窗口实时列表用例依赖运行中的应用，其用例还通过 Docker 查询和更改测试记录，复跑前需要提供相应容器和隔离数据库。</p>
+<p>项目 CI 以 PHP 8.3 和 Node 20 安装依赖、构建资源、执行前端测试，再准备应用密钥并跑 Laravel 测试。复核失败时先确认失败发生在构建、环境引导还是断言阶段。涉及 PostgreSQL 行锁时，在对应数据库中用两个独立连接构造竞争，再断言最终状态与写入次数。</p>
+<h3 id="section-10">接手故障时收集可对照的上下文</h3>
+<p>按「用户和产线 → 工单/批次/工序 → 操作和时间 → 页面/接口响应 → 提交后的状态」记录证据。设备和 ERP 问题额外记录通道 ID、事件 ID 或外部单据号。复现后先运行覆盖该分支的测试，再跑受影响的相邻入口。</p>
+<h2 id="section-11">环境初始化的可复现步骤</h2>
+<p>以下命令面向 OpenMES 源码目录，而不是 MESagent。先检查 PHP、Composer、Node 与 npm 已安装，并使用锁文件安装依赖。PHP 约束及 Composer platform 见第 01 章；精确依赖以当前 lock 文件为准。</p>
+<div class="code-block"><span>bash</span><pre><code>cd /Users/seal/Desktop/myLog/program/SKhynix/OpenMes/backend
+php --version
+composer --version
+node --version
+npm --version
+composer install
+npm ci
+# 仅首次创建本地配置，不覆盖已有 .env
+[ -f .env ] || cp .env.example .env</code></pre></div>
+<p>在继续前编辑本地 .env。示例 DB_HOST=postgres、REVERB_HOST=reverb 是容器网络中的服务名，直接在宿主机运行时应改为实际可访问地址。设置数据库连接、APP_URL、会话、广播和浏览器连接参数，确认它们属于本地隔离实例。</p>
+<div class="code-block"><span>bash</span><pre><code># 首次初始化才生成 APP_KEY，已有实例保留原密钥
+php artisan key:generate
+php artisan migrate
+npm run build
+composer run dev</code></pre></div>
+<p>composer run dev 包含应用、队列监听、日志与 Vite，不包含 Reverb 服务。需要实时同步时，在匹配配置的另一个终端运行 php artisan reverb:start，或使用 Compose 的 reverb 服务。空数据库完成迁移并不等于已具备角色、产品、工艺等实验数据，应按安装流程和第 01 章准备最小数据。</p>
+<h2 id="section-12">容器开发与长驻进程</h2>
+<p>从 OpenMES 根目录使用基础 Compose 与开发覆盖文件：</p>
+<div class="code-block"><span>bash</span><pre><code>docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.dev.yml ps</code></pre></div>
+<p>开发覆盖文件挂载 PHP 与前端源码，frontend 服务执行 npm ci 和 npm run watch。后端使用 RoadRunner Octane，修改 PHP 后需要重新加载长驻应用；只刷新浏览器不保证新 PHP 已执行。</p>
+<div class="code-block"><span>bash</span><pre><code>docker compose -f docker-compose.yml -f docker-compose.dev.yml exec backend php artisan octane:reload
+docker compose -f docker-compose.yml -f docker-compose.dev.yml restart reverb</code></pre></div>
+<p>第二条用于修改广播鉴权或相关 PHP 后重启 Reverb。依赖清单发生变化时还需在对应运行环境重新安装依赖；挂载了 composer.json 不代表镜像里的 vendor 自动同步。端口、数据库和安装初始化按当前 Compose 配置检查，不把本地预览文档的 8765 当作业务端口。</p>
+<h2 id="section-13">分层验证命令</h2>
+<div class="code-block"><span>bash</span><pre><code># OpenMES/backend；运行受影响的业务测试
+npm run build
+php artisan test --filter=BatchServiceTest --stop-on-failure
+php artisan test --filter=StepQuantitySafetyTest --stop-on-failure
+npm test
+# 针对改动的 PHP 文件执行格式化或检查
+./vendor/bin/pint --test app/Services/WorkOrder/BatchService.php</code></pre></div>
+<p>Playwright 从 OpenMES 根目录安装和运行，不是 backend。第一次使用需要 npm ci 和 npx playwright install chromium，再提供 E2E_BASE_URL 指向已启动的隔离实例。部分用例通过 Docker 直接修改测试数据，运行前应阅读目标 spec 的准备逻辑。</p>
+<p>验收记录应写出命令、运行目录、结果与环境。测试未执行、执行被依赖阻塞、断言失败是三种不同状态，不应统一写成“已验证”。</p>
+<h2 id="section-14">从缺陷报告到修复提交</h2>
+<ol><li>收集角色、租户、产线、模式、对象 ID、操作时间和响应，缩小到一条可重放的路径。</li><li>用 Route → Controller / Request → Service → Model 定位首次偏离预期的位置。</li><li>对业务风险补一条能区分正确与错误行为的测试，避免只镜像实现细节。</li><li>在领域规则所在地修复，并核对 Web、API、设备或导入的相邻入口。</li><li>运行相关测试、前端构建与必要的浏览器场景；数据库并发另在 PostgreSQL 验证。</li><li>提交说明描述触发条件、修复后行为、验证与未覆盖的环境，并更新相应章节。</li></ol>
+<p>数据库变更另需检查既有数据、空值、索引和回填。涉及长驻进程的配置或 PHP 改动，交付说明应写清需要重新加载的服务。恢复时区分应用代码回退与数据补偿，不能假设回退代码会自动撤销已过账库存或外部 ERP 单据。</p>
+<h2 id="section-15">文档站维护命令与验收</h2>
+<div class="code-block"><span>bash</span><pre><code>cd /Users/seal/Desktop/myNote/MESagent/docs
+python3 tools/build_portal.py
+python3 tools/check_portal.py
+node --check portal/assets/app.js
+node --check portal/assets/search-data.js</code></pre></div>
+<p>Markdown 是唯一正文源稿；不要只编辑 portal 中生成的 HTML。新增章节更新 chapters.json，新增证据同时补源码链接和 sources 清单。构建会刷新来源快照和 baseline，因此构建后仍要复核是否有源码变化导致旧文字失效。</p>
+<p>浏览器验收覆盖首页入口、每章目录、长表格横向滚动、代码块、搜索命中、来源行号、上一章/下一章和窄屏导航。使用 HTTP 预览时可在 docs 目录运行 python3 -m http.server 8765 --bind 127.0.0.1，再打开 /portal/。</p>
+<h2 id="section-16">源码依据</h2>
+<ul><li><a href="sources/4d8d9da12db5f9e8.html#L66">backend/composer.json:66</a></li><li><a href="sources/4ee0dfc654b8b260.html#L26">backend/phpunit.xml:26</a></li><li><a href="sources/f679bf1e58e8dddf.html#L8">playwright.config.ts:8</a></li><li><a href="sources/62a6a80349a9029e.html#L1">backend/tests/Feature/Warehouse/StockDocumentServiceTest.php:1</a></li><li><a href="sources/1db27d93186e46d3.html#L18">CI 运行环境与测试顺序</a></li><li><a href="sources/eb4e7794757b30e8.html#L27">数量和状态边界测试</a></li><li><a href="sources/b5e70abf1edb5d4a.html#L14">实时列表 E2E 的运行依赖</a></li><li><a href="sources/9542f82d64bbeebd.html#L1">docker-compose.dev.yml:1</a></li><li><a href="sources/361f2d0f55c49b27.html#L1">backend/.env.example:1</a></li><li><a href="sources/495707834ca4b862.html#L1">backend/package.json:1</a></li><li><a href="sources/7ae45ad102eab3b6.html#L1">package.json:1</a></li></ul></article><div class="page-nav"><a href="09-planning-traceability.html"><small>上一章</small>排程、绩效与追溯旁路</a><a href="11-evidence.html"><small>下一章 →</small>来源基线与已知文档差异</a></div></main><footer class="page-footer">OpenMES / 从业务行为理解源码 <span>本地文档 · 不连接生产数据</span></footer></div>
+<aside class="toc"><div>本页内容</div><a href="#section-2">使用逻辑</a><a href="#section-4">技术逻辑</a><a href="#section-11">环境初始化的可复现步骤</a><a href="#section-12">容器开发与长驻进程</a><a href="#section-13">分层验证命令</a><a href="#section-14">从缺陷报告到修复提交</a><a href="#section-15">文档站维护命令与验收</a><a href="#section-16">源码依据</a></aside>
+<dialog id="search-dialog"><div class="search-head"><label for="search-input">搜索文档</label><button id="search-close" aria-label="关闭搜索">×</button></div><input id="search-input" placeholder="工单、事务、MachineCounter…" autocomplete="off"><div id="search-count" role="status">输入关键词搜索全部章节</div><div id="search-results"></div></dialog><script src="assets/search-data.js"></script><script src="assets/app.js"></script></body></html>

@@ -1,0 +1,114 @@
+# 权限、租户与扩展模块
+
+界面是否可见、用户是否有权操作、数据是否属于当前租户，是三层不同约束。
+
+## 使用逻辑
+
+### 给操作员开通产线后的验收
+
+在测试环境用操作员账号进入分配的产线，打开本线工单并开始允许执行的工序。切换到另一条未分配产线的对象，检查列表、详情及操作入口。对后台集成另用 ERP key，分别验证有对应 scope 的端点和缺少 scope 的端点。角色、产线分配与集成密钥应分别记录，以便复现。
+
+| 现象 | 先检查 | 再检查 |
+| --- | --- | --- |
+| 登录成功但队列没有本线工单 | 账号产线分配与当前选线 | 接单、工单状态、计划时间与列表过滤 |
+| 能打开工单但提交动作失败 | 动作请求的权限和参数 | 所选产线、当前工位与领域状态 |
+| ERP 端点拒绝请求 | 模块是否启用、密钥是否可用和允许来源 IP | scope、租户上下文、具体对象可见性 |
+| 已安装模块但页面不可用 | 是否启用及 provider 是否加载 | 路由、菜单权限、前端入口与运行时版本 |
+
+权限复核可使用同一业务对象分别以管理员、主管、操作员身份验证，然后用另一租户的对象做隔离验证。页面展示的按钮与后端请求各自需要验证。
+
+## 技术逻辑
+
+### 授权链
+
+路由中间件限制入口，Policy 判断对象级权限，Request 验证当前操作及参数，领域服务检查业务状态。WorkOrderPolicy.view 先检查 view work orders 权限，再允许管理员/主管，或要求操作员归属工单产线。
+
+CompleteBatchStepRequest.authorize 使用工单的 view Policy；start 则在控制器中显式 authorize。由此可见，请求动作并非都使用名字相同的权限方法，必须逐入口检查。
+
+### 租户上下文
+
+TenantScope 优先读取当前认证用户 tenant_id，在无登录用户的 API-key 场景回退 TenantContext。只有得到 tenantId 时才附加 where 条件。因此不能断言“所有查询天然绝对隔离”；后台任务、命令、裸查询和绕过 Scope 的路径仍需审查。
+
+实时集合还需核对订阅频道、快照投影与用户产线范围。隐藏导航菜单不等于后端拒绝访问。
+
+### 模块的两类含义
+
+ModuleRegistry 管理可选业务能力的可用性；ModuleManager 管理可安装扩展模块的发现、启停、资源与 provider。阅读时分清“打开仓储功能”和“安装一个第三方 Laravel 模块”。
+
+ModuleManager 根据 manifest 的 provider 加载已启用模块，并用 ModuleProviderGuard 包装。前端通过模块资产、页面注册和构建期页面发现接入。旧文档仅描述扫描 ServiceProvider 文件，不能完整代表当前机制。
+
+### 新功能落点
+
+| 变化 | 建议检查位置 |
+| --- | --- |
+| 新字段与校验 | migration、Model、FormRequest、共享表单 |
+| 新业务动作 | Service、Controller、Policy 与 Feature 测试 |
+| 新实时字段 | Shape 投影、广播投影、集合消费者 |
+| 模块页面 | manifest、provider、前端注册、直接刷新测试 |
+| 外部事件订阅 | HOOKS、实际事件派发点、事务与失败处理 |
+
+领域行为优先复用已有服务，不要在模块控制器里另写一套计产或库存扣减。模块安装成功不代表每种租户和角色均有正确访问边界。
+
+### API key 和对象查找的时序
+
+AuthenticateApiKey 读取 X-Api-Key 或符合前缀的 Bearer，校验密钥可用性与来源 IP，并在调用后续处理前设置 TenantContext。请求终止时清理上下文，长驻 worker 可继续处理下一请求。对象查找时序也重要。ERP 的库存单据确认控制器接收整数 ID，再在方法内查询，确保查询发生在租户上下文建立后。
+
+### 模块从发现到页面可用
+
+ModuleManager::discover 读各目录的 module.json，并结合启用列表确定当前状态。启动时 loadEnabled 加载 provider。frontendAssets 根据已启用模块收集已发布的 JS，URL 带内容指纹，还可从 sidecar 读取 requires_runtime。验收一项新增模块功能时，应覆盖直接打开路由、页面内导航和刷新，以及功能开关关闭后的访问结果。
+
+## 新增动作的授权设计步骤
+
+| 层次 | 需要明确的问题 | 常见遗漏 |
+| --- | --- | --- |
+| 路由身份 | 使用用户会话、Sanctum 还是 API key | 将路径含 api 的集合误当 token 接口 |
+| 功能能力 | 模块是否开启、动作是否允许 | 只隐藏菜单，没有限制路由 |
+| 对象范围 | 是否属于当前租户、产线或工位 | 只检查角色，没有检查对象归属 |
+| 业务状态 | 当前是否允许开工、报数或完工 | 有权限就直接写状态 |
+| 输出范围 | 响应、列表、广播是否暴露多余数据 | 写操作安全但读侧泄漏 |
+
+现有 CompleteBatchStepRequest 使用 view 工单 Policy，这说明当前实现如何授权，不代表新增写动作必须复制这个选择。新增动作应明确需要哪些权限，并分别核对所有入口。
+
+## 可执行的权限验收用例
+
+准备租户 A、B 的对象，A 内再准备操作员可访问与不可访问的两条产线。分别验证列表、详情、直接 POST、集合快照和 WebSocket 订阅。不能只让操作员看不到按钮就判定权限通过。
+
+| 身份与目标 | 验收重点 |
+| --- | --- |
+| 未登录访问受保护入口 | 应被对应认证机制拒绝或引导登录 |
+| 有角色但无对象范围 | 直接使用对象 ID 也不能完成越权动作 |
+| 有 scope 的 ERP key | 仍只能访问本 key 建立的租户范围 |
+| 缺 scope / 过期 key / 来源不允许 | 区分权限与身份失败，不进入业务写入 |
+| 模块关闭后访问旧 URL | 后端也应按入口规则拒绝 |
+| 连续处理不同租户请求 | 上一请求的上下文不残留到下一请求 |
+
+不同入口可能返回 403、404 或登录跳转，应根据实际中间件和控制器断言；不要为所有拒绝硬编码同一个状态码。
+
+## 后台任务与裸查询的租户审查
+
+TenantScope 无有效 tenantId 时不会自动附加条件。新增队列任务、定时命令或后台同步时，必须明确查询作用域从哪里来，以及是否应处理单租户或显式遍历多个租户。DB::table 也不会自动获得 Eloquent 全局 Scope，集合控制器已展示需要显式过滤的例子。
+
+检查顺序为“建立上下文 → 解析对象 → 执行业务 → 清理上下文”。ERP 库存 ACK 延迟对象查询到控制器内部，正是为了让查询发生在 API key 中间件建立租户之后。扩展类似接口时应复核 Laravel 中间件与绑定顺序，而不是只检查 URL 中有没有对象 ID。
+
+## 扩展模块交付清单
+
+1. 从现有 module.json、manifest provider 与 ModuleManager 读取实际约定，不凭旧指南猜字段。
+2. 将路由、权限、迁移与领域调用放在各自职责中，复用核心数量和库存服务。
+3. 检查启用、停用和 provider 加载失败的保护路径。
+4. 发布前端资源并核对 frontendAssets 的指纹、requires_runtime 和页面注册。
+5. 验证直接刷新模块页面与站内跳转，确认资源不是只在某条导航路径中偶然加载。
+6. 记录停用后历史数据如何读取，以及升级涉及的迁移和兼容范围。
+
+业务能力开关与第三方模块安装是两条不同路径，提交说明中应明确改的是哪一种。启停操作是否涉及数据清理，要读具体实现，不能由“禁用”字样推断数据会自动删除。
+
+## 源码依据
+
+- [backend/app/Policies/WorkOrderPolicy.php:32](/Users/seal/Desktop/myLog/program/SKhynix/OpenMes/backend/app/Policies/WorkOrderPolicy.php:32)
+- [backend/app/Scopes/TenantScope.php:11](/Users/seal/Desktop/myLog/program/SKhynix/OpenMes/backend/app/Scopes/TenantScope.php:11)
+- [backend/app/Services/ModuleManager.php:373](/Users/seal/Desktop/myLog/program/SKhynix/OpenMes/backend/app/Services/ModuleManager.php:373)
+- [backend/app/Support/ModuleRegistry.php:1](/Users/seal/Desktop/myLog/program/SKhynix/OpenMes/backend/app/Support/ModuleRegistry.php:1)
+- [backend/tests/Feature/ModuleLifecycleGuardsTest.php:1](/Users/seal/Desktop/myLog/program/SKhynix/OpenMes/backend/tests/Feature/ModuleLifecycleGuardsTest.php:1)
+- [backend/tests/Feature/Sync/StatefulCollectionAccessTest.php:1](/Users/seal/Desktop/myLog/program/SKhynix/OpenMes/backend/tests/Feature/Sync/StatefulCollectionAccessTest.php:1)
+- [API key 身份与租户上下文](/Users/seal/Desktop/myLog/program/SKhynix/OpenMes/backend/app/Http/Middleware/AuthenticateApiKey.php:24)
+- [模块前端资源与运行时要求](/Users/seal/Desktop/myLog/program/SKhynix/OpenMes/backend/app/Services/ModuleManager.php:185)
+- [ERP 对象查找的时序](/Users/seal/Desktop/myLog/program/SKhynix/OpenMes/backend/app/Http/Controllers/Api/V1/Erp/StockDocumentExportController.php:76)

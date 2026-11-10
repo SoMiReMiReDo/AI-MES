@@ -1,0 +1,154 @@
+<section class="module" id="module-1" aria-labelledby="title-1">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title" id="title-1">从一次完工操作读懂 OpenMES</h1>
+      <p class="module-subtitle">沿着一张工单，从操作员点「完成」追到数据落库。再认目录、读业务规则、练习排查，最后动手重建核心流程。</p>
+      <p>按含本地修改的工作树整理。源码基线为 <code>6048facedb99b112caecd9f60089e753a53ca89d</code>（2026-09-29），路径为 <code>/Users/seal/Desktop/myLog/program/SKhynix/OpenMes</code>。</p>
+      <nav class="module-links" aria-label="课程快捷导航">
+        <a class="btn" href="#journey-trace">开始追踪</a>
+        <a class="btn" href="#module-6">跳到重建路线</a>
+      </nav>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in" aria-labelledby="journey-scenario">
+        <h2 class="screen-heading" id="journey-scenario">假设车间收到一张 100 件的工单</h2>
+        <div class="step-cards">
+          <div class="step-card">
+            <div class="step-num" aria-hidden="true">1</div>
+            <div class="step-body"><strong>主管接收工单</strong><p>这张工单计划生产 100 件。</p></div>
+          </div>
+          <div class="step-card">
+            <div class="step-num" aria-hidden="true">2</div>
+            <div class="step-body"><strong>操作员打开产线队列</strong><p>找到工单，创建首批 50 件的生产批次。</p></div>
+          </div>
+          <div class="step-card">
+            <div class="step-num" aria-hidden="true">3</div>
+            <div class="step-body"><strong>操作员依次做完两道工序</strong><p>每做完一道就在工单详情点「完成」。我们追踪其中一次点击。</p></div>
+          </div>
+        </div>
+        <p>想对着系统操作，可以从操作员指南开始。<code>docs/operator-guide.md:47</code></p>
+      </section>
+
+      <section class="screen animate-in" id="journey-trace" aria-labelledby="journey-flow">
+        <h2 class="screen-heading" id="journey-flow">跟着一张「完工交接单」走</h2>
+        <p>网页送出一张交接单。<span class="term" tabindex="0" data-definition="按网址和请求类型，把请求交给相应处理代码的规则。">路由</span>负责分派，<span class="term" tabindex="0" data-definition="网页请求进入后端后，由控制器接收，检查操作上下文并调用相应业务服务。">控制器</span>核对产线，<span class="term" tabindex="0" data-definition="批次业务服务。它执行批次工序的开始、完成等业务动作。">BatchService</span>负责执行业务规则。</p>
+        <div class="flow-steps" role="group" aria-label="完工请求的四个阶段">
+          <div class="flow-step"><div class="flow-step-num">1</div><p>网页提交</p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num">2</div><p>校验输入<br>核对产线</p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num">3</div><p>服务在<span class="term" tabindex="0" data-definition="将一组数据库操作视为一个整体。全部成功才一起提交，出错时可撤销这一组写入。">事务</span>中保存</p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num">4</div><p>跳回网页<br>带上反馈</p></div>
+        </div>
+        <div class="flow-animation" data-steps='[
+          {"highlight":"flow-actor-1","label":"操作员在工单详情点「完成」。"},
+          {"highlight":"flow-actor-2","label":"网页提交 POST /operator/batch-step/{batchStep}/complete，路由把它交给操作员控制器。","packet":true,"from":"actor-1","to":"actor-2"},
+          {"highlight":"flow-actor-2","label":"请求先校验输入。进入控制器后，再检查这道工序是否属于当前选中的产线。"},
+          {"highlight":"flow-actor-3","label":"检查通过后，控制器调用 BatchService 完成这道工序。","packet":true,"from":"actor-2","to":"actor-3"},
+          {"highlight":"flow-actor-4","label":"业务条件满足时，服务在数据库事务里保存完工结果。","packet":true,"from":"actor-3","to":"actor-4"},
+          {"highlight":"flow-actor-1","label":"保存成功后，Web 控制器返回带成功反馈的跳转，操作员回到网页。","packet":true,"from":"actor-2","to":"actor-1"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1"><div class="flow-actor-icon" aria-hidden="true">①</div><span>网页</span></div>
+            <div class="flow-actor" id="flow-actor-2"><div class="flow-actor-icon" aria-hidden="true">②</div><span>路由／控制器</span></div>
+            <div class="flow-actor" id="flow-actor-3"><div class="flow-actor-icon" aria-hidden="true">③</div><span>BatchService</span></div>
+            <div class="flow-actor" id="flow-actor-4"><div class="flow-actor-icon" aria-hidden="true">④</div><span>数据库</span></div>
+          </div>
+          <div class="flow-packet" id="flow-packet" aria-hidden="true"></div>
+          <div class="flow-step-label" id="flow-label" aria-live="polite">点「下一步」，查看交接单到了哪里。</div>
+          <div class="flow-controls">
+            <button class="btn flow-next-btn" type="button">下一步</button>
+            <button class="btn flow-reset-btn" type="button">从头开始</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+        <p>批次是否随之完成、工单产量怎样更新，留到<a href="#module-3">第 3 章</a>拆开看。</p>
+      </section>
+
+      <section class="screen animate-in" aria-labelledby="journey-source">
+        <h2 class="screen-heading" id="journey-source">在源码中找到这四站</h2>
+        <div class="file-tree" role="group" aria-label="完工路径的源码位置">
+          <div class="ft-file"><code class="ft-name">backend/resources/js/Pages/operator/WorkOrderDetail.jsx:1373</code><span class="ft-desc">网页发起完工提交</span></div>
+          <div class="ft-file"><code class="ft-name">backend/routes/web.php:266</code><span class="ft-desc">操作员网页路由组</span></div>
+          <div class="ft-file"><code class="ft-name">backend/routes/web.php:283</code><span class="ft-desc">完工地址对应的处理方法</span></div>
+          <div class="ft-file"><code class="ft-name">backend/app/Http/Controllers/Web/Operator/BatchController.php:126</code><span class="ft-desc">核对所选产线并调用服务</span></div>
+          <div class="ft-file"><code class="ft-name">backend/app/Services/WorkOrder/BatchService.php:129</code><span class="ft-desc">执行业务规则并保存</span></div>
+        </div>
+        <details>
+          <summary>展开网页路由和逐行对照</summary>
+          <p><code>backend/routes/web.php:279–283</code></p>
+          <div class="translation-block">
+            <div class="translation-code">
+              <span class="translation-label">源码</span>
+              <pre><code><span class="code-line"><span class="code-comment">        // Batch step progression (replaces the old Livewire BatchStepList — see</span></span>
+<span class="code-line"><span class="code-comment">        // OperatorBatchController::startStep/completeStep delegating to BatchService).</span></span>
+<span class="code-line">        Route::<span class="code-function">get</span>(<span class="code-string">'/batch-step/{batchStep}/pick-preview'</span>, [OperatorBatchController::class, <span class="code-string">'pickPreview'</span>])-&gt;name(<span class="code-string">'batch-step.pick-preview'</span>);</span>
+<span class="code-line">        Route::<span class="code-function">post</span>(<span class="code-string">'/batch-step/{batchStep}/start'</span>, [OperatorBatchController::class, <span class="code-string">'startStep'</span>])-&gt;name(<span class="code-string">'batch-step.start'</span>);</span>
+<span class="code-line">        Route::<span class="code-function">post</span>(<span class="code-string">'/batch-step/{batchStep}/complete'</span>, [OperatorBatchController::class, <span class="code-string">'completeStep'</span>])-&gt;name(<span class="code-string">'batch-step.complete'</span>);</span></code></pre>
+            </div>
+            <div class="translation-english">
+              <span class="translation-label">怎么读</span>
+              <div class="translation-lines">
+                <p class="tl">注释交代了入口的迁移。开始和完成最终交给批次业务服务。</p>
+                <p class="tl"><span class="term" tabindex="0" data-definition="通常用来读取数据的网页请求方法。此处用来读取拣料预览。">GET</span> 请求读取该工序的拣料预览。</p>
+                <p class="tl"><span class="term" tabindex="0" data-definition="向后端提交数据或触发操作的请求方法。">POST</span> 到 <code>/start</code> 由 <code>startStep</code> 接收。</p>
+                <p class="tl">POST 到 <code>/complete</code> 由 <code>completeStep</code> 接收。地址里的工序标识确定本次处理对象。</p>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="screen animate-in" aria-labelledby="journey-quiz-title">
+        <h2 class="screen-heading" id="journey-quiz-title">判断交接单走到了哪一步</h2>
+        <div class="quiz-container" id="quiz-module1">
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="浏览器记录能证明网页已发出请求。顺着地址在 Web 路由中定位控制器，再检查请求是否执行到服务。"
+               data-explanation-wrong="发出请求只能确认网页端已提交。先用请求方法和地址匹配 Web 路由，才能确定服务端入口。">
+            <h3 class="quiz-question">浏览器记录里有一条完工 POST，请求地址以 <code>/operator/batch-step/42/complete</code> 结尾。先从哪一层确定后端接收者？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" type="button" data-value="option-a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>先从产量汇总逻辑反查这次点击</span></button>
+              <button class="quiz-option" type="button" data-value="option-b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>用方法和地址在 Web 路由中查对应控制器</span></button>
+              <button class="quiz-option" type="button" data-value="option-c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>去移动端路由找同名的完工动作</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="输入通过校验后，Web 控制器先核对工序与当前产线。通过之后才轮到 BatchService 判断业务状态。"
+               data-explanation-wrong="顺着调用顺序看。输入校验通过之后，产线归属是控制器交给服务之前的一道门。">
+            <h3 class="quiz-question">输入校验已通过，但操作员选的是 A 线，这道工序属于 B 线。先确认哪一道检查？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" type="button" data-value="option-a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>服务里工序是否处于可完工状态</span></button>
+              <button class="quiz-option" type="button" data-value="option-b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>事务是否已保存完工结果</span></button>
+              <button class="quiz-option" type="button" data-value="option-c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>Web 控制器是否允许当前产线操作这道工序</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="两端都进入同一个批次服务。先对照服务收到的参数和工序状态，再沿事务检查写入。"
+               data-explanation-wrong="两端都能复现，且已确认各自走到业务服务。先核对共同路径的输入和写入，比单看一个客户端的反馈更直接。">
+            <h3 class="quiz-question">网页和移动端都能提交完工，也都确认调用到了业务服务，但完工结果相同地异常。下一步看哪里？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" type="button" data-value="option-a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>对照 BatchService 的输入、状态判断和数据库写入</span></button>
+              <button class="quiz-option" type="button" data-value="option-b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>只看 Web 控制器返回的跳转地址</span></button>
+              <button class="quiz-option" type="button" data-value="option-c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>先查移动端怎样渲染提示</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+
+          <button class="quiz-check-btn" type="button" onclick="checkQuiz('quiz-module1')">查看反馈</button>
+          <button class="quiz-reset-btn" type="button" onclick="resetQuiz('quiz-module1')">重做</button>
+        </div>
+        <p>接下来用仓库地图定位这条链路，也认清工单、批次和工序各自是什么。<a href="#module-2">下一章 · 项目地图与数据对象</a></p>
+      </section>
+    </div>
+  </div>
+</section>

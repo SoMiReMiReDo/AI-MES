@@ -1,0 +1,144 @@
+<section class="module" id="module-5" aria-labelledby="module-5-title">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h2 class="module-title" id="module-5-title">用请求与测试定位失败</h2>
+      <p class="module-subtitle">开工失败时，先分清是权限拒绝、业务规则阻挡，还是数据没有写入。像巡检一样沿途检查，每走一步都找一条证据。</p>
+    </header>
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h3 class="screen-heading">从响应缩小范围</h3>
+        <div class="pattern-cards">
+          <article class="pattern-card">
+            <h4 class="pattern-title">请求被拒绝</h4>
+            <p class="pattern-desc">两个现有 <span class="term" tabindex="0" data-definition="API 是客户端和服务器约定的调用入口。这里移动端发送请求后，服务器以状态码和结构化内容回应。">API</span> 开工用例中，跨产线操作员得到 <code>403</code>，同产线但前一道工序未完成得到 <code>422</code>。先找请求地址、身份和响应内容。Web 入口会通过页面反馈报告选线错误或业务异常。</p>
+          </article>
+          <article class="pattern-card">
+            <h4 class="pattern-title">成功返回，产量没变</h4>
+            <p class="pattern-desc">先查该批是否完成、采用哪种流转模式，再查批次与工单的 <code>produced_qty</code>。整批模式下只完成首道工序时，工单产量还可以保持原值。</p>
+          </article>
+          <article class="pattern-card">
+            <h4 class="pattern-title">数据已变，页面没跟上</h4>
+            <p class="pattern-desc">先重新读取数据。若重读正确，再检查网页是否刷新、实时订阅是否收到更新，以及当前页面使用的是哪种刷新方式。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h3 class="screen-heading">一次提前开工的对话</h3>
+        <p>这是根据源码和现有用例整理的演示。操作员已分配到该产线，但第一道工序仍未完成。</p>
+        <div class="chat-window" id="chat-module5">
+          <div class="chat-messages" role="log" aria-label="提前开工请求的处理过程">
+            <div class="chat-message" data-msg="0" data-sender="mobile" style="display:none">
+              <div class="chat-avatar" style="background:var(--color-actor-1)">端</div>
+              <div class="chat-bubble"><span class="chat-sender">移动客户端</span><p>提交第二道工序的开工请求，携带操作员的访问令牌。</p></div>
+            </div>
+            <div class="chat-message" data-msg="1" data-sender="controller" style="display:none">
+              <div class="chat-avatar" style="background:var(--color-actor-2)">口</div>
+              <div class="chat-bubble"><span class="chat-sender">API 控制器</span><p>已核验该操作员可查看所属工单，把开工请求交给 BatchService。</p></div>
+            </div>
+            <div class="chat-message" data-msg="2" data-sender="service" style="display:none">
+              <div class="chat-avatar" style="background:var(--color-actor-5)">规</div>
+              <div class="chat-bubble"><span class="chat-sender">BatchService</span><p>工序开工条件未满足。请先完成第一道工序，第二道工序保持原状态。</p></div>
+            </div>
+            <div class="chat-message" data-msg="3" data-sender="controller" style="display:none">
+              <div class="chat-avatar" style="background:var(--color-actor-2)">口</div>
+              <div class="chat-bubble"><span class="chat-sender">API 控制器</span><p>返回 422。客户端可以从 errors.step 中取出拒绝原因。</p></div>
+            </div>
+          </div>
+          <div class="chat-typing" style="display:none" aria-hidden="true">
+            <div class="chat-avatar" id="chat-module5-typing-avatar">·</div>
+            <div class="chat-typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+          </div>
+          <div class="chat-controls">
+            <button type="button" class="btn chat-next-btn">下一条</button>
+            <button type="button" class="btn chat-all-btn">连续播放</button>
+            <button type="button" class="btn chat-reset-btn">重置</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+        <div class="callout callout-accent">
+          <span class="callout-icon" aria-hidden="true">◎</span>
+          <div class="callout-content">
+            <strong class="callout-title">同时看响应和存储结果</strong>
+            <p>现有顺序用例核对拒绝原因，产量用例则重新读取工单后核对产量。前者能证明入口拒绝了请求，后者能证明数据库保存了预期结果。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h3 class="screen-heading">从现有用例确认行为</h3>
+        <p>在 <code>BatchStepTest</code> 中先对照三种结果。提前开工看第 65 行，末道工序计产看第 199 行，跨产线拒绝看第 289 行。</p>
+        <details class="pattern-card">
+          <summary><strong>展开源码对照与验证命令</strong></summary>
+          <p>源码 · <code>backend/tests/Feature/Api/BatchStepTest.php:74–80</code></p>
+          <div class="translation-block">
+            <div class="translation-code">
+              <span class="translation-label">源码</span>
+              <pre><code><span class="code-line">        $token = $user-&gt;createToken(<span class="code-string">'test'</span>)-&gt;plainTextToken;</span>
+<span class="code-line"></span>
+<span class="code-line">        $response = $this-&gt;withHeader(<span class="code-string">'Authorization'</span>, <span class="code-string">"Bearer $token"</span>)</span>
+<span class="code-line">            -&gt;postJson(<span class="code-string">"/api/v1/batch-steps/{$secondStep-&gt;id}/start"</span>);</span>
+<span class="code-line"></span>
+<span class="code-line">        $response-&gt;assertStatus(<span class="code-number">422</span>)</span>
+<span class="code-line">            -&gt;assertJsonPath(<span class="code-string">'errors.step.0'</span>, <span class="code-string">'Complete step 1 before starting this step.'</span>);</span></code></pre>
+            </div>
+            <div class="translation-english">
+              <span class="translation-label">逐行解读</span>
+              <div class="translation-lines">
+                <p class="tl">第 74 行为测试用户签发访问令牌。这个场景模拟已登录的操作员。</p>
+                <p class="tl">第 76–77 行带着身份向第二道工序发出开工请求。</p>
+                <p class="tl">第 79–80 行要求响应为 422，且明确提示第一道工序未完成。</p>
+              </div>
+            </div>
+          </div>
+          <p>如果本地已有运行实例，可先请求 <code>GET /api/health</code> 看 HTTP 入口。生产行为用例需要 PHP 8.3、Composer 依赖和隔离的 SQLite 测试环境。准备好后，在仓库的 <code>backend/</code> 目录执行：</p>
+          <pre><code>php artisan test tests/Feature/Api/BatchStepTest.php --stop-on-failure</code></pre>
+          <p>课程整理时核对了源码和测试入口。当前环境缺少 PHP、Composer 和 <code>backend/vendor/autoload.php</code>，PHPUnit 运行已跳过。</p>
+        </details>
+      </section>
+
+      <section class="screen animate-in">
+        <h3 class="screen-heading">用三个现场反馈定位问题</h3>
+        <div class="quiz-container" id="quiz-module5">
+          <div class="quiz-question-block" data-correct="a"
+            data-explanation-right="403 对应这个用例的授权拒绝。先确认操作员和工单产线的关系，再追开工条件。"
+            data-explanation-wrong="开工顺序错误在对应测试里是 422。这里的 403 先指向操作员的访问范围。">
+            <h4 class="quiz-question">同一工序，甲能开工，乙收到 403。优先核对哪条证据？</h4>
+            <div class="quiz-options">
+              <button type="button" class="quiz-option" data-value="a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>乙和工单所在产线的分配关系</span></button>
+              <button type="button" class="quiz-option" data-value="b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>末工序的报废数量</span></button>
+              <button type="button" class="quiz-option" data-value="c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>实时看板的刷新频率</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="c"
+            data-explanation-right="工单持久化后的产量能验证是否真正计产。再核对批次完成状态，就能区分结算与显示的问题。"
+            data-explanation-wrong="响应可以说明请求被接受。要验证末道工序是否计产，需要重新读取持久化结果。">
+            <h4 class="quiz-question">接口报告最后一道工序完成。哪项验证能确认工单真的计产？</h4>
+            <div class="quiz-options">
+              <button type="button" class="quiz-option" data-value="a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>只检查成功提示</span></button>
+              <button type="button" class="quiz-option" data-value="b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>只检查请求里传入的产量</span></button>
+              <button type="button" class="quiz-option" data-value="c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>重新查询工单，核对保存的产量</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="b"
+            data-explanation-right="重新读取已经得到正确数据，把排查范围缩到界面的刷新路径，再检查订阅或重新加载机制。"
+            data-explanation-wrong="数据重读正确说明这次写入已保存。先定位页面怎么拿到更新，就能避免反复触发生产写入。">
+            <h4 class="quiz-question">重新打开页面后数据正确，旧页面一直显示原值。先查哪里？</h4>
+            <div class="quiz-options">
+              <button type="button" class="quiz-option" data-value="a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>再次提交完工请求，观察产量是否累加</span></button>
+              <button type="button" class="quiz-option" data-value="b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>旧页面依赖的重新加载或实时订阅</span></button>
+              <button type="button" class="quiz-option" data-value="c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>当前产品的工艺模板是否改名</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+          <button type="button" class="quiz-check-btn" onclick="checkQuiz('quiz-module5')">查看反馈</button>
+          <button type="button" class="quiz-reset-btn" onclick="resetQuiz('quiz-module5')">重做</button>
+        </div>
+        <p><a href="#module-6">第 06 章 · 用这些观察设计自己的重建练习 →</a></p>
+      </section>
+    </div>
+  </div>
+</section>

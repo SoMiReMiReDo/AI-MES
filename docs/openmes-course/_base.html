@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenMES 生产链学习手册</title>
+
+  <link rel="stylesheet" href="styles.css">
+
+  <!--
+    CUSTOMIZE PER COURSE — change only the three accent variables below.
+    Options:
+      vermillion  #D94F30 / #C4432A / #FDEEE9 / #E8836C  (default)
+      coral       #E06B56 / #C85A47 / #FDECEA / #E89585
+      teal        #2A7B9B / #1F6280 / #E4F2F7 / #5A9DB8
+      amber       #D4A843 / #BF9530 / #FDF5E0 / #E0C070
+      forest      #2D8B55 / #226B41 / #E8F5EE / #5AAD7A
+  -->
+  <style>
+    :root {
+      --color-accent:       #D94F30;
+      --color-accent-hover: #C4432A;
+      --color-accent-light: #FDEEE9;
+      --color-accent-muted: #E8836C;
+      --font-display: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    .module:nth-of-type(even) { background: var(--color-bg-warm); }
+    .module-links { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+    .module-links .btn { text-decoration: none; }
+    .module-links .btn:first-child { background: var(--color-accent-hover); color: white; }
+    .screen[id] { scroll-margin-top: calc(var(--nav-height) + var(--space-4)); }
+    .screen a { color: var(--color-accent-hover); text-underline-offset: 0.18em; }
+    .screen summary { cursor: pointer; }
+    .translation-code .code-line { display: inline; }
+    :focus-visible { outline: 2px solid var(--color-accent-hover); outline-offset: 3px; }
+    @media (max-width: 480px) {
+      .module { padding-top: calc(var(--nav-height) + var(--space-6)); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .animate-in { opacity: 1; transform: none; transition: none; }
+      html { scroll-behavior: auto; }
+    }
+  </style>
+
+  <script src="main.js" defer></script>
+</head>
+<body>
+
+  <nav class="nav" id="nav" aria-label="章节导航">
+    <div class="progress-bar" id="progress-bar" role="progressbar" aria-label="阅读进度" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="nav-inner">
+      <span class="nav-title">OpenMES 生产链学习手册</span>
+      <div class="nav-dots" id="nav-dots">
+        <!--
+          One <button> per module. Replace MODULE_N_NAME with the actual module title.
+
+          <button class="nav-dot" data-target="module-1" data-tooltip="MODULE_1_NAME" role="tab" aria-label="Module 1: MODULE_1_NAME"></button>
+          <button class="nav-dot" data-target="module-2" data-tooltip="MODULE_2_NAME" role="tab" aria-label="Module 2: MODULE_2_NAME"></button>
+          ...
+        -->
+        <button type="button" class="nav-dot" data-target="module-1" data-tooltip="从一次完工操作开始" aria-label="第 1 章 从一次完工操作开始"></button>
+        <button type="button" class="nav-dot" data-target="module-2" data-tooltip="项目地图与数据对象" aria-label="第 2 章 项目地图与数据对象"></button>
+        <button type="button" class="nav-dot" data-target="module-3" data-tooltip="工序推进与产量回写" aria-label="第 3 章 工序推进与产量回写"></button>
+        <button type="button" class="nav-dot" data-target="module-4" data-tooltip="车间边界与外部系统" aria-label="第 4 章 车间边界与外部系统"></button>
+        <button type="button" class="nav-dot" data-target="module-5" data-tooltip="用请求与测试定位失败" aria-label="第 5 章 用请求与测试定位失败"></button>
+        <button type="button" class="nav-dot" data-target="module-6" data-tooltip="从 M1 设计开始重建" aria-label="第 6 章 从 M1 设计开始重建"></button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <!-- modules/*.html content is assembled here by build.sh -->

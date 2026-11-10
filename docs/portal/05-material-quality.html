@@ -1,0 +1,52 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="OpenMES 开发文档：架构、生产逻辑与源码拆解"><title>物料、质量与仓储闭环 · OpenMES Atlas</title><link rel="stylesheet" href="assets/style.css"></head><body>
+<a class="skip" href="#main">跳到正文</a><aside class="sidebar" id="sidebar"><a class="brand" href="index.html"><span class="brand-mark">M</span><span>OpenMES <b>ATLAS</b></span></a><div class="sidebar-caption">DEVELOPER KNOWLEDGE BASE</div><button class="search-trigger" type="button">⌕ 搜索文档 <kbd>/</kbd></button><nav aria-label="主导航"><a class="nav-home " href="index.html">⌂ <span>文档概览</span></a><a class="nav-item " href="01-overview.html" ><span class="nav-num">01</span><span>项目全景与阅读地图</span></a><a class="nav-item " href="02-domain.html" ><span class="nav-num">02</span><span>领域对象与数据归属</span></a><a class="nav-item " href="03-production.html" ><span class="nav-num">03</span><span>生产主链与事务边界</span></a><a class="nav-item " href="04-quantity.html" ><span class="nav-num">04</span><span>两种流转与数量账本</span></a><a class="nav-item active" href="05-material-quality.html" aria-current=page><span class="nav-num">05</span><span>物料、质量与仓储闭环</span></a><a class="nav-item " href="06-machine-erp.html" ><span class="nav-num">06</span><span>设备信号与 ERP 集成</span></a><a class="nav-item " href="07-frontend-sync.html" ><span class="nav-num">07</span><span>前端入口与实时读模型</span></a><a class="nav-item " href="08-permissions-modules.html" ><span class="nav-num">08</span><span>权限、租户与扩展模块</span></a><a class="nav-item " href="09-planning-traceability.html" ><span class="nav-num">09</span><span>排程、绩效与追溯旁路</span></a><a class="nav-item " href="10-development.html" ><span class="nav-num">10</span><span>开发、验证与问题定位</span></a><a class="nav-item " href="11-evidence.html" ><span class="nav-num">11</span><span>来源基线与已知文档差异</span></a></nav><div class="sidebar-footer"><span class="status-dot"></span> 本地源码阅读基线<br><small>6048face · 2026.11.09</small><a href="../openmes-course/index.html">交互课程 ↗</a><a href="../README.md">Markdown 文档 ↗</a></div></aside>
+<div class="workspace"><header class="topbar"><button id="menu-toggle" aria-expanded="false" aria-controls="sidebar" aria-label="展开导航">☰</button><div>工程知识库 <span>/</span> 物料、质量与仓储闭环</div><span class="top-tag">SOURCE VERIFIED · 静态核对</span><button id="theme-toggle" aria-label="切换明暗主题">◐</button></header><main id="main" tabindex="-1"><div class="article-meta">CHAPTER 05 <span>业务流程 · 实现契约 · 开发验收</span><a href="../developer/05-material-quality.md">阅读 Markdown ↗</a></div><div class="chapter-jump" role="navigation" aria-label="本章导航"><a href="#section-2">使用逻辑</a><a href="#section-4">技术逻辑</a><a href="#section-11">四本账如何对齐</a><a href="#section-12">从 BOM 到实际耗用的核对方法</a><a href="#section-13">质量任务与异常处置的生命周期</a><a href="#section-14">仓储过账与补偿操作</a><a href="#section-15">开发与验收矩阵</a><a href="#section-16">源码依据</a></div><article class="prose"><h1 id="section-1">物料、质量与仓储闭环</h1>
+<p>生产会触发分配、耗用和检验；仓库草稿与正式库存过账属于另外的业务阶段。</p>
+<h2 id="section-2">使用逻辑</h2>
+<h3 id="section-3">一次生产涉及四次业务确认</h3>
+<p>假设本批需要 20 个零件。主管先核对工单快照里的 BOM、消耗时点和可用量。首次开工时，若开启批号追踪，操作员可在支持的入口查看建议领用批号，并确认或指定实际批号。发生质量检验时，质量人员记录样本结果。工单结束后，仓库人员检查对应库存单据，再按流程过账。</p>
+<div class="table-wrap"><table><thead><tr><th>当前看到的状态</th><th>应检查的证据</th><th>现场动作</th></tr></thead><tbody><tr><td>可用量不足</td><td>物料、需求量、库存与已保留量、允许负库存或缺料停工设置</td><td>核对库存和领用批号，解决短缺后重试</td></tr><tr><td>质检待处理</td><td>任务对应批次、触发规则、是否阻塞</td><td>录入样本并查看判定</td></tr><tr><td>质检已结束但生产仍被阻塞</td><td>质量结果与关联异常单</td><td>按权限处理异常和处置流程</td></tr><tr><td>工单已完、仓库显示草稿</td><td>单据行、仓库、物料批号、单据状态</td><td>核实后过账，再与外部系统对账</td></tr></tbody></table></div>
+<p>在追查某个批次的用料时，保留物料编码与批号。两个批号的同一种物料可能有不同的库存与追溯结果。</p>
+<h2 id="section-4">技术逻辑</h2>
+<h3 id="section-5">物料在何时介入</h3>
+<div class="table-wrap"><table><thead><tr><th>时点</th><th>BatchService 调用</th><th>含义</th></tr></thead><tbody><tr><td>批次第一次进入生产</td><td>allocateForBatch</td><td>开工时点或默认 BOM 行</td></tr><tr><td>指定工序开始</td><td>allocateForStep</td><td>consumed_at=during 的行</td></tr><tr><td>批次完成</td><td>allocateForBatchEnd</td><td>consumed_at=end 的行</td></tr><tr><td>完批结算</td><td>consumeForBatch</td><td>将相关分配确认为耗用</td></tr></tbody></table></div>
+<p>MaterialAllocationService 协调分配与耗用，LotPickingService 负责选批逻辑，StockMovementService 负责物料库存变动。追溯不仅要知道“用了哪种材料”，还要关联物料批、生产批和工序。</p>
+<h3 id="section-6">质量如何阻塞生产</h3>
+<p>QualityControlTask 的未完成阻塞任务会阻止相应开工；transfer 的 productionBlocker 也会参与数量与执行校验。QualityTriggerService 在进入生产和完批数量等节点创建任务。来料检验、物料 hold、异常处置由 Quality 下的独立服务处理。</p>
+<p>分析一个“不能开工”问题时，分别检查工单 hold、阻塞式质量任务、工序前置条件、工位路由和可选缺料阻塞。页面禁用提示不是最终规则所在。</p>
+<h3 id="section-7">完工到库存</h3>
+<div class="code-block"><span>text</span><pre><code>WorkOrderCompleted
+ → GenerateWorkOrderStockDocuments
+ → 仓储模块 / 自动生成开关 / 仓库条件
+ → WorkOrderStockDocumentService 生成草稿
+ → StockDocumentService.post 过账
+ → 仓库余额 + 物料库存流水 + 批次数量
+ → ERP 拉取与确认</code></pre></div>
+<p>监听器异常被捕获并写警告，避免库存草稿生成失败直接破坏工单完工。由此可能出现“工单已完成，但库存草稿缺失”，排障需要查日志和补偿路径。</p>
+<h3 id="section-8">库存写入规则</h3>
+<p>StockDocumentService 把草稿、过账、取消分开。post 在锁住单据后检查状态，已过账的单据直接返回，避免重复扣增库存。取消已过账单据通过反向操作处理，而不是手改余额。</p>
+<p>库存草稿不是已入库；ERP ack 也不应被当成生产完成动作。是否启用仓储、是否自动生成以及单据是否过账，都影响最终结果。</p>
+<h3 id="section-9">领用失败的事务范围</h3>
+<p>allocateMatching 从工单快照读取 BOM，按当前时点筛选，用批次目标量计算需求。分配时产生库存变动和保留量，再建立 MaterialAllocation。批号追踪开启后，服务使用指定批号或自动选批。如果批号校验失败，事务回滚相关库存与分配记录。完批处理后，具备工序归属与已选批号的分配可写入 BatchStepLotConsumption 供追溯查询。</p>
+<h3 id="section-10">检验结果与库存结果的落点</h3>
+<p>performTask 对质检任务行加锁，复核任务仍开放，再创建质量检查结果。结果失败时可关联异常单，任务本身仍记录为 DONE。因此排查停工要同时看任务终态与异常单是否还在阻塞。</p>
+<p>库存单据过账则由 StockDocumentService::post 锁住单据并检查状态。验收时用同一个单据 ID 对照草稿、首次过账、重复提交、取消后的余额与流水。ERP 确认发生在单据流程上，应与质量任务和 MES 完工记录分别核对。</p>
+<h2 id="section-11">四本账如何对齐</h2>
+<div class="table-wrap"><table><thead><tr><th>账本</th><th>回答的问题</th><th>对账主键或维度</th></tr></thead><tbody><tr><td>BOM / 工艺快照</td><td>理论上需要什么、何时消耗</td><td>工单版本、物料、消耗时点</td></tr><tr><td>MaterialAllocation</td><td>本批实际分配与耗用什么</td><td>批次、物料、所选物料批</td></tr><tr><td>检验与异常</td><td>检验发生了什么、是否仍阻塞</td><td>任务、结果、关联异常单</td></tr><tr><td>StockDocument / 库存流水</td><td>哪张单据导致库存变化</td><td>单据 ID、仓库、物料或产品、批号</td></tr></tbody></table></div>
+<p>四本账之间有关联，但状态不等价。质量任务 DONE 只表示检验任务处理完；工单 DONE 不表示仓库过账；分配记录存在也不能单独证明 ERP 已确认入账。</p>
+<h2 id="section-12">从 BOM 到实际耗用的核对方法</h2>
+<p>对一个简单无损耗系数的示例，单位成品需要物料 M 两件，批次目标 10，则理论需求为 20 件。先在工单快照核对单位用量和 consumed_at，再观察对应开工、指定工序或完批动作产生的分配。实际项目若有单位换算、替代物料或其他需求规则，应按服务结果复算，不能直接套这个示例。</p>
+<p>选批时同时记录物料 ID 和 lot ID，确认批号属于正确物料及租户，且符合可用性条件。自动建议的批号与现场实际投料不同，必须通过支持的指定批号流程修正，不能仅把显示文本改成实际批号。完成后再查耗用和 BatchStepLotConsumption 是否建立了对应关系。</p>
+<h2 id="section-13">质量任务与异常处置的生命周期</h2>
+<ol><li>配置触发条件和是否阻塞，确认作用范围覆盖测试工单或批次。</li><li>触发生产节点后查任务是否创建，保留任务与批次关联。</li><li>执行检验，记录样本、结果和判定，观察任务进入 DONE。</li><li>若失败，继续查产生的异常单及其阻塞状态。</li><li>按实际处置流程解决异常，重新验证生产入口能否继续。</li></ol>
+<p>开发新的质量触发器时，要区分“每次调用都触发”与“只在首次进入生产时触发”。重复点击开工、事务重试和重跑任务都可能造成重复检验，需要沿已有触发条件核对，而不是在前端去重。</p>
+<h2 id="section-14">仓储过账与补偿操作</h2>
+<p>验收从一张草稿开始，记录每行物料、数量、仓库和批号。首次 post 后检查单据状态、余额、流水；第二次对同一 ID post，应验证已有状态保护不会再生成同等库存变化。取消已过账单据要通过服务的反向处理，并保留原单与反向记录用于对账。</p>
+<p>如果工单完成却没有草稿，先查仓储模块、自动生成设置、仓库条件及监听器警告。确认确实未生成后，再使用系统已有的补偿入口或经过验证的业务服务处理。直接重做生产完工可能重复触发其他副作用；直接插入单据也可能遗漏行、关联和审计。</p>
+<h2 id="section-15">开发与验收矩阵</h2>
+<div class="table-wrap"><table><thead><tr><th>修改</th><th>至少覆盖的场景</th><th>对照证据</th></tr></thead><tbody><tr><td>选批规则</td><td>自动选批、指定批号、无足够可用量</td><td>分配记录和库存变化一致</td></tr><tr><td>消耗时点</td><td>start、during、end</td><td>只有对应阶段的 BOM 行被处理</td></tr><tr><td>缺料停工</td><td>开关开 / 关</td><td>区分可选开工阻塞与真正分配失败</td></tr><tr><td>质量规则</td><td>合格、不合格、重复提交</td><td>任务、检查、异常单关系不混淆</td></tr><tr><td>库存服务</td><td>首次过账、重复过账、取消</td><td>余额与流水能解释每次变化</td></tr><tr><td>外部同步</td><td>已过账未 ACK、ACK 后、ACK 失败</td><td>ERP 接收记录与 MES 单据可逐条核对</td></tr></tbody></table></div>
+<p>排查库存差异时固定同一单位和同一仓库范围，先列出完整流水再解释余额；不能拿全厂物料总量直接与某一个仓库或物料批余额比较。</p>
+<h2 id="section-16">源码依据</h2>
+<ul><li><a href="sources/c823b0fcfddb72b7.html#L18">backend/app/Services/Material/MaterialAllocationService.php:18</a></li><li><a href="sources/0ef2367e7db39788.html#L21">backend/app/Services/Material/LotPickingService.php:21</a></li><li><a href="sources/a2cf82bcb2b73442.html#L32">backend/app/Services/Quality/QualityTriggerService.php:32</a></li><li><a href="sources/4a0dc39f8a7e7824.html#L23">backend/app/Listeners/GenerateWorkOrderStockDocuments.php:23</a></li><li><a href="sources/ceeddcb7b058730b.html#L99">backend/app/Services/Warehouse/StockDocumentService.php:99</a></li><li><a href="sources/ac0e8835b74eb4aa.html#L1">backend/tests/Feature/Warehouse/WorkOrderStockDocumentTest.php:1</a></li><li><a href="sources/1ecbe4f79d7ca7e6.html#L1">backend/tests/Feature/Quality/QualityControlTriggerTest.php:1</a></li><li><a href="sources/c823b0fcfddb72b7.html#L637">物料分配事务与选批</a></li><li><a href="sources/a2cf82bcb2b73442.html#L230">质检完成与失败异常</a></li><li><a href="sources/96f9b98dbb70f689.html#L22">物料分配与消耗测试</a></li></ul></article><div class="page-nav"><a href="04-quantity.html"><small>上一章</small>两种流转与数量账本</a><a href="06-machine-erp.html"><small>下一章 →</small>设备信号与 ERP 集成</a></div></main><footer class="page-footer">OpenMES / 从业务行为理解源码 <span>本地文档 · 不连接生产数据</span></footer></div>
+<aside class="toc"><div>本页内容</div><a href="#section-2">使用逻辑</a><a href="#section-4">技术逻辑</a><a href="#section-11">四本账如何对齐</a><a href="#section-12">从 BOM 到实际耗用的核对方法</a><a href="#section-13">质量任务与异常处置的生命周期</a><a href="#section-14">仓储过账与补偿操作</a><a href="#section-15">开发与验收矩阵</a><a href="#section-16">源码依据</a></aside>
+<dialog id="search-dialog"><div class="search-head"><label for="search-input">搜索文档</label><button id="search-close" aria-label="关闭搜索">×</button></div><input id="search-input" placeholder="工单、事务、MachineCounter…" autocomplete="off"><div id="search-count" role="status">输入关键词搜索全部章节</div><div id="search-results"></div></dialog><script src="assets/search-data.js"></script><script src="assets/app.js"></script></body></html>

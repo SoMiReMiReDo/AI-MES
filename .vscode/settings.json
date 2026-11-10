@@ -1,0 +1,11 @@
+{
+  "dotnet.defaultSolution": "MESagent.sln",
+  "[csharp]": {
+    "editor.defaultFormatter": "ms-dotnettools.csharp",
+    "editor.formatOnSave": true
+  },
+  "files.exclude": {
+    "**/bin": true,
+    "**/obj": true
+  }
+}

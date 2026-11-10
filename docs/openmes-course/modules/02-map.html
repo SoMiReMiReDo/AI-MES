@@ -1,0 +1,185 @@
+<section class="module" id="module-2" aria-labelledby="title-2">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">02</span>
+      <h2 class="module-title" id="title-2">项目地图与数据对象</h2>
+      <p class="module-subtitle">按问题选目录。沿工单、批次、工序三层往下读，就能看到一份生产配置怎样变成具体作业。</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in" aria-labelledby="map-tree">
+        <h3 class="screen-heading" id="map-tree">从仓库顶层找到入口</h3>
+        <div class="file-tree" role="group" aria-label="OpenMES 仓库目录树">
+          <div class="ft-folder open">
+            <code class="ft-name">backend/</code>
+            <span class="ft-desc"><span class="term" tabindex="0" data-definition="用于接收请求、访问数据库和组织业务代码的 PHP 框架。这里使用第 12 版。">Laravel 12</span> 后端和 <span class="term" tabindex="0" data-definition="Inertia 把服务器提供的页面数据交给 React，React 负责渲染和更新浏览器界面。">Inertia／React</span> 网页</span>
+            <div class="ft-children">
+              <div class="ft-folder"><code class="ft-name">resources/js/</code><span class="ft-desc">网页、表单和按钮</span></div>
+              <div class="ft-folder"><code class="ft-name">routes/</code><span class="ft-desc"><span class="term" tabindex="0" data-definition="把网址和请求方法映射到处理代码。这里可以分别找网页入口和 API 入口。">路由</span>，定位请求去向</span></div>
+              <div class="ft-folder"><code class="ft-name">app/Http/Controllers/</code><span class="ft-desc"><span class="term" tabindex="0" data-definition="接住网页或应用的请求，把动作交给业务代码，再返回响应。">控制器</span>，衔接请求、业务和响应</span></div>
+              <div class="ft-folder"><code class="ft-name">app/Http/Requests/</code><span class="ft-desc">检查请求字段和输入格式</span></div>
+              <div class="ft-folder"><code class="ft-name">app/Policies/</code><span class="ft-desc"><span class="term" tabindex="0" data-definition="把能否对某个对象执行操作的权限判断集中写在一处。">策略</span>，判断谁能操作某个对象</span></div>
+              <div class="ft-folder"><code class="ft-name">app/Services/</code><span class="ft-desc">执行业务动作，如建单、建批和工序完工</span></div>
+              <div class="ft-folder"><code class="ft-name">app/Models/</code><span class="ft-desc"><span class="term" tabindex="0" data-definition="Eloquent 是 Laravel 的数据库对象工具。模型用代码表示数据记录及其关系。">Eloquent 模型</span>，表示工单、批次等数据及关联</span></div>
+              <div class="ft-folder"><code class="ft-name">database/migrations/</code><span class="ft-desc"><span class="term" tabindex="0" data-definition="按版本记录怎样建表或改表，让不同环境的数据库能应用同一组结构变更。">迁移</span>，记录表和字段的结构变化</span></div>
+              <div class="ft-folder"><code class="ft-name">tests/</code><span class="ft-desc">用自动化测试验证请求和业务结果</span></div>
+            </div>
+          </div>
+          <div class="ft-folder"><code class="ft-name">mobile/</code><span class="ft-desc"><span class="term" tabindex="0" data-definition="构建和运行 React Native 移动应用的工具链。">Expo</span> 移动端，通过 <span class="term" tabindex="0" data-definition="API 是程序之间的调用入口。移动端调用后端接口时由 Laravel Sanctum 验证访问令牌。">Sanctum API</span> 调用后端</span></div>
+          <div class="ft-folder"><code class="ft-name">desktop/</code><span class="ft-desc"><span class="term" tabindex="0" data-definition="把网页技术构建的界面装进原生桌面应用的框架。">Tauri</span> 桌面应用</span></div>
+          <div class="ft-folder open">
+            <code class="ft-name">packages/</code><span class="ft-desc">共享包</span>
+            <div class="ft-children">
+              <div class="ft-folder"><code class="ft-name">ui/</code><span class="ft-desc">共享界面组件</span></div>
+              <div class="ft-folder"><code class="ft-name">module/</code><span class="ft-desc">共享前端模块约定</span></div>
+            </div>
+          </div>
+          <div class="ft-folder"><code class="ft-name">opcua-gateway/</code><span class="ft-desc"><span class="term" tabindex="0" data-definition="一种工业设备通信标准。这里由独立网关接入设备数据。">OPC UA</span> 设备网关</span></div>
+          <div class="ft-file"><code class="ft-name">docker-compose.yml</code><span class="ft-desc"><span class="term" tabindex="0" data-definition="用一份配置描述多个容器，以及它们怎样一起运行。">Docker Compose</span> 服务配置</span></div>
+        </div>
+        <details>
+          <summary>排程、设备和外部系统放在哪里？</summary>
+          <div class="pattern-cards">
+            <div class="pattern-card">
+              <h4 class="pattern-title">车间业务</h4>
+              <p class="pattern-desc">排程、<span class="term" tabindex="0" data-definition="设备综合效率，用可用率、性能和良品率衡量生产设备的利用效果。">OEE</span>、物料和质量从后端各自的业务入口读起。</p>
+            </div>
+            <div class="pattern-card">
+              <h4 class="pattern-title">系统交界</h4>
+              <p class="pattern-desc">设备数据可从网关进入。<span class="term" tabindex="0" data-definition="企业资源计划系统，负责工单、库存等跨部门业务。">ERP</span> 对接和<span class="term" tabindex="0" data-definition="把后端记录的变化通知给客户端，使看板等界面跟着更新。">实时同步</span>也从后端接口和处理代码开始追。<a href="#module-4">第 4 章</a>展开。</p>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="screen animate-in" aria-labelledby="map-objects">
+        <h3 class="screen-heading" id="map-objects">发行图纸，再按批派活</h3>
+        <p>模板像可以修订的图纸。建单时，把所选的工艺与<span class="term" tabindex="0" data-definition="BOM 是物料清单。这里选用的模板还参与构建工单所用的生产配置。">BOM</span> 配置固化成工单的<span class="term" tabindex="0" data-definition="把建单时采用的配置复制并保存下来，后续建批按这份记录办。">快照</span>。一个批次像一张分批施工单，带着这一批要做的工序。</p>
+        <div class="flow-steps" role="group" aria-label="一个工单可有多个批次，一个批次可有多道工序">
+          <div class="flow-step"><div class="flow-step-num">1</div><p><strong>工单 · WorkOrder</strong><br>计划生产什么和多少</p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num">N</div><p><strong>批次 · Batch</strong><br>一张工单可分成多批</p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num">N</div><p><strong>工序 · BatchStep</strong><br>一批可有多道作业</p></div>
+        </div>
+        <div class="pattern-cards" role="group" aria-label="生产位置的两层">
+          <div class="pattern-card"><h4 class="pattern-title">产线 · Line</h4><p class="pattern-desc">较大的生产位置，比如组装 A 线。</p></div>
+          <div class="pattern-card"><h4 class="pattern-title">工位 · Workstation</h4><p class="pattern-desc">产线下具体执行作业的位置，比如 A 线的装配工位。</p></div>
+        </div>
+        <div class="callout callout-accent">
+          <div class="callout-icon" aria-hidden="true">◆</div>
+          <div class="callout-content">
+            <strong class="callout-title">已经发行的图纸有自己的版本</strong>
+            <p>以后编辑模板，已存快照仍记录这张工单原来采用的配置。正式调整现有工单配置时，走显式变更路径。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen animate-in" aria-labelledby="map-entry">
+        <h3 class="screen-heading" id="map-entry">分别追建单、接收和建批</h3>
+        <p>这三个动作可以从不同入口发起。想找两端共有的规则，先看动作在哪一层汇合。</p>
+        <div class="step-cards">
+          <div class="step-card">
+            <div class="step-num" aria-hidden="true">1</div>
+            <div class="step-body"><strong>建单</strong><p>主管网页与 API 的建单入口共用 <code>WorkOrderService</code>，由它构建工单快照。</p></div>
+          </div>
+          <div class="step-card">
+            <div class="step-num" aria-hidden="true">2</div>
+            <div class="step-body"><strong>接收</strong><p>主管网页进入 <code>WorkOrderService::applyTransition</code>。API 侧先从控制器的 <code>transition</code> 跟起。</p></div>
+          </div>
+          <div class="step-card">
+            <div class="step-num" aria-hidden="true">3</div>
+            <div class="step-body"><strong>建批</strong><p>网页与 API 汇到同一个服务方法。它从已存快照生成工序，记录所用版本，并把符合条件的工序推进到就绪。</p></div>
+          </div>
+        </div>
+        <details>
+          <summary>展开可复制的源码定位</summary>
+          <div class="file-tree">
+            <div class="ft-file"><code class="ft-name">backend/app/Http/Controllers/Web/Supervisor/WorkOrderController.php:65</code><span class="ft-desc">主管网页建单</span></div>
+            <div class="ft-file"><code class="ft-name">backend/app/Http/Controllers/Api/V1/WorkOrderController.php:64</code><span class="ft-desc">API 建单</span></div>
+            <div class="ft-file"><code class="ft-name">backend/app/Services/WorkOrder/WorkOrderService.php:173</code><span class="ft-desc">两端共用的建单服务</span></div>
+            <div class="ft-file"><code class="ft-name">backend/app/Services/WorkOrder/WorkOrderService.php:109</code><span class="ft-desc">主管网页接收所用的状态处理</span></div>
+            <div class="ft-file"><code class="ft-name">backend/app/Http/Controllers/Api/V1/WorkOrderController.php:190</code><span class="ft-desc">API 接收从这里跟进</span></div>
+            <div class="ft-file"><code class="ft-name">backend/app/Services/WorkOrder/WorkOrderService.php:695</code><span class="ft-desc">两端共用的建批服务</span></div>
+            <div class="ft-file"><code class="ft-name">backend/app/Services/WorkOrder/WorkOrderService.php:332</code><span class="ft-desc">已有工单的显式配置变更</span></div>
+          </div>
+        </details>
+        <details>
+          <summary>展开建单时怎样选用模板</summary>
+          <p><code>backend/app/Services/WorkOrder/WorkOrderService.php:175–182</code></p>
+          <div class="translation-block">
+            <div class="translation-code">
+              <span class="translation-label">源码</span>
+              <pre><code><span class="code-line">        <span class="code-keyword">return</span> DB::<span class="code-function">transaction</span>(<span class="code-keyword">function</span> () <span class="code-keyword">use</span> ($data) {</span>
+<span class="code-line"><span class="code-comment">            // Build the immutable process snapshot from the selected BOM(s).</span></span>
+<span class="code-line"><span class="code-comment">            // With no explicit selection this resolves the single active template</span></span>
+<span class="code-line"><span class="code-comment">            // for the product type - the legacy single-BOM behaviour.</span></span>
+<span class="code-line">            $processSnapshot = $this-&gt;<span class="code-function">buildProcessSnapshot</span>(</span>
+<span class="code-line">                $data[<span class="code-string">'product_type_id'</span>] ?? <span class="code-keyword">null</span>,</span>
+<span class="code-line">                $data[<span class="code-string">'bom_template_ids'</span>] ?? [],</span>
+<span class="code-line">            );</span></code></pre>
+            </div>
+            <div class="translation-english">
+              <span class="translation-label">怎么读</span>
+              <div class="translation-lines">
+                <p class="tl">建单放在<span class="term" tabindex="0" data-definition="把一组数据库操作当作一个整体，成功时一起提交，失败时撤销。">事务</span>里执行。</p>
+                <p class="tl">有选定的物料清单，就按选定内容构建快照。</p>
+                <p class="tl">未指定模板时，按配置尝试为产品类型解析生效模板。这保留了单模板的用法。</p>
+                <p class="tl">把产品类型和所选模板标识交给快照构建方法。缺省时分别传空值和空列表。</p>
+                <p class="tl">到这里拿到的是待保存的快照。写入工单发生在后面的代码。</p>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="screen animate-in" aria-labelledby="map-quiz-title">
+        <h3 class="screen-heading" id="map-quiz-title">遇到这三件事，该去哪里看？</h3>
+        <div class="quiz-container" id="quiz-module2">
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="新批次按已有工单保存的快照生成工序。先看工单快照版本，再查是否对这张工单做过显式变更。"
+               data-explanation-wrong="先区分模板修订与工单配置变更。给已有工单建批时，依据是工单存下来的快照。">
+            <h4 class="quiz-question">工单已经创建，工程师随后修改了模板。今天给这张工单新建一批，想知道会生成哪些工序，先查哪里？</h4>
+            <div class="quiz-options">
+              <button class="quiz-option" type="button" data-value="option-a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>直接读取模板的最新配置</span></button>
+              <button class="quiz-option" type="button" data-value="option-b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>先看产线工位列表</span></button>
+              <button class="quiz-option" type="button" data-value="option-c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>查看这张工单保存的快照及其变更记录</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="两个入口各自接收请求，再交给同一个建单服务。先定位共享规则，也能逐端核对提交的数据。"
+               data-explanation-wrong="同一建单规则要覆盖两个入口。沿两边的控制器往下找，找到它们共用的建单服务。">
+            <h4 class="quiz-question">现在要求网页和 API 建单时遵守相同的快照选择规则。该先从哪里读现有逻辑？</h4>
+            <div class="quiz-options">
+              <button class="quiz-option" type="button" data-value="option-a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>对照两个建单控制器的输入，再读共用建单服务</span></button>
+              <button class="quiz-option" type="button" data-value="option-b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>先读主管网页的接收动作</span></button>
+              <button class="quiz-option" type="button" data-value="option-c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>从移动端的表单显示逻辑推断规则</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="迁移记录字段怎样进入数据库。模型能补充这条记录在应用里怎样表示和关联。"
+               data-explanation-wrong="先区分存储结构、权限和业务规则。要核实数据库何时加了字段，从迁移的结构变更记录查起。">
+            <h4 class="quiz-question">本地数据库的批次表缺一个字段。你想核实哪个版本引入了它，仓库里先读哪一层？</h4>
+            <div class="quiz-options">
+              <button class="quiz-option" type="button" data-value="option-a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>控制器和请求输入校验</span></button>
+              <button class="quiz-option" type="button" data-value="option-b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>数据库迁移，需要时对照批次模型</span></button>
+              <button class="quiz-option" type="button" data-value="option-c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>授权策略和产线权限</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+
+          <button class="quiz-check-btn" type="button" onclick="checkQuiz('quiz-module2')">查看反馈</button>
+          <button class="quiz-reset-btn" type="button" onclick="resetQuiz('quiz-module2')">重做</button>
+        </div>
+        <p>接下来沿着三层对象追一次完工，看看工序状态、批次产量和工单进度分别怎样变。<a href="#module-3">下一章 · 工序怎样推进，产量怎样回写</a></p>
+      </section>
+    </div>
+  </div>
+</section>

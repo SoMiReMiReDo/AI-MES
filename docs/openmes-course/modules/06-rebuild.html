@@ -1,0 +1,134 @@
+<section class="module" id="module-6" aria-labelledby="module-6-title">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">06</span>
+      <h2 class="module-title" id="module-6-title">从 M1 设计开始重建</h2>
+      <p class="module-subtitle">用单产线、两道固定工序和整批流转走通最小生产链。每次只推进一个里程碑。</p>
+    </header>
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h3 class="screen-heading">首轮练习的四道关</h3>
+        <div class="step-cards">
+          <article class="step-card"><span class="step-num">1</span><div class="step-body"><strong>M1 · 工单与接收</strong><p>设计最小字段、接收规则和失败表达。提交时说明工单号冲突和重复接收各怎么处理。</p></div></article>
+          <article class="step-card"><span class="step-num">2</span><div class="step-body"><strong>M2 · 工艺快照与建批</strong><p>设计模板与工单的配置边界、批次身份和工序来源。验证模板更新后旧工单的建批行为，以及两批彼此独立。</p></div></article>
+          <article class="step-card"><span class="step-num">3</span><div class="step-body"><strong>M3 · 顺序执行与产量汇总</strong><p>定义哪道工序可执行，工序、批次和工单各何时结束。验证末道工序完工、多批汇总和重复提交。</p></div></article>
+          <article class="step-card"><span class="step-num">4</span><div class="step-body"><strong>M4 · 持久化与请求入口</strong><p>通过一个入口走通前几关。说明跨产线权限、<span class="term" tabindex="0" data-definition="事务把几笔相关写入放在同一次提交里。一旦中途失败，可以一起撤回，避免只写了一半。">事务</span>失败时的回滚以及重试和并发下的结算。</p></div></article>
+        </div>
+        <details class="pattern-card">
+          <summary><strong>展开首轮之后的候选练习</strong></summary>
+          <div class="pattern-cards">
+            <article class="pattern-card"><h4 class="pattern-title">M5 · 按量流转</h4><p class="pattern-desc">核对在途、可用、通过和报废，验证超量处理和末工序计产。</p></article>
+            <article class="pattern-card"><h4 class="pattern-title">M6 · 物料分配与追溯</h4><p class="pattern-desc">选一个领用时点，覆盖库存不足与由生产批追到使用的物料批。</p></article>
+            <article class="pattern-card"><h4 class="pattern-title">M7 · 质量阻塞</h4><p class="pattern-desc">选一种质检，说明阻塞范围、解除权限和重复提交的结果。</p></article>
+          </div>
+        </details>
+      </section>
+
+      <section class="screen animate-in" id="m1-design">
+        <h3 class="screen-heading">现在写一份 M1 设计</h3>
+        <p>用几句话描述工单的最小形状，再用三个例子说清每次操作后会发生什么。可以把下面的草稿复制到对话里提交。</p>
+        <div class="pattern-card">
+          <label for="m1-draft"><strong>设计草稿</strong></label>
+          <textarea id="m1-draft" rows="8" style="display:block;width:100%;margin-top:.65rem;padding:.75rem;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface-warm);color:var(--color-text);font:inherit;resize:vertical">范围和最小字段
+接收动作的输入、允许状态和结果
+工单号重复与重复接收的处理
+一个成功例子（动作前 → 动作后）
+两个拒绝或重试例子（动作前 → 动作后）
+暂未确定的取舍</textarea>
+          <p style="margin-top:.65rem">草稿在当前页面填写，提交时请手动复制。</p>
+        </div>
+        <div class="callout callout-accent">
+          <span class="callout-icon" aria-hidden="true">◎</span>
+          <div class="callout-content"><strong class="callout-title">设计通过后再打开练习</strong><p>我先反馈遗漏和取舍，设计清楚后给当期空骨架、运行命令和验收测试。卡住时按需领取提示，依次缩小到约束、边界或可手算的例子。</p></div>
+        </div>
+        <p>你提交代码后，我检查结果、失败路径和设计质量，并运行当期与此前的回归测试。通过后对照上游实现，记录一条有理由的差异，再进入下一关。</p>
+      </section>
+
+      <section class="screen animate-in">
+        <h3 class="screen-heading">区分两种验收证据</h3>
+        <div class="pattern-cards">
+          <article class="pattern-card"><h4 class="pattern-title">业务用例</h4><p class="pattern-desc">用小数据验证输入、状态、产量与失败结果。骨架契约测试应先通过，行为测试应因待实现行为明确失败。</p></article>
+          <article class="pattern-card"><h4 class="pattern-title">数据库并发用例</h4><p class="pattern-desc">验证同批重复完工或同工单同时建批时的真实写入结果。对锁的断言需要能复现目标部署数据库的锁语义。</p></article>
+        </div>
+        <details class="pattern-card">
+          <summary><strong>展开仓库的测试环境配置</strong></summary>
+          <p>源码 · <code>backend/phpunit.xml:24–30</code></p>
+          <div class="translation-block">
+            <div class="translation-code">
+              <span class="translation-label">源码</span>
+              <pre><code><span class="code-line">        &lt;env name=<span class="code-string">"BROADCAST_CONNECTION"</span> value=<span class="code-string">"null"</span>/&gt;</span>
+<span class="code-line">        &lt;env name=<span class="code-string">"CACHE_STORE"</span> value=<span class="code-string">"array"</span>/&gt;</span>
+<span class="code-line">        &lt;env name=<span class="code-string">"DB_CONNECTION"</span> value=<span class="code-string">"sqlite"</span>/&gt;</span>
+<span class="code-line">        &lt;env name=<span class="code-string">"DB_DATABASE"</span> value=<span class="code-string">":memory:"</span>/&gt;</span>
+<span class="code-line">        &lt;env name=<span class="code-string">"MAIL_MAILER"</span> value=<span class="code-string">"array"</span>/&gt;</span>
+<span class="code-line">        &lt;env name=<span class="code-string">"QUEUE_CONNECTION"</span> value=<span class="code-string">"sync"</span>/&gt;</span>
+<span class="code-line">        &lt;env name=<span class="code-string">"SESSION_DRIVER"</span> value=<span class="code-string">"array"</span>/&gt;</span></code></pre>
+            </div>
+            <div class="translation-english">
+              <span class="translation-label">逐行解读</span>
+              <div class="translation-lines">
+                <p class="tl">第 24–25 行关闭默认外部广播，缓存放在测试进程内。</p>
+                <p class="tl">第 26–27 行使用 SQLite 内存库来运行多数业务用例。</p>
+                <p class="tl">第 28 行把邮件放在测试进程中。</p>
+                <p class="tl">第 29–30 行让任务同步执行，并把会话数据留在进程内。</p>
+              </div>
+            </div>
+          </div>
+          <p>生产容器的数据库配置见 <code>docker-compose.yml:67</code>。内存用例通过后，M4 的并发场景还要在具备目标锁语义的测试库中复验。</p>
+        </details>
+      </section>
+
+      <section class="screen animate-in">
+        <h3 class="screen-heading">检查你提交的设计</h3>
+        <div class="quiz-container" id="quiz-module6">
+          <div class="quiz-question-block" data-correct="b"
+            data-explanation-right="先说明可观察的结果。设计评审时才能把重复接收写成清楚的验收条件。"
+            data-explanation-wrong="重复接收直接影响状态和调用方。先定义输入、响应和保留的数据，再选择代码结构。">
+            <h4 class="quiz-question">M1 设计里只写了「支持接收工单」。最需要补上什么？</h4>
+            <div class="quiz-options">
+              <button type="button" class="quiz-option" data-value="a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>生产看板的颜色和布局</span></button>
+              <button type="button" class="quiz-option" data-value="b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>允许的起始状态，以及重复接收时的结果</span></button>
+              <button type="button" class="quiz-option" data-value="c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>设备连接协议和全部数据表</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="c"
+            data-explanation-right="一次失败后应核对每笔关联写入。重试用例进一步验证最终只结算一次。"
+            data-explanation-wrong="单看异常或成功响应不足以证明一致性。需要重新读取关联状态和数量，观察失败与重试后的最终值。">
+            <h4 class="quiz-question">M4 中途写入失败，哪组观察最能说明可以安全重试？</h4>
+            <div class="quiz-options">
+              <button type="button" class="quiz-option" data-value="a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>页面显示一条错误提示</span></button>
+              <button type="button" class="quiz-option" data-value="b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>请求重试时返回成功</span></button>
+              <button type="button" class="quiz-option" data-value="c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>失败后无部分写入，重试后产量只结算一次</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="a"
+            data-explanation-right="SQLite 内存测试可以提供业务证据。部署数据库上的并发验证才能回答那里的锁和事务行为。"
+            data-explanation-wrong="同一用例顺序执行通过，无法说明并发请求如何争用行锁。为这个目标选能验证相应锁语义的环境。">
+            <h4 class="quiz-question">内存数据库的顺序测试通过了。若要确认部署数据库的行锁行为，下一步是什么？</h4>
+            <div class="quiz-options">
+              <button type="button" class="quiz-option" data-value="a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>在具备相同锁语义的测试库中运行并发场景</span></button>
+              <button type="button" class="quiz-option" data-value="b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>把原来的顺序测试多运行几次</span></button>
+              <button type="button" class="quiz-option" data-value="c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>通过网页按钮的禁用状态判断</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+          <button type="button" class="quiz-check-btn" onclick="checkQuiz('quiz-module6')">查看反馈</button>
+          <button type="button" class="quiz-reset-btn" onclick="resetQuiz('quiz-module6')">重做</button>
+        </div>
+      </section>
+
+      <section class="screen animate-in">
+        <h3 class="screen-heading">学习材料与源码</h3>
+        <div class="pattern-cards">
+          <article class="pattern-card"><h4 class="pattern-title"><a href="../openmes-implementation-guide.md">项目导读</a></h4><p class="pattern-desc">对照项目地图、调用链和带行号的源码索引。</p></article>
+          <article class="pattern-card"><h4 class="pattern-title"><a href="../LEARNING_PATH.md">重建路线</a></h4><p class="pattern-desc">查看每关的设计题、验收方向和通过标准。</p></article>
+          <article class="pattern-card"><h4 class="pattern-title"><a href="../learning-kit.yaml">学习清单</a></h4><p class="pattern-desc">查找源码目录、提交基线和已记录的环境检查。</p></article>
+        </div>
+        <p style="margin-top:1rem">页面中的源码位置以 <code>~/Desktop/myLog/program/SKhynix/OpenMes</code> 为根目录。把片段标题中的相对路径与行号交给编辑器即可定位。</p>
+        <p><a href="#m1-design">回到 M1 设计草稿 ↑</a></p>
+      </section>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,518 @@
+{
+  "source_root": "/Users/seal/Desktop/myLog/program/SKhynix/OpenMes",
+  "review_date": "2026-11-09",
+  "git_head": "6048facedb99b112caecd9f60089e753a53ca89d",
+  "worktree_status": " M CHANGELOG.md\n M CLA.md\n M CLAUDE.md\n M CODE_OF_CONDUCT.md\n M HOOKS.md\n M LICENSING.md\n M README.md\n M ROADMAP.md\n M SECURITY.md\n M backend/app/Providers/AppServiceProvider.php\n M backend/app/Support/DemoDatasetRegistry.php\n M backend/config/app.php\n M backend/database/seeders/ShiftMonitorDemoSeeder.php\n M backend/lang/en.json\n M backend/lang/pl.json\n M backend/lang/vi.json\n M backend/tests/Feature/Seeders/DemoBacklogTest.php\n M backend/tests/Feature/Seeders/DemoCustomersTest.php\n M backend/tests/Feature/Seeders/DemoHorizonTest.php\n M backend/tests/Feature/Seeders/DemoMultiLineOrdersTest.php\n M backend/tests/Feature/Seeders/DemoOrdersAreStartableTest.php\n M backend/tests/Feature/Seeders/DemoSeedersBeforeShiftTest.php\n M backend/tests/Feature/Seeders/DemoToolsTest.php\n M docs/API_DOCUMENTATION.md\n M docs/CONTRIBUTING.md\n M docs/admin-guide.md\n M docs/customization-layers.md\n M docs/development.md\n M docs/implementation-runbook.md\n M docs/import-samples/README.md\n M docs/index.md\n M docs/isa95.md\n M docs/machine-connectivity.md\n M docs/mqtt-connectivity.md\n M docs/operator-guide.md\n M docs/roadmap.md\n M docs/supervisor-guide.md\n M docs/telemetry.md\n M docs/training-program.md\n M docs/training/administrator.md\n M docs/training/developer.md\n M docs/training/operator.md\n M docs/warehouse-erp-rollout.md\n?? AGENTS.md\n?? backend/database/seeders/SemiconductorFabDemoSeeder.php\n?? backend/lang/zh.json\n?? backend/tests/Feature/Seeders/SemiconductorFabDemoSeederTest.php\n?? docs/withdraw.md\n",
+  "files": [
+    {
+      "path": ".github/workflows/tests.yml",
+      "sha256": "c09238720db1b6d1e5f1ae1c09f3f048b2cbf37bfa9428a1d4080d25068f3ac3",
+      "lines": 64
+    },
+    {
+      "path": "backend/.env.example",
+      "sha256": "9cfaaaf3d1271cb589864ee1579959f4ea964be4a46e500a8cfaad19ac0ffcec",
+      "lines": 85
+    },
+    {
+      "path": "backend/app/Http/Controllers/Api/CollectionController.php",
+      "sha256": "b9bf313499e7053e48712b920276ca2cd658828d76af9cc776c081f4c1c01501",
+      "lines": 71
+    },
+    {
+      "path": "backend/app/Http/Controllers/Api/V1/BatchStepController.php",
+      "sha256": "c1470e8ae1fb5a972458cc7e150362bdcdc8b7207bec5bfbaf85cee47e5ed8dc",
+      "lines": 161
+    },
+    {
+      "path": "backend/app/Http/Controllers/Api/V1/Erp/StockDocumentExportController.php",
+      "sha256": "69c13a8161bf0fbda9dd0cf7185d438b292fda58ead445534e55eaa8a008b91f",
+      "lines": 118
+    },
+    {
+      "path": "backend/app/Http/Controllers/Api/V1/Erp/WorkOrderImportController.php",
+      "sha256": "6497fdcdd980fa047d3049c63293b99d9da703b858b0268680fa2788d57a16fc",
+      "lines": 30
+    },
+    {
+      "path": "backend/app/Http/Controllers/Web/Operator/BatchController.php",
+      "sha256": "49c35a21d9772320498a27b1eed5bd85524876f4ec6cc57c9a8391292d525d54",
+      "lines": 613
+    },
+    {
+      "path": "backend/app/Http/Controllers/Web/Operator/WorkOrderController.php",
+      "sha256": "84f5dd354060e54a9c4de62ff4949df7a072a116cac77533dd0adc884136aa0a",
+      "lines": 462
+    },
+    {
+      "path": "backend/app/Http/Middleware/AuthenticateApiKey.php",
+      "sha256": "98172eacf6b8a4b2550e6020b0954e79e986dec8ffd2266bb8336903009183f0",
+      "lines": 77
+    },
+    {
+      "path": "backend/app/Http/Requests/Api/V1/CompleteBatchStepRequest.php",
+      "sha256": "759aa4596728c129169d88cefbf5f51ac9c6e09b1e867e007ed1aed4c96b6da2",
+      "lines": 33
+    },
+    {
+      "path": "backend/app/Listeners/GenerateWorkOrderStockDocuments.php",
+      "sha256": "54e0d33c28c3c43b3a4fb4204ab2c43c70c2a8b9201d759d85cc2e56a553b345",
+      "lines": 42
+    },
+    {
+      "path": "backend/app/Models/Batch.php",
+      "sha256": "f5d047ef6d4a3a5969ba716edcd2e2a2cdb0ed873ec7b7e2f647ef19b347c70b",
+      "lines": 287
+    },
+    {
+      "path": "backend/app/Models/BatchStep.php",
+      "sha256": "e23fa65ec4d70b736d6de7c45a00729405c0cdc8c591dda52d71aead8a6be813",
+      "lines": 477
+    },
+    {
+      "path": "backend/app/Models/WorkOrder.php",
+      "sha256": "358936931472ae4a3d8edff64594c51a30799051c231495659789b52a85a231e",
+      "lines": 756
+    },
+    {
+      "path": "backend/app/Policies/WorkOrderPolicy.php",
+      "sha256": "226c44eafcc4e3edd8de104982162a26a3445583582784cc78f949ac41ce7284",
+      "lines": 97
+    },
+    {
+      "path": "backend/app/Scopes/TenantScope.php",
+      "sha256": "6fafeb46d51d15daf1a514697f6d8aa4e3bc9ccf61fa2415d0363ae2c3bc9ffe",
+      "lines": 25
+    },
+    {
+      "path": "backend/app/Services/Connectivity/ActionExecutor.php",
+      "sha256": "19c59f8edae45691770201f3a7138ca46be8a4f9a785c889edd3dfd377457d4e",
+      "lines": 298
+    },
+    {
+      "path": "backend/app/Services/Connectivity/MqttMessageParser.php",
+      "sha256": "98260447c63d9acfe6a9c9351844a619e199f90194d2cc4b3648daf02381717b",
+      "lines": 134
+    },
+    {
+      "path": "backend/app/Services/CsvImport/WorkOrderImportService.php",
+      "sha256": "3b3d08e9521c64cc970bdbb2c616049554eed141c6e8deec74fc0b951f82377a",
+      "lines": 438
+    },
+    {
+      "path": "backend/app/Services/Machine/MachineCounterService.php",
+      "sha256": "4223723f77a5bc0c34875f1efd373d5fc4b4b4da7c1e2b258cfa7ad56ea7e855",
+      "lines": 337
+    },
+    {
+      "path": "backend/app/Services/Machine/MachineSignalIngestor.php",
+      "sha256": "052654b40e8d1c84f0a996429050ee5ee6ddad27aa1a9ee527a4d90904ab0355",
+      "lines": 130
+    },
+    {
+      "path": "backend/app/Services/Material/LotPickingService.php",
+      "sha256": "e76230bf2c4c556f13c6185ab3dc7bca17d1c010ec5d34daf0a2f710ea59caa5",
+      "lines": 332
+    },
+    {
+      "path": "backend/app/Services/Material/MaterialAllocationService.php",
+      "sha256": "96ba7cff368ea294fbf202921f6d81b9664107ddab8a25567e2ff6638a3e62ab",
+      "lines": 828
+    },
+    {
+      "path": "backend/app/Services/ModuleManager.php",
+      "sha256": "b339a30a5b612c9587b1499400830f246d04e3b75f157e492424e5950a0056d6",
+      "lines": 469
+    },
+    {
+      "path": "backend/app/Services/Packaging/UnitPackingService.php",
+      "sha256": "58c4431d7d001028394b54e742779601bf09ad1037392e3d1edef1bc1e638d4a",
+      "lines": 579
+    },
+    {
+      "path": "backend/app/Services/Production/OeeCalculationService.php",
+      "sha256": "86caf4b2b04a41e675750da5261bf3c2c50cd75aa423866348a26dc59f600012",
+      "lines": 247
+    },
+    {
+      "path": "backend/app/Services/Quality/QualityTriggerService.php",
+      "sha256": "91b384b6c45a9f812521727a62cd9a71fb8555d4b2adf7845ebba5a63da53e34",
+      "lines": 374
+    },
+    {
+      "path": "backend/app/Services/Schedule/CapacityService.php",
+      "sha256": "a91aeeeb89c550a89d2e9d9d2165318713045f72d8d8a75b299f1ad7e5e9d446",
+      "lines": 777
+    },
+    {
+      "path": "backend/app/Services/Schedule/SchedulePlannerService.php",
+      "sha256": "c1f316e02a236cde712210aa74f7ed8048ba005528671196ee13a6099aaf66ed",
+      "lines": 809
+    },
+    {
+      "path": "backend/app/Services/Traceability/SerialTraceService.php",
+      "sha256": "23b06bf6cdbfdb584cb16a5c65eb4840ac3ec8e5ee0455fe3445dfee1481c919",
+      "lines": 638
+    },
+    {
+      "path": "backend/app/Services/Traceability/TraceabilityService.php",
+      "sha256": "2b070fa1c675b14b367b9016d8ea13469c0b3f0c6e9e5185a97b943f46a04a86",
+      "lines": 778
+    },
+    {
+      "path": "backend/app/Services/Warehouse/StockDocumentService.php",
+      "sha256": "89e0be457d71b04264eadb011f6bea0657d72c356daab3aad84688ebcd99b15a",
+      "lines": 430
+    },
+    {
+      "path": "backend/app/Services/WorkOrder/BatchService.php",
+      "sha256": "50ad279bc9eaca9b6f02a0860996b00effd070fdc6ed20255e1a6365f650b543",
+      "lines": 809
+    },
+    {
+      "path": "backend/app/Services/WorkOrder/ChangeRequestService.php",
+      "sha256": "23c958f9d1e8e47bafb7cb15cdfb71f2dfc2890d0b25e3fb0138fba14a273fba",
+      "lines": 731
+    },
+    {
+      "path": "backend/app/Services/WorkOrder/WorkOrderService.php",
+      "sha256": "7b8f91f2487258d3b207491a54261fdd3b953862cfc6c34b5dec3da100ecb4fc",
+      "lines": 871
+    },
+    {
+      "path": "backend/app/Services/WorkOrder/WorkOrderSnapshotService.php",
+      "sha256": "1177dfb2d71aff5b61307c99c589ce346c037e367bdf8628448141bf73896a00",
+      "lines": 152
+    },
+    {
+      "path": "backend/app/Support/ModuleRegistry.php",
+      "sha256": "86b10c9169076cbc99c60a25830ada226e78be56fee6fa192aa9dc3a1acd2cfe",
+      "lines": 219
+    },
+    {
+      "path": "backend/app/Support/ProductionFlow.php",
+      "sha256": "3b5824c15caa330dff54e8fe9af98f06266da3ed2beccae500d4788243991e86",
+      "lines": 96
+    },
+    {
+      "path": "backend/app/Sync/CollectionBroadcaster.php",
+      "sha256": "23cb9d39901be35e5880bc59ee0d95393432b1f57c5cbdae17637428e5e3a8b6",
+      "lines": 246
+    },
+    {
+      "path": "backend/composer.json",
+      "sha256": "4231896934d3800bcd3690768fbbdd1d05cc487b95ffede2fac666325028a762",
+      "lines": 116
+    },
+    {
+      "path": "backend/package.json",
+      "sha256": "8b599b3bb2cb38224e9d29d7d2cef57b2f2d2ec5434211441c8cb289b559ef0d",
+      "lines": 45
+    },
+    {
+      "path": "backend/phpunit.xml",
+      "sha256": "6da698f932ae34a4d1c5d8a7cd8c619b05e337169ce360e8941e698ff6897443",
+      "lines": 37
+    },
+    {
+      "path": "backend/resources/js/Pages/operator/WorkOrderDetail.jsx",
+      "sha256": "490aec29b4f185b448059b0ec5be5a5f5adc242e809ca6e2f6e6bd5795e936f6",
+      "lines": 2691
+    },
+    {
+      "path": "backend/resources/js/app.jsx",
+      "sha256": "c2526572083cff4363fa39f0b58bc4b90aa8389dc51944ddd5c3c54bae3e8775",
+      "lines": 103
+    },
+    {
+      "path": "backend/resources/js/lib/pageResolver.js",
+      "sha256": "e4327c7ed54e671b5340274da65f8b980de61289b2aa0d5f100d30787a89ea03",
+      "lines": 58
+    },
+    {
+      "path": "backend/resources/js/lib/realtimeCollection.js",
+      "sha256": "8ce033250d4699883bb5b80c1572cbfa93cd13e61f5a62cd4191549c2774dba3",
+      "lines": 168
+    },
+    {
+      "path": "backend/routes/api.php",
+      "sha256": "61c664946842cedca362d0e0858a145be9c78ec919a933eafe420f3fadfc60ed",
+      "lines": 777
+    },
+    {
+      "path": "backend/routes/channels.php",
+      "sha256": "544d3a0bb04f16e11b38ff6d97674836ad8f496503736d9a3211fecabaf1b395",
+      "lines": 63
+    },
+    {
+      "path": "backend/routes/web.php",
+      "sha256": "d822f02ecc89a349e0a99582d4fa8f2fc3d529eabdcdbd9477a1c414c0944471",
+      "lines": 1042
+    },
+    {
+      "path": "backend/tests/Feature/Api/BatchStepTest.php",
+      "sha256": "5985082d5b5d97d406aa3b77e706e131ece70bc06ad816d5a69dc50a59db833a",
+      "lines": 305
+    },
+    {
+      "path": "backend/tests/Feature/Api/V1/Erp/ErpWorkOrderImportTest.php",
+      "sha256": "71b3799d375a132543be7a2d97d51bdab388b3202041168fa834479579d440d4",
+      "lines": 145
+    },
+    {
+      "path": "backend/tests/Feature/Api/V1/WorkOrderChangeRequestApiTest.php",
+      "sha256": "f5fd1cc49294114379139c633503a4d083e0c714cf37022a7b23ade83f6ec47a",
+      "lines": 770
+    },
+    {
+      "path": "backend/tests/Feature/Machine/MachineCounterTest.php",
+      "sha256": "623aad0e39e9b43e5e764d0a9180a79d92f2322e7a64dab4324fe19dc26744f0",
+      "lines": 402
+    },
+    {
+      "path": "backend/tests/Feature/ModuleLifecycleGuardsTest.php",
+      "sha256": "1eb3e56f748f95d750519d3097ba39735e3a337a71d0e639d359c9858741a3fc",
+      "lines": 237
+    },
+    {
+      "path": "backend/tests/Feature/Quality/QualityControlTriggerTest.php",
+      "sha256": "8e97e26aec25bbd9b048a23ac77cba44a0c7dbeffefa1d2b5d9b0115ed4fad52",
+      "lines": 347
+    },
+    {
+      "path": "backend/tests/Feature/Sync/CollectionBroadcastAfterCommitTest.php",
+      "sha256": "c8bf37c2cefa9c07ea1eb1066cef92112af670138afe11d3819e1163da14ca10",
+      "lines": 72
+    },
+    {
+      "path": "backend/tests/Feature/Sync/StatefulCollectionAccessTest.php",
+      "sha256": "c5f28b91ba233d348bea7d6a935b336032009c454823bdf2180971563e711ce6",
+      "lines": 52
+    },
+    {
+      "path": "backend/tests/Feature/Warehouse/StockDocumentServiceTest.php",
+      "sha256": "cf1be1171c4b05d314e21b31a4dd7e0fb9352758520a7fd62705aa62d3ddd8a8",
+      "lines": 483
+    },
+    {
+      "path": "backend/tests/Feature/Warehouse/WorkOrderStockDocumentTest.php",
+      "sha256": "7d218a7950077b6fd849eb39375c6045bdd2becef64fdd2d3415a4ef8c104316",
+      "lines": 177
+    },
+    {
+      "path": "backend/tests/Feature/Web/Operator/StepQuantityFlowTest.php",
+      "sha256": "ac2a92b960cef1779b2b9708be0f16479b59291b525b8d18f25daedf745c7888",
+      "lines": 771
+    },
+    {
+      "path": "backend/tests/Feature/Web/Operator/StepQuantitySafetyTest.php",
+      "sha256": "04ce542ca7e306ebed891b191537b32d23497dab445fb70606a3b686473771cd",
+      "lines": 275
+    },
+    {
+      "path": "backend/tests/Feature/WorkOrder/PlannedStartTest.php",
+      "sha256": "a50df8397b6866254c8fa70b63124e978718b72546b3cb2847c431233b8c1005",
+      "lines": 222
+    },
+    {
+      "path": "backend/tests/Unit/Services/BatchServiceTest.php",
+      "sha256": "a692cd0412e0503c236a08d92d6ed5ff3b24bd6deb519741624033557199448f",
+      "lines": 290
+    },
+    {
+      "path": "backend/tests/Unit/Services/MaterialAllocationServiceTest.php",
+      "sha256": "1862d1cf545c35278631681a0171a8faef82a8f2e6ca13bd98b7cd4b5ca1bac3",
+      "lines": 297
+    },
+    {
+      "path": "docker-compose.dev.yml",
+      "sha256": "0aa5ec6f8d1c853da48678c0508320ca208edaa3341f4f669e1356f9ee2a38e5",
+      "lines": 98
+    },
+    {
+      "path": "docker-compose.yml",
+      "sha256": "7a003657972a93b4fa22b63904b0b5cfb3abb3929ec28d71ab9b8fe712235bd1",
+      "lines": 356
+    },
+    {
+      "path": "docs/API_DOCUMENTATION.md",
+      "sha256": "c0863947715bb57c9dbcc367892e1c0c5a3f7727cb8f1fcb37b2753da9568abf",
+      "lines": 1380
+    },
+    {
+      "path": "docs/CONTRIBUTING.md",
+      "sha256": "adb314747668775687d7071839d22411f2473303f565ab071ca84f33b9131c85",
+      "lines": 190
+    },
+    {
+      "path": "docs/admin-guide.md",
+      "sha256": "9047f080953fce4cfb8c363e3d4e80ca1533bf1822b0d256d2e76edc0cbfa7a7",
+      "lines": 559
+    },
+    {
+      "path": "docs/cla/CCLA-template.md",
+      "sha256": "86b3e545252573152e1fd8b9232aef4e304fee7d12988425e67a3deee3eb50d9",
+      "lines": 82
+    },
+    {
+      "path": "docs/cla/SETUP.md",
+      "sha256": "44041fcf0f185a7ed9296a3c618f753bc38b8b83757f4eedaee9506ee0c7c905",
+      "lines": 77
+    },
+    {
+      "path": "docs/customization-layers.md",
+      "sha256": "2f9030ad77609718e7b76d7bb1cd2d074776252efe75379e31c346f11bdad01e",
+      "lines": 246
+    },
+    {
+      "path": "docs/development.md",
+      "sha256": "8f7d5819aa9870fa8a3c5cdb43734c6dda1dbba67638e7957de3bcfce79e8249",
+      "lines": 557
+    },
+    {
+      "path": "docs/fresh-install-manual-flow-review-2026-09-16.md",
+      "sha256": "6e9c2b1cf61f96e60c740a3c9e1e9d07cf03257d81b159621679a4a3cd58fbe9",
+      "lines": 174
+    },
+    {
+      "path": "docs/implementation-runbook.md",
+      "sha256": "0bdc3efa59f5074577c4f0dc8763617ae4d349fa30ce5b6386101d398f36eed9",
+      "lines": 436
+    },
+    {
+      "path": "docs/import-samples/README.md",
+      "sha256": "2b25dd6fb5bc36a7333505ad7b7550ef2c20faeb82d9d9f1d0de0df1056182d5",
+      "lines": 15
+    },
+    {
+      "path": "docs/index.md",
+      "sha256": "e459cddc2473a846929c8f21751c61536b8591d0108fbc4dc994a4b3a4677e8d",
+      "lines": 62
+    },
+    {
+      "path": "docs/isa95.md",
+      "sha256": "979ad44faa352e283cfc8125bdc92cbbf8768ad7816f5b72e24ef574e80d3e92",
+      "lines": 151
+    },
+    {
+      "path": "docs/machine-connectivity.md",
+      "sha256": "74bc118f413a9d4d98c62f56ef4bd8b404af5b4355986203a03403203472a4bd",
+      "lines": 174
+    },
+    {
+      "path": "docs/machine-counter-browser-tests.md",
+      "sha256": "24ac5e52bf5185477088febd09e8766fd2b3ffdf5fc9be8cbde6ac1f36b953fb",
+      "lines": 124
+    },
+    {
+      "path": "docs/material-availability-ux-review-2026-09-16.md",
+      "sha256": "e6d23a081fb2bd02be0de794113182320bd13bff7a4ff9bd45435552a1bf1739",
+      "lines": 63
+    },
+    {
+      "path": "docs/mqtt-connectivity.md",
+      "sha256": "f4b28a995ce605cde84411309b0ce8263a352222dc67998d46b5d80311a29455",
+      "lines": 284
+    },
+    {
+      "path": "docs/operator-guide.md",
+      "sha256": "63cb5396036706e7ae3e0ec8f485c1565cb9cecb6df26efef64864d3e4a7c012",
+      "lines": 155
+    },
+    {
+      "path": "docs/planned-production-start.md",
+      "sha256": "15c28af6a600f24684ba3348ea7c34be3816dbf34a9f72b060007fc44d886bfe",
+      "lines": 82
+    },
+    {
+      "path": "docs/postgresql-test-review-2026-09-16.md",
+      "sha256": "114e9c3389d23928bbf354a9c5c2ffa7de1fce4a3a0bdecae307fed973746549",
+      "lines": 43
+    },
+    {
+      "path": "docs/production-flow-deployment.md",
+      "sha256": "eef845a20e22728cf3099d92571fa8649c9f20455c806b97506133e68efe4727",
+      "lines": 155
+    },
+    {
+      "path": "docs/production-flow-review.md",
+      "sha256": "7e661fbe5152c34984ea130fca68716b9edc661fcb26a07213dc7d08add1d7f3",
+      "lines": 132
+    },
+    {
+      "path": "docs/pwa-testing-guide.md",
+      "sha256": "efc40c5128ecd8470280e93d857b64b762d782a841eb5a38b7b8e7fb099c0801",
+      "lines": 268
+    },
+    {
+      "path": "docs/recorded-reset-flow-review-2026-09-16.md",
+      "sha256": "6f64cadb2dfa66345b085bbde99866557ba11a0f69e79b72f970b3fd6165337a",
+      "lines": 71
+    },
+    {
+      "path": "docs/rfc/feature-template-step-rate.md",
+      "sha256": "b47dde68de46bc5f4179dbcb0cc26f0fefcef8e70ec920553ca1173f9f8b832d",
+      "lines": 211
+    },
+    {
+      "path": "docs/roadmap.md",
+      "sha256": "5395caea89a443e0e3961bdb543be4d0bb14bb97887d502739ebe471c7ce4966",
+      "lines": 95
+    },
+    {
+      "path": "docs/supervisor-guide.md",
+      "sha256": "e3ac385b0e7e59c50a52407cd4a56de9ddb7570a1cb714c823eed286cf67c267",
+      "lines": 163
+    },
+    {
+      "path": "docs/telemetry.md",
+      "sha256": "03fbef532e6861e651d6149f01c69121cb8399abd7855b863caf55f87ef53cf2",
+      "lines": 119
+    },
+    {
+      "path": "docs/training-program.md",
+      "sha256": "473087f295d464c9da212d6c86f12acc7e80e7bdd1abea95483a59058be128f9",
+      "lines": 77
+    },
+    {
+      "path": "docs/training/administrator.md",
+      "sha256": "1bccc18dd1906604da518b277303933490639d5a881113eb59a93d53a12355b2",
+      "lines": 152
+    },
+    {
+      "path": "docs/training/developer.md",
+      "sha256": "875a4931f50de56065bc423a7f16aea441438d0ed2e9a4165fb4d76d65c212ca",
+      "lines": 146
+    },
+    {
+      "path": "docs/training/operator.md",
+      "sha256": "e65a81dfd440fb7fe3e3cb8a9e525df60131022f260135037c8a809af9620aa3",
+      "lines": 136
+    },
+    {
+      "path": "docs/warehouse-erp-rollout.md",
+      "sha256": "74f6df99d717f9fc302cf5bed66b5fd61b9462814a3b56424c1cef70dd25ee1a",
+      "lines": 316
+    },
+    {
+      "path": "docs/withdraw.md",
+      "sha256": "f4e7ac4a7710b25e835ea7ee23e4edafd626f81a1762cb47028c031bba4caad7",
+      "lines": 1
+    },
+    {
+      "path": "package.json",
+      "sha256": "93e1810e696faa23cc076c212ccbdb3633589c51338d651ffd89ef98e54df28a",
+      "lines": 27
+    },
+    {
+      "path": "playwright.config.ts",
+      "sha256": "9c7decc80592aa42c507e8b493565ac7f1cfd7fb9155883e3e957f2a591e1248",
+      "lines": 23
+    },
+    {
+      "path": "tests/e2e/work-orders-live-list.spec.ts",
+      "sha256": "3a1f4ac2c81552d035a1cf99e1ec9364429a062d2c624b21500fc49f9c4e6f31",
+      "lines": 119
+    }
+  ]
+}

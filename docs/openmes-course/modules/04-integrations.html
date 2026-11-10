@@ -1,0 +1,178 @@
+<section class="module" id="module-4" aria-labelledby="module-4-title" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+    <header class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h2 class="module-title" id="module-4-title">车间边界与外部系统</h2>
+      <p class="module-subtitle">把车间边界想成几个交接窗口。领料和质检决定流程何时能往下走，仓储把完工接到企业系统，设备信号和实时看板分别负责采集和展示。</p>
+    </header>
+
+    <div class="module-body">
+      <section class="screen animate-in">
+        <h3 class="screen-heading">物料分配与质量放行</h3>
+        <p>领料像先把原料留给指定批次，再登记实际用掉的量。<span class="term" tabindex="0" data-definition="物料清单，列出生产产品需要的物料，也可以指定在哪个生产时点使用。">BOM</span> 上的时点决定系统在哪个环节处理对应物料。</p>
+        <div class="flow-steps" aria-label="物料清单的三个处理时点">
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">1</div><p><strong>开始</strong><br>批次首次进入生产时分配<br>未指定时点的物料也在此处理</p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">2</div><p><strong>工序</strong><br>步骤开工时检查<br>指定给该步骤的物料</p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">3</div><p><strong>结束</strong><br>批次完工时处理结束时点的物料<br>并办理批次消耗</p></div>
+        </div>
+        <div class="pattern-cards">
+          <div class="pattern-card">
+            <h3 class="pattern-title">物料窗口</h3>
+            <p class="pattern-desc"><code>MaterialAllocationService</code> 处理物料分配和消耗。开始时的分配归到首道步骤，方便<span class="term" tabindex="0" data-definition="从成品或生产步骤反查用过哪一批物料，也能从原料批次查它去了哪里。">批次追溯</span>。</p>
+          </div>
+          <div class="pattern-card">
+            <h3 class="pattern-title">质量窗口</h3>
+            <p class="pattern-desc"><span class="term" tabindex="0" data-definition="针对收到的原料或零件，在入库或投入生产前进行的质量检验。">来料检验</span>面向收到的物料。生产质检关注加工过程或产出，<code>QualityTriggerService</code> 参与触发，流程到达已配置的质量门槛时要等放行。</p>
+          </div>
+        </div>
+        <details>
+          <summary>展开源码 · 批次和工序各在何时分配物料</summary>
+          <p>可对照 <code>BatchService.php:49</code>、<code>BatchService.php:77–92</code> 和 <code>BatchService.php:608</code> 阅读开工与完工路径。</p>
+          <p><code>backend/app/Services/WorkOrder/BatchService.php:77–85</code></p>
+          <div class="translation-block">
+            <div class="translation-code">
+              <span class="translation-label">源码</span>
+              <pre><code><span class="code-line"><span class="code-comment">            // Allocate materials when batch first transitions to IN_PROGRESS</span></span>
+<span class="code-line"><span class="code-comment">            // (covers BOM rows with consumed_at='start' or unspecified). Attribute</span></span>
+<span class="code-line"><span class="code-comment">            // these allocations to this (first) step for genealogy.</span></span>
+<span class="code-line">            <span class="code-keyword">if</span> ($wasPending &amp;&amp; $batch-&gt;<span class="code-function">fresh</span>()-&gt;status === Batch::STATUS_IN_PROGRESS) {</span>
+<span class="code-line">                $this-&gt;allocationService-&gt;<span class="code-function">allocateForBatch</span>($batch, $user, $picksByMaterial, attributeStepId: $step-&gt;id);</span>
+<span class="code-line">            }</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">            // Always check for BOM rows targeted at *this* step (consumed_at='during').</span></span>
+<span class="code-line">            $this-&gt;allocationService-&gt;<span class="code-function">allocateForStep</span>($step, $user, $picksByMaterial);</span></code></pre>
+            </div>
+            <div class="translation-english">
+              <span class="translation-label">逐段读</span>
+              <div class="translation-lines">
+                <p class="tl">第 77–79 行，说明开始时点的物料范围和追溯归属。</p>
+                <p class="tl">第 80 行，确认这是批次第一次从待开始进入生产。</p>
+                <p class="tl">第 81–82 行，分配批次开始用料，并归到当前的首道步骤。</p>
+                <p class="tl">第 84–85 行，每次开工都检查指定给当前步骤的工序用料。</p>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="screen animate-in">
+        <h3 class="screen-heading">从工单完工到仓储和企业系统</h3>
+        <p>仓储窗口把车间完工转换成库存单据。<span class="term" tabindex="0" data-definition="企业资源计划系统，集中管理订单、库存等企业业务。">ERP</span> 可以从这个窗口拉取已<span class="term" tabindex="0" data-definition="确认库存单据并让它正式生效。草稿需要过账，才能按默认流程提供给 ERP。">过账</span>的单据。</p>
+        <div class="flow-steps" aria-label="完工到 ERP 拉取的出站路径">
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">1</div><p>工单进入 <code>DONE</code><br>发出 <code>WorkOrderCompleted</code></p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">2</div><p>配置与仓储模块均符合条件<br>生成仓储单据草稿</p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">3</div><p>单据过账<br>ERP 默认拉取并返回 <span class="term" tabindex="0" data-definition="接收方发回的确认回执，表明它已收到相应记录。">ack</span> 回执</p></div>
+        </div>
+        <div class="callout callout-info">
+          <div class="callout-content">
+            <strong class="callout-title">ERP 导入工单有独立入口</strong>
+            <p>入站走 <code>/api/v1/erp/work-orders/import</code>。该入口使用 ERP 的 <span class="term" tabindex="0" data-definition="外部系统调用接口时提供的身份凭据。">API key</span> 和 <span class="term" tabindex="0" data-definition="接口凭据获准执行的操作范围，例如导入工单。">scope</span>，移动端使用自己的认证与权限。</p>
+          </div>
+        </div>
+        <details>
+          <summary>展开定位 · 完工事件、仓储门槛与入站路由</summary>
+          <p><code>WorkOrderEventObserver.php</code> 在工单进入 <code>DONE</code> 时发事件。<code>GenerateWorkOrderStockDocuments.php:25–35</code> 检查单据生成配置和仓储模块。</p>
+          <p>导入入口见 <code>routes/api.php:113–117</code>。单据流转可继续读 <code>docs/warehouse-erp-rollout.md</code>。</p>
+        </details>
+      </section>
+
+      <section class="screen animate-in">
+        <h3 class="screen-heading">设备信号进来，已提交的变更出去</h3>
+        <div class="pattern-cards">
+          <div class="pattern-card">
+            <h3 class="pattern-title">采集入口</h3>
+            <p class="pattern-desc"><span class="term" tabindex="0" data-definition="让软件读取工业设备数据的一套通信标准。">OPC UA</span> 走独立运行的 <span class="term" tabindex="0" data-definition="与主应用配合运行的辅助服务，这里负责连接设备并转送读数。">sidecar</span>。<span class="term" tabindex="0" data-definition="一种按主题发布和接收消息的通信协议，设备可以用它上报数据。">MQTT</span> 和 <span class="term" tabindex="0" data-definition="工业设备常用的通信协议，可以读取设备寄存器里的数据。">Modbus</span> 各有入口，采集值交给 <code>MachineSignalIngestor</code> 按信号分派。</p>
+          </div>
+          <div class="pattern-card">
+            <h3 class="pattern-title">看板更新</h3>
+            <p class="pattern-desc">页面用 <code>GET /api/collections/{name}</code> 读取集合，这条路径沿用 <span class="term" tabindex="0" data-definition="浏览器登录后用来维持当前登录身份的一组状态。">Web 会话</span>。<span class="term" tabindex="0" data-definition="项目用来向打开的浏览器实时发送事件的服务。">Reverb</span> 在数据库提交后推送<span class="term" tabindex="0" data-definition="这次新增、更新或删除的记录，页面可以只刷新变化的部分。">集合增量</span>，由前端的 <code>realtimeCollection.js</code> 接收并更新。</p>
+          </div>
+        </div>
+        <div class="flow-steps" aria-label="实时看板只接收已提交的变更">
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">1</div><p>业务记录变更<br>准备集合事件</p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">2</div><p><span class="term" tabindex="0" data-definition="一组一起成功或一起撤销的数据库操作。提交后变更才正式生效。">事务</span>成功提交<br>发出事件</p></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-step"><div class="flow-step-num" aria-hidden="true">3</div><p>看板收到增量<br>更新受影响的记录</p></div>
+        </div>
+        <details>
+          <summary>展开源码 · 为什么提交之后才发事件</summary>
+          <p><code>backend/app/Sync/CollectionBroadcaster.php:204–212</code></p>
+          <div class="translation-block">
+            <div class="translation-code">
+              <span class="translation-label">源码</span>
+              <pre><code><span class="code-line">        $event = <span class="code-keyword">new</span> CollectionChanged($name, $op, self::<span class="code-function">project</span>($name, $row), $tenant);</span>
+<span class="code-line"></span>
+<span class="code-line">        DB::<span class="code-function">afterCommit</span>(<span class="code-keyword">function</span> () <span class="code-keyword">use</span> ($event) {</span>
+<span class="code-line">            <span class="code-keyword">try</span> {</span>
+<span class="code-line">                <span class="code-function">event</span>($event);</span>
+<span class="code-line">            } <span class="code-keyword">catch</span> (\Throwable $e) {</span>
+<span class="code-line">                <span class="code-function">report</span>($e);</span>
+<span class="code-line">            }</span>
+<span class="code-line">        });</span></code></pre>
+            </div>
+            <div class="translation-english">
+              <span class="translation-label">逐段读</span>
+              <div class="translation-lines">
+                <p class="tl">第 204 行，准备事件，带上集合名、变更类型、页面所需字段和组织归属。</p>
+                <p class="tl">第 206 行，登记一段等事务成功提交后才执行的逻辑。</p>
+                <p class="tl">第 207–208 行，提交后才发出已准备好的集合事件。</p>
+                <p class="tl">第 209–212 行，发送抛出错误时上报，便于定位推送问题。</p>
+              </div>
+            </div>
+          </div>
+        </details>
+        <details>
+          <summary>展开定位 · 从设备入口或看板入口继续追</summary>
+          <p>采集可从 <code>opcua-gateway/index.js:43</code> 和 <code>MachineSignalIngestor.php:31</code> 追起，再看 <code>docs/machine-connectivity.md</code>。页面读集合的路由在 <code>routes/web.php:181</code>。</p>
+        </details>
+      </section>
+
+      <section class="screen animate-in">
+        <h3 class="screen-heading">试着定位哪个交接窗口还没走完</h3>
+        <div class="quiz-container" id="quiz-module4">
+          <div class="quiz-question-block" data-correct="option-c"
+               data-explanation-right="这里卡在已配置的生产质检门槛。查这道工序的检验结果和放行状态，才能知道何时可以继续。"
+               data-explanation-wrong="生产质检对应正在加工的工序。来料检验对应收到的物料，领料成功也只说明物料环节已走通。">
+            <h4 class="quiz-question">物料已分配，系统提示这道工序的生产质检还未放行。下一步先查什么？</h4>
+            <div class="quiz-options">
+              <button type="button" class="quiz-option" data-value="option-a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>原料入厂时的来料检验结果</span></button>
+              <button type="button" class="quiz-option" data-value="option-b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>给同一批次再分配一次物料</span></button>
+              <button type="button" class="quiz-option" data-value="option-c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>该工序的生产质检结果和放行状态</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="option-a"
+               data-explanation-right="先确认仓储单据生成条件是否满足。找到单据后核对过账状态，因为 ERP 默认拉取已过账单据。"
+               data-explanation-wrong="工单完工只走到交接的第一步。继续查仓储生成配置、模块开关和单据过账状态，就能缩小缺单据的范围。">
+            <h4 class="quiz-question">工单已进入 DONE，但 ERP 拉取不到对应的库存单据。先沿哪条线查？</h4>
+            <div class="quiz-options">
+              <button type="button" class="quiz-option" data-value="option-a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>核对仓储生成条件、单据草稿和过账状态</span></button>
+              <button type="button" class="quiz-option" data-value="option-b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>从 ERP 工单导入接口重导该工单</span></button>
+              <button type="button" class="quiz-option" data-value="option-c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>先补发 ERP 的接收回执，再查仓储</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+          <div class="quiz-question-block" data-correct="option-b"
+               data-explanation-right="事务回滚后，提交后的发送逻辑不会执行。看板继续显示上一次成功提交的状态。"
+               data-explanation-wrong="集合事件在事务提交后才发送。写入被撤销时，浏览器应该继续显示已提交的状态。">
+            <h4 class="quiz-question">服务端准备好了集合事件，但写入失败，事务随后回滚。看板应该收到什么？</h4>
+            <div class="quiz-options">
+              <button type="button" class="quiz-option" data-value="option-a" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>先收到新状态，再收到一条撤销消息</span></button>
+              <button type="button" class="quiz-option" data-value="option-b" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>这次变更的增量不会到达，看板保留上次提交的状态</span></button>
+              <button type="button" class="quiz-option" data-value="option-c" onclick="selectOption(this)"><span class="quiz-option-radio" aria-hidden="true"></span><span>只收到新状态，因为事件已经准备好</span></button>
+            </div>
+            <div class="quiz-feedback" aria-live="polite"></div>
+          </div>
+          <button type="button" class="quiz-check-btn" onclick="checkQuiz('quiz-module4')">查看反馈</button>
+          <button type="button" class="quiz-reset-btn" onclick="resetQuiz('quiz-module4')">重做本章小测</button>
+        </div>
+        <p>下一章从失败现象倒查请求、状态和测试。<a href="#module-5">进入「用请求与测试定位失败」</a></p>
+      </section>
+    </div>
+  </div>
+</section>

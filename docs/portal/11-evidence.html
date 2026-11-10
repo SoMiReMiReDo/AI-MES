@@ -1,0 +1,48 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="OpenMES 开发文档：架构、生产逻辑与源码拆解"><title>来源基线与已知文档差异 · OpenMES Atlas</title><link rel="stylesheet" href="assets/style.css"></head><body>
+<a class="skip" href="#main">跳到正文</a><aside class="sidebar" id="sidebar"><a class="brand" href="index.html"><span class="brand-mark">M</span><span>OpenMES <b>ATLAS</b></span></a><div class="sidebar-caption">DEVELOPER KNOWLEDGE BASE</div><button class="search-trigger" type="button">⌕ 搜索文档 <kbd>/</kbd></button><nav aria-label="主导航"><a class="nav-home " href="index.html">⌂ <span>文档概览</span></a><a class="nav-item " href="01-overview.html" ><span class="nav-num">01</span><span>项目全景与阅读地图</span></a><a class="nav-item " href="02-domain.html" ><span class="nav-num">02</span><span>领域对象与数据归属</span></a><a class="nav-item " href="03-production.html" ><span class="nav-num">03</span><span>生产主链与事务边界</span></a><a class="nav-item " href="04-quantity.html" ><span class="nav-num">04</span><span>两种流转与数量账本</span></a><a class="nav-item " href="05-material-quality.html" ><span class="nav-num">05</span><span>物料、质量与仓储闭环</span></a><a class="nav-item " href="06-machine-erp.html" ><span class="nav-num">06</span><span>设备信号与 ERP 集成</span></a><a class="nav-item " href="07-frontend-sync.html" ><span class="nav-num">07</span><span>前端入口与实时读模型</span></a><a class="nav-item " href="08-permissions-modules.html" ><span class="nav-num">08</span><span>权限、租户与扩展模块</span></a><a class="nav-item " href="09-planning-traceability.html" ><span class="nav-num">09</span><span>排程、绩效与追溯旁路</span></a><a class="nav-item " href="10-development.html" ><span class="nav-num">10</span><span>开发、验证与问题定位</span></a><a class="nav-item active" href="11-evidence.html" aria-current=page><span class="nav-num">11</span><span>来源基线与已知文档差异</span></a></nav><div class="sidebar-footer"><span class="status-dot"></span> 本地源码阅读基线<br><small>6048face · 2026.11.09</small><a href="../openmes-course/index.html">交互课程 ↗</a><a href="../README.md">Markdown 文档 ↗</a></div></aside>
+<div class="workspace"><header class="topbar"><button id="menu-toggle" aria-expanded="false" aria-controls="sidebar" aria-label="展开导航">☰</button><div>工程知识库 <span>/</span> 来源基线与已知文档差异</div><span class="top-tag">SOURCE VERIFIED · 静态核对</span><button id="theme-toggle" aria-label="切换明暗主题">◐</button></header><main id="main" tabindex="-1"><div class="article-meta">CHAPTER 11 <span>业务流程 · 实现契约 · 开发验收</span><a href="../developer/11-evidence.md">阅读 Markdown ↗</a></div><div class="chapter-jump" role="navigation" aria-label="本章导航"><a href="#section-2">使用逻辑</a><a href="#section-4">技术逻辑</a><a href="#section-10">证据等级与结论写法</a><a href="#section-11">来源清单的使用方式</a><a href="#section-12">更新基线的标准流程</a><a href="#section-13">文档与实现冲突的处理模板</a><a href="#section-14">完整性的边界与后续维护</a><a href="#section-15">源码依据</a></div><article class="prose"><h1 id="section-1">来源基线与已知文档差异</h1>
+<p>结论绑定当前本地工作树，并保留路径、行号和内容摘要，便于之后复核。</p>
+<h2 id="section-2">使用逻辑</h2>
+<h3 id="section-3">用源码解决一条相互矛盾的说明</h3>
+<p>操作员指南的「开始批次」段落把建批和进入生产连在一起。实际排查可在测试环境做两个动作并分别记录结果。先创建批次，核对新批次是 PENDING、相关步骤已经生成。随后开始首道工序，再核对工序与批次进入生产。这两个操作对应不同控制器方法和服务。更新说明时应把「创建批次」和「开始工序」拆成两行，保留对应源码证据。</p>
+<div class="table-wrap"><table><thead><tr><th>正在查什么</th><th>首选证据</th><th>需要补哪一层</th></tr></thead><tbody><tr><td>页面按钮和操作顺序</td><td>角色指南、React 页面与 Web 路由</td><td>同角色、同设置的实际页面</td></tr><tr><td>工序为何拒绝或允许</td><td>服务、模型和请求校验</td><td>失败分支测试及真实请求结果</td></tr><tr><td>数据表如何约束字段</td><td>迁移、模型、数据库约束</td><td>实际部署版本和迁移状态</td></tr><tr><td>未来计划是否已经交付</td><td>路线图、RFC 与对应入口</td><td>找到可达的实现和可执行验证</td></tr></tbody></table></div>
+<p>在站内打开源码链接时，用目标行定位方法，再读它的调用点和前后分支。该行能帮助定位论据，操作条件通常分布在多个方法和设置中。</p>
+<h2 id="section-4">技术逻辑</h2>
+<h3 id="section-5">阅读基线</h3>
+<ul><li>源码：/Users/seal/Desktop/myLog/program/SKhynix/OpenMes</li><li>Git HEAD：6048facedb99b112caecd9f60089e753a53ca89d</li><li>梳理日期：2026-11-09（Asia/Shanghai）</li><li>工作树包含已修改和未跟踪内容，因此不能只用 HEAD 重建本次阅读材料。</li><li>baseline.json 保存被引用文件的 SHA-256 与源工作树状态，便于识别资料变化。</li></ul>
+<h3 id="section-6">原文档与代码的差异</h3>
+<div class="table-wrap"><table><thead><tr><th>主题</th><th>原说明或容易产生的误解</th><th>当前核对结果</th></tr></thead><tbody><tr><td>主 Web 技术栈</td><td>development.md 写 Blade / Livewire</td><td>app.jsx 使用 React / Inertia；仍可存在 Blade 宿主模板</td></tr><tr><td>数据库版本</td><td>技术文档写 PostgreSQL 14+</td><td>Compose 当前镜像为 PostgreSQL 17；不等于证明不兼容 14</td></tr><tr><td>模块发现</td><td>只按目录扫描 provider 理解</td><td>ModuleManager 使用 manifest provider 与启用状态</td></tr><tr><td>设备信号</td><td>统一入口注释容易被理解为每次都落事件</td><td>相同 state 返回；计数还有 Legacy 分支，应按分派函数判断</td></tr><tr><td>工单完成</td><td>达到数量即一律结束</td><td>transfer 仍等待进行中批次结束</td></tr><tr><td>仓库</td><td>完工事件即入库成功</td><td>先生成草稿，过账才移动库存；监听失败记录日志</td></tr></tbody></table></div>
+<h3 id="section-7">文档来源分组</h3>
+<p>docs/index.md 用作入口；development.md 用作旧架构对照；production-flow-review.md 和 production-flow-deployment.md 用作数量及上线注意事项；machine-connectivity.md、mqtt-connectivity.md 用作协议背景；warehouse-erp-rollout.md 用作集成部署背景。源码是行为判断的优先依据。</p>
+<p>原 docs 下其他角色指南、培训、历史评审与 RFC 也列在 source-docs.md 清单中。该清单按文件标题建立导航，不表示所有细节均完成逐条代码核验。RFC / roadmap 是设计或规划，不能据其标题宣称已实现。</p>
+<h3 id="section-8">范围与维护</h3>
+<p>本体系覆盖架构、核心生产链及主要旁路，不替代完整数据库字典或穷举 API 规范。未进行运行时行为、设备真机或生产部署验收。新增结论应附源码位置，遇到文档与实现冲突时记录差异，不静默混合两种描述。</p>
+<p>站内源码页面是本地生成的阅读快照；修改 OpenMES 不会自动更新它们。更新文档后重新构建，检查 baseline 中引用文件哈希，并保留版本差异。</p>
+<h3 id="section-9">如何复核版本和更新这套文档</h3>
+<ol><li>检查 baseline.json 的 git_head、worktree_status 和相关文件哈希，确定对比的是哪份源码。相同 Git HEAD 的两个工作树可能有不同未提交修改。</li><li>从路由和用户动作开始，找到服务入口并验证方法仍然被调用。涉及状态时核对模型规则、设置与数据库写入。</li><li>更新章节正文、源码链接及 chapters.json 中对应的文件行号。新增证据标明它说明的是界面动作、当前实现、仓库测试还是本次实际验证。</li><li>重新生成 portal 和全文搜索索引，运行 check_portal.py。链接和哈希通过用于确认产物与源文件的对应关系。业务结论还要依靠代码复核或隔离实例验证。</li></ol>
+<p>例如上游只重命名或移动一个方法，行号检查仍可能通过，但旧链接已经落到别的语句。复核时应按类名和方法名重新定位，再更新行号。验证记录中也应写清具体运行了什么。</p>
+<h2 id="section-10">证据等级与结论写法</h2>
+<div class="table-wrap"><table><thead><tr><th>等级</th><th>可以支持的结论</th><th>不能据此宣称</th></tr></thead><tbody><tr><td>实现阅读</td><td>某方法当前按这些条件执行</td><td>现场所有配置都经过验证</td></tr><tr><td>仓库测试阅读</td><td>仓库为某边界提供了测试契约</td><td>本次测试已经通过</td></tr><tr><td>本地文档检查</td><td>页面、链接、锚点、哈希与搜索产物一致</td><td>Laravel 业务逻辑正确</td></tr><tr><td>隔离实例验证</td><td>指定版本、配置和输入下观察到结果</td><td>真机或生产部署普遍成立</td></tr><tr><td>现场验收</td><td>指定设备与业务流程已验证</td><td>其他设备、租户或模式自动兼容</td></tr></tbody></table></div>
+<p>正文中的验收矩阵是建议执行的场景，不是已执行结果。源码直接支持的字段与分支可作为实现说明；建议的日志字段、外部去重和交付步骤属于开发实践。新增内容时保持这种区分，避免把建议误写成已有功能。</p>
+<h2 id="section-11">来源清单的使用方式</h2>
+<p>chapters.json 维护章节标题、摘要与显式引用文件；baseline.json 保存阅读根目录、git_head、worktree_status 和文件 SHA-256；portal/sources 保存转义后的文本及行号。这三者共同帮助从结论追到当时的源文件。</p>
+<p>哈希相同说明文件内容一致，不能证明选择的行支持该结论。行号存在只说明链接有效，方法移动后仍需人工复核。Git HEAD 一致也不能代替文件哈希，因为本地工作树可能包含尚未提交的修复或演示代码。</p>
+<h2 id="section-12">更新基线的标准流程</h2>
+<ol><li>先保留当前 baseline 与需要比较的章节，明确本次更新涉及哪个源码工作树。</li><li>检查被引用文件的内容差异，列出受影响的行为、字段和入口。</li><li>对每条受影响说明追到调用链，核对 Request、Service、Model 及测试。</li><li>修改正文、源码定位与引用清单，明确新旧行为差异。</li><li>重新构建离线门户，再检查链接、锚点、来源哈希、搜索和表格。</li><li>在 VALIDATION.md 记录本次实际执行内容；未运行的业务或设备测试继续标记未执行。</li></ol>
+<p>不能仅运行构建并用新哈希覆盖旧基线，就认为所有章节已跟进新源码。生成器可以刷新文本快照，不能自动判断中文解释是否仍正确。</p>
+<h2 id="section-13">文档与实现冲突的处理模板</h2>
+<div class="code-block"><span>text</span><pre><code>主题：例如批次何时进入生产
+旧说明：建批即开工
+当前实现：createBatch 创建 PENDING；首次 startStep 推进执行
+依据：类名、方法名、文件与行号、读取基线
+影响：操作指南、按钮文案、状态验收
+验证：静态阅读 / 指定测试 / 隔离实例（分别填写）
+处理：修订当前章节，保留原指南作为历史来源</code></pre></div>
+<p>对于尚未覆盖的分支，明确写出待验证条件，例如某个机器协议、某种 BOM 配置或某条移动端入口。不能因为主链验证通过，就把旁路接口描述成同等成熟。</p>
+<h2 id="section-14">完整性的边界与后续维护</h2>
+<p>这套手册覆盖从开发环境、领域对象、生产执行、数量、物料质量仓库、外部集成、前端同步、权限模块，到排程追溯及交付验证的工作链。它提供核心字段和接口示例，但不取代全量数据库字典、所有 API 的机器可读规范或工厂设备作业标准。</p>
+<p>新增业务功能的文档完成条件是：用户知道从哪里触发，开发者知道规则归属，联调者知道输入与错误，测试者知道如何判断成功，维护者能追到证据。每次业务变更按这个标准更新对应章节，比单纯增加篇幅更能保持手册可用。</p>
+<h2 id="section-15">源码依据</h2>
+<ul><li><a href="sources/97db29a7915320e6.html#L9">docs/development.md:9</a></li><li><a href="sources/510dfbc5eaeb2c9c.html#L3">docs/production-flow-review.md:3</a></li><li><a href="sources/0ed9481a2f5565d4.html#L1">docs/warehouse-erp-rollout.md:1</a></li><li><a href="sources/cf0a3193f110f80d.html#L23">backend/app/Services/ModuleManager.php:23</a></li><li><a href="sources/bf81ad8c6daaae10.html#L67">旧指南 · 开始批次段落</a></li><li><a href="sources/db60ec1b349e8b02.html#L695">建批时的状态与工序生成</a></li><li><a href="sources/1488eb91be109065.html#L35">首道工序开工的状态推进</a></li></ul></article><div class="page-nav"><a href="10-development.html"><small>上一章</small>开发、验证与问题定位</a></div></main><footer class="page-footer">OpenMES / 从业务行为理解源码 <span>本地文档 · 不连接生产数据</span></footer></div>
+<aside class="toc"><div>本页内容</div><a href="#section-2">使用逻辑</a><a href="#section-4">技术逻辑</a><a href="#section-10">证据等级与结论写法</a><a href="#section-11">来源清单的使用方式</a><a href="#section-12">更新基线的标准流程</a><a href="#section-13">文档与实现冲突的处理模板</a><a href="#section-14">完整性的边界与后续维护</a><a href="#section-15">源码依据</a></aside>
+<dialog id="search-dialog"><div class="search-head"><label for="search-input">搜索文档</label><button id="search-close" aria-label="关闭搜索">×</button></div><input id="search-input" placeholder="工单、事务、MachineCounter…" autocomplete="off"><div id="search-count" role="status">输入关键词搜索全部章节</div><div id="search-results"></div></dialog><script src="assets/search-data.js"></script><script src="assets/app.js"></script></body></html>
