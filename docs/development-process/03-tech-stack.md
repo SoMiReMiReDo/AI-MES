@@ -2,6 +2,8 @@
 
 日期：2026-11-10｜状态：推荐草案。C#、半导体方向、完整前后端及 Docker 已由用户确认，其余是当前建议；未安装或联调以下组件。
 
+**2026-11-11 更新：**用户已要求按此技术栈建立数据库。数据库部分已采用 EF Core / Identity 10.0.12、Npgsql EF Provider 10.0.3、PostgreSQL 18.6 与 Docker Compose，并建立迁移和真实数据库测试，见 [数据库实施说明](06-database-implementation.md)。下文其余组件仍是规划建议，不表示前端、Web API 或 Agent 已安装实现。
+
 ## 1. 推荐组合
 
 | 层次 | 推荐 | 本项目选择理由 |
