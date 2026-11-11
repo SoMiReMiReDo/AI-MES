@@ -5530,3 +5530,176 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    DROP INDEX security."IX_users_worker_id";
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    ALTER TABLE organization.terminals ADD fab_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    UPDATE organization.terminals t SET fab_id = a.fab_id
+    FROM organization.workstations w JOIN organization.areas a ON a.id = w.area_id
+    WHERE t.workstation_id = w.id;
+    DO $$ BEGIN
+      IF EXISTS (SELECT 1 FROM organization.terminals WHERE fab_id IS NULL) THEN
+        RAISE EXCEPTION 'F01 migration: unbound terminals require an explicit workstation/fab assignment before migration';
+      END IF;
+    END $$;
+    ALTER TABLE organization.terminals ALTER COLUMN fab_id SET NOT NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    ALTER TABLE security.roles ADD is_active boolean NOT NULL DEFAULT TRUE;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    ALTER TABLE security.roles ADD is_system boolean NOT NULL DEFAULT FALSE;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    CREATE TABLE security.security_events (
+        id uuid NOT NULL,
+        occurred_at timestamp with time zone NOT NULL,
+        user_id uuid,
+        session_id uuid,
+        event_type character varying(64) NOT NULL,
+        outcome character varying(64) NOT NULL,
+        correlation_id uuid NOT NULL,
+        CONSTRAINT "PK_security_events" PRIMARY KEY (id),
+        CONSTRAINT "FK_security_events_users_user_id" FOREIGN KEY (user_id) REFERENCES security.users (id) ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    CREATE TABLE security.user_sessions (
+        id uuid NOT NULL,
+        user_id uuid NOT NULL,
+        created_at timestamp with time zone NOT NULL,
+        last_activity_at timestamp with time zone NOT NULL,
+        idle_expires_at timestamp with time zone NOT NULL,
+        absolute_expires_at timestamp with time zone NOT NULL,
+        revoked_at timestamp with time zone,
+        revoke_reason character varying(500),
+        restricted boolean NOT NULL,
+        terminal_id uuid,
+        security_stamp character varying(128) NOT NULL,
+        CONSTRAINT "PK_user_sessions" PRIMARY KEY (id),
+        CONSTRAINT ck_session_times CHECK (absolute_expires_at > created_at AND idle_expires_at <= absolute_expires_at),
+        CONSTRAINT "FK_user_sessions_terminals_terminal_id" FOREIGN KEY (terminal_id) REFERENCES organization.terminals (id) ON DELETE RESTRICT,
+        CONSTRAINT "FK_user_sessions_users_user_id" FOREIGN KEY (user_id) REFERENCES security.users (id) ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    CREATE UNIQUE INDEX "IX_users_worker_id" ON security.users (worker_id) WHERE worker_id IS NOT NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    CREATE UNIQUE INDEX "IX_terminals_fab_id_code" ON organization.terminals (fab_id, code);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    CREATE INDEX "IX_security_events_occurred_at" ON security.security_events (occurred_at);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    CREATE INDEX "IX_security_events_user_id" ON security.security_events (user_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    CREATE INDEX "IX_user_sessions_terminal_id" ON security.user_sessions (terminal_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    CREATE INDEX "IX_user_sessions_user_id_revoked_at" ON security.user_sessions (user_id, revoked_at);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    ALTER TABLE organization.terminals ADD CONSTRAINT "FK_terminals_fabs_fab_id" FOREIGN KEY (fab_id) REFERENCES organization.fabs (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    CREATE FUNCTION organization.validate_f01_context() RETURNS trigger LANGUAGE plpgsql AS $$
+    DECLARE expected_fab uuid;
+    BEGIN
+      IF TG_TABLE_NAME = 'workstations' THEN
+        IF NEW.line_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM organization.lines l WHERE l.id = NEW.line_id AND l.area_id = NEW.area_id) THEN
+          RAISE EXCEPTION 'workstation line must belong to the same area' USING ERRCODE = '23514';
+        END IF;
+        SELECT fab_id INTO expected_fab FROM organization.areas WHERE id = NEW.area_id;
+        IF EXISTS (SELECT 1 FROM organization.terminals WHERE workstation_id = NEW.id AND fab_id <> expected_fab) THEN
+          RAISE EXCEPTION 'workstation change would invalidate terminal fab' USING ERRCODE = '23514';
+        END IF;
+      ELSE
+        IF NEW.workstation_id IS NOT NULL THEN
+          SELECT a.fab_id INTO expected_fab FROM organization.workstations w JOIN organization.areas a ON a.id=w.area_id WHERE w.id=NEW.workstation_id;
+          IF expected_fab IS DISTINCT FROM NEW.fab_id THEN
+            RAISE EXCEPTION 'terminal and workstation must belong to the same fab' USING ERRCODE = '23514';
+          END IF;
+        END IF;
+      END IF;
+      RETURN NEW;
+    END $$;
+    CREATE TRIGGER f01_context BEFORE INSERT OR UPDATE ON organization.workstations FOR EACH ROW EXECUTE FUNCTION organization.validate_f01_context();
+    CREATE TRIGGER f01_context BEFORE INSERT OR UPDATE ON organization.terminals FOR EACH ROW EXECUTE FUNCTION organization.validate_f01_context();
+    CREATE TRIGGER immutable_history BEFORE UPDATE OR DELETE ON security.security_events FOR EACH ROW EXECUTE FUNCTION audit.reject_history_mutation();
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261110213648_F01IdentityAndOrganization') THEN
+    INSERT INTO public.__ef_migrations_history ("MigrationId", "ProductVersion")
+    VALUES ('20261110213648_F01IdentityAndOrganization', '10.0.12');
+    END IF;
+END $EF$;
+COMMIT;
+

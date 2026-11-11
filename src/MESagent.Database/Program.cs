@@ -22,9 +22,14 @@ if (string.IsNullOrWhiteSpace(connection))
 }
 
 await using var db = MesDbContextFactory.Create(connection);
-if (args[0] == "migrate") await db.Database.MigrateAsync();
+if (args[0] == "migrate")
+    await db.Database.MigrateAsync();
+
 var applied = (await db.Database.GetAppliedMigrationsAsync()).ToArray();
 var pending = (await db.Database.GetPendingMigrationsAsync()).ToArray();
 Console.WriteLine($"已应用迁移: {applied.Length}；待应用: {pending.Length}");
-foreach (var migration in applied) Console.WriteLine(migration);
+
+foreach (var migration in applied)
+    Console.WriteLine(migration);
+
 return pending.Length == 0 ? 0 : 1;

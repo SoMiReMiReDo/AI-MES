@@ -24,6 +24,7 @@ internal static partial class FabModel
             b.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             b.HasIndex(x => x.Code).IsUnique();
         });
+
         modelBuilder.Entity<RolePermission>(b =>
         {
             b.ToTable("role_permissions", "security", t =>
@@ -40,6 +41,7 @@ internal static partial class FabModel
             b.HasOne<Permission>().WithMany().HasForeignKey(x => x.PermissionId).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(x => new { x.RoleId, x.PermissionId }).IsUnique();
         });
+
         modelBuilder.Entity<UserPermission>(b =>
         {
             b.ToTable("user_permissions", "security", t =>
@@ -56,6 +58,7 @@ internal static partial class FabModel
             b.HasOne<Permission>().WithMany().HasForeignKey(x => x.PermissionId).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(x => new { x.UserId, x.PermissionId }).IsUnique();
         });
+
         modelBuilder.Entity<UserFabScope>(b =>
         {
             b.ToTable("user_fab_scopes", "security", t =>

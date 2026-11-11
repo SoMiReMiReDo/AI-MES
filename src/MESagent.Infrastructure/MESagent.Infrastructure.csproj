@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="../MESagent.Application/MESagent.Application.csproj" />
     <ProjectReference Include="../MESagent.Domain/MESagent.Domain.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />

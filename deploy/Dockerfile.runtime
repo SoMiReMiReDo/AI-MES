@@ -1,0 +1,8 @@
+# Optional local/CI path: package portable output built by the pinned host SDK.
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:bfd912c83295ce66d4b706ebb8541b9f14259b0e76fbb88b2751f58ce2399d2e
+ARG COMPONENT=api
+WORKDIR /app
+COPY artifacts/docker/${COMPONENT}/ .
+ENV ASPNETCORE_URLS=http://+:8080
+USER $APP_UID
+ENTRYPOINT ["dotnet", "MESagent.Api.dll"]

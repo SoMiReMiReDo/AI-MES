@@ -89,6 +89,7 @@ public sealed class Workstation
 /// <summary>Organization / terminals，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
 public sealed class Terminal
 {
+    public Guid FabId { get; set; }
     public Guid Id { get; set; } = Guid.CreateVersion7();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

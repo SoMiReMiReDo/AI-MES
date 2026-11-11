@@ -1,0 +1,47 @@
+services:
+  key-init:
+    build: {context: ., dockerfile: deploy/Dockerfile.api}
+    user: "0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ['chown -R $$APP_UID:$$APP_UID /keys && chmod 700 /keys']
+    volumes: ["api_keys:/keys"]
+    restart: "no"
+  migrate:
+    build: {context: ., dockerfile: deploy/Dockerfile.database}
+    environment:
+      ConnectionStrings__Mes: Host=postgres;Database=mesagent;Username=mesagent_owner;Password=${MES_DB_PASSWORD:?}
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+  api:
+    build: {context: ., dockerfile: deploy/Dockerfile.api}
+    environment:
+      ConnectionStrings__Mes: Host=postgres;Database=mesagent;Username=mesagent_app;Password=${MES_APP_DB_PASSWORD:?Run python3 scripts/app.py provision first}
+      Mes__DeploymentFabId: ${MES_FAB_ID:?Run python3 scripts/app.py configure first}
+      ASPNETCORE_ENVIRONMENT: ${MES_ENVIRONMENT:-Development}
+      DataProtection__Path: /app/keys
+    volumes:
+      - api_keys:/app/keys
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      key-init: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "dotnet", "MESagent.Api.dll", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+  web:
+    build: {context: ., dockerfile: deploy/Dockerfile.web}
+    ports: ["127.0.0.1:${MES_WEB_PORT:-5088}:8080"]
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+volumes:
+  api_keys:

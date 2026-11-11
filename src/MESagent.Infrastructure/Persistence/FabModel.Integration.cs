@@ -25,6 +25,7 @@ internal static partial class FabModel
             b.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             b.HasIndex(x => x.SystemName).IsUnique();
         });
+
         modelBuilder.Entity<MachineConnection>(b =>
         {
             b.ToTable("machine_connections", "integration", t =>
@@ -46,6 +47,7 @@ internal static partial class FabModel
             b.Property(x => x.Config).HasColumnName("config").HasColumnType("jsonb");
             b.Property(x => x.SecretReference).HasColumnName("secret_reference").HasMaxLength(255);
         });
+
         modelBuilder.Entity<MachineMessage>(b =>
         {
             b.ToTable("machine_messages", "integration", t =>
@@ -57,7 +59,10 @@ internal static partial class FabModel
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             b.Property(x => x.RowVersion).HasColumnName("xmin").IsRowVersion();
             b.Property(x => x.MachineConnectionId).HasColumnName("machine_connection_id");
-            b.HasOne<MachineConnection>().WithMany().HasForeignKey(x => x.MachineConnectionId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<MachineConnection>()
+                .WithMany()
+                .HasForeignKey(x => x.MachineConnectionId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.Topic).HasColumnName("topic").HasMaxLength(255);
             b.Property(x => x.RawPayload).HasColumnName("raw_payload");
             b.Property(x => x.ParsedData).HasColumnName("parsed_data").HasColumnType("jsonb");
@@ -66,6 +71,7 @@ internal static partial class FabModel
             b.Property(x => x.ReceivedAt).HasColumnName("received_at");
             b.Property(x => x.SourceMessageId).HasColumnName("source_message_id").HasMaxLength(128);
         });
+
         modelBuilder.Entity<MachineTag>(b =>
         {
             b.ToTable("machine_tags", "integration", t =>
@@ -77,7 +83,10 @@ internal static partial class FabModel
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             b.Property(x => x.RowVersion).HasColumnName("xmin").IsRowVersion();
             b.Property(x => x.MachineConnectionId).HasColumnName("machine_connection_id");
-            b.HasOne<MachineConnection>().WithMany().HasForeignKey(x => x.MachineConnectionId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<MachineConnection>()
+                .WithMany()
+                .HasForeignKey(x => x.MachineConnectionId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.EquipmentId).HasColumnName("equipment_id");
             b.HasOne<Equipment>().WithMany().HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.Name).HasColumnName("name").HasMaxLength(200);
@@ -89,6 +98,7 @@ internal static partial class FabModel
             b.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             b.HasIndex(x => new { x.MachineConnectionId, x.Name }).IsUnique();
         });
+
         modelBuilder.Entity<ApiKey>(b =>
         {
             b.ToTable("api_keys", "integration", t =>
@@ -100,7 +110,10 @@ internal static partial class FabModel
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             b.Property(x => x.RowVersion).HasColumnName("xmin").IsRowVersion();
             b.Property(x => x.IntegrationConfigId).HasColumnName("integration_config_id");
-            b.HasOne<IntegrationConfig>().WithMany().HasForeignKey(x => x.IntegrationConfigId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<IntegrationConfig>()
+                .WithMany()
+                .HasForeignKey(x => x.IntegrationConfigId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.Name).HasColumnName("name").HasMaxLength(200);
             b.Property(x => x.KeyPrefix).HasColumnName("key_prefix").HasMaxLength(32);
             b.Property(x => x.KeyHash).HasColumnName("key_hash").HasMaxLength(128);
@@ -111,6 +124,7 @@ internal static partial class FabModel
             b.Property(x => x.ExpiresAt).HasColumnName("expires_at");
             b.HasIndex(x => x.KeyHash).IsUnique();
         });
+
         modelBuilder.Entity<ImportMapping>(b =>
         {
             b.ToTable("import_mappings", "integration", t =>
@@ -125,6 +139,7 @@ internal static partial class FabModel
             b.Property(x => x.MappingConfig).HasColumnName("mapping_config").HasColumnType("jsonb");
             b.Property(x => x.Entity).HasColumnName("entity").HasMaxLength(64);
         });
+
         modelBuilder.Entity<ImportJob>(b =>
         {
             b.ToTable("import_jobs", "integration", t =>
@@ -152,6 +167,7 @@ internal static partial class FabModel
             b.Property(x => x.CompletedAt).HasColumnName("completed_at");
             b.Property(x => x.DryRun).HasColumnName("dry_run");
         });
+
         modelBuilder.Entity<LabelTemplate>(b =>
         {
             b.ToTable("label_templates", "integration", t =>
@@ -169,6 +185,7 @@ internal static partial class FabModel
             b.Property(x => x.BarcodeFormat).HasColumnName("barcode_format").HasMaxLength(32);
             b.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
         });
+
         modelBuilder.Entity<CustomFieldDefinition>(b =>
         {
             b.ToTable("custom_field_definitions", "integration", t =>

@@ -1,0 +1,8 @@
+services:
+  api:
+    build: {context: ., dockerfile: deploy/Dockerfile.runtime, args: {COMPONENT: api}}
+  key-init:
+    build: {context: ., dockerfile: deploy/Dockerfile.runtime, args: {COMPONENT: api}}
+  migrate:
+    build: {context: ., dockerfile: deploy/Dockerfile.runtime, args: {COMPONENT: database}}
+    entrypoint: ["dotnet", "MESagent.Database.dll", "migrate"]

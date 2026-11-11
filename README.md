@@ -1,6 +1,39 @@
 # MESagent
 
-面向半导体制造的 MES + Agent + WebUI 项目，采用 C# 后端并以 Docker 交付。已启动数据库开发，建立 PostgreSQL 18 + EF Core 10 数据模型、迁移和真实数据库测试；业务 API、WebUI 与 Agent 尚未实现。
+面向半导体制造的 MES + Agent + WebUI 项目，采用 C# 后端并以 Docker 交付。已建立 PostgreSQL 18 + EF Core 10 数据基础，并完成 Application/API/React WebUI 初始化及 组织结构、人员与场所、账号会话及角色权限 的组织、账号与权限功能。Agent、生产流程和 OrganizationIdentityAccessControl 扩展功能尚未实现；Docker 打包按用户要求后置。
+
+## 本地网页启动与验证
+
+先打开 Docker Desktop。当前本地已配置数据库和管理员，使用两个终端启动后端与网页。
+
+**终端 1：启动数据库和后端**
+
+```sh
+cd /Users/seal/Desktop/myNote/MESagent
+python3 scripts/database.py up
+python3 scripts/app.py serve
+```
+
+**终端 2：启动网页**
+
+```sh
+cd /Users/seal/Desktop/myNote/MESagent
+npm run dev --prefix web
+```
+
+浏览器打开 [网页工作台](http://127.0.0.1:5173)。前端将 API 请求代理到 `127.0.0.1:5080`。两个终端保持运行，停止服务时分别按 `Ctrl+C`。
+
+初始账号保存在本地 `.local/initial-admin.txt`（Git 忽略）。首次登录需要修改密码；若已经修改，使用新密码。改密后删除初始凭据文件。
+
+建议依次验证：登录与改密 → 组织结构 → 员工、工位与终端 → 账号授权 → 角色权限 → 审计记录。
+
+若提示缺少前端依赖，在项目根目录运行：
+
+```sh
+npm ci --prefix web
+```
+
+全新环境的数据库、管理员初始化及测试步骤见 [OrganizationIdentityAccessControl 实现与开发说明](docs/feature-development/organization-identity-access-control-implementation.md)。
 
 ## 项目记忆与规划
 
@@ -15,7 +48,7 @@
 - [数据库字段字典](docs/development-process/05-database-catalog.md)。
 - [数据库实施与连接说明](docs/development-process/06-database-implementation.md)。
 
-首版围绕 Lot/Wafer、工艺与配方版本、设备履历、生产执行、质量处置和追溯建设。当前数据库包含 114 张业务表、7 张 Identity 表、2 个派生视图，另有迁移历史表；按需模块已有结构，业务流程尚待实现。
+首版围绕 Lot/Wafer、工艺与配方版本、设备履历、生产执行、质量处置和追溯建设。当前数据库包含 116 张业务/支撑表、7 张 Identity 表、2 个派生视图，另有迁移历史表；OrganizationIdentityAccessControl 基础功能已有 API 与 WebUI，其它业务模块仍待开发。
 
 `docs/` 中原有 [OpenMES 开发手册](docs/README.md)、门户与课程仍作为参考材料保存，其 Laravel/React 功能不属于本项目已实现能力。
 

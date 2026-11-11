@@ -8,3 +8,12 @@ TestResults/
 .env
 .env.*
 !.env.example
+
+node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+.local/
+artifacts/
+**/*.tsbuildinfo
+scripts/__pycache__/

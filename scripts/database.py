@@ -37,10 +37,12 @@ def settings():
 
 def main():
     command = sys.argv[1] if len(sys.argv) == 2 else ''
+
     if command == 'init':
         if ENV_FILE.exists():
             print('.env 已存在，保留现有配置。')
             return
+
         fd = os.open(ENV_FILE, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, 'w') as file:
             file.write(f'MES_DB_PASSWORD={secrets.token_hex(32)}\nMES_DB_PORT=55432\n')
@@ -54,14 +56,27 @@ def main():
         run('dotnet', 'test', 'tests/MESagent.Database.Tests', '--no-restore', env=settings())
     elif command == 'catalog':
         run('dotnet', 'build', 'src/MESagent.Database', '--no-restore')
-        result = subprocess.run(['dotnet', 'run', '--no-build', '--project', 'src/MESagent.Database', '--', 'catalog'], cwd=ROOT, check=True, capture_output=True, text=True)
+        result = subprocess.run(
+            [
+                'dotnet', 'run', '--no-build', '--project', 'src/MESagent.Database',
+                '--', 'catalog'
+            ],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+
         path = ROOT / 'docs/development-process/05-database-catalog.md'
         path.write_text(result.stdout)
+
         print('已从 EF Core 模型更新数据库字段字典。')
     elif command == 'stop':
         run('docker', 'compose', 'stop', 'postgres')
     else:
-        raise SystemExit('用法: python3 scripts/database.py init|up|migrate|status|test|catalog|stop')
+        raise SystemExit(
+            '用法: python3 scripts/database.py init|up|migrate|status|test|catalog|stop'
+        )
 
 
 if __name__ == '__main__':

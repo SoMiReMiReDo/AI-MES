@@ -20,8 +20,9 @@ public sealed class SchemaTests(DatabaseFixture fixture) : IClassFixture<Databas
     public async Task Fresh_database_has_all_tables_and_repeat_migration_is_safe()
     {
         await using var db = fixture.CreateContext();
-        Assert.Equal(121, db.Model.GetEntityTypes().Count());
+        Assert.Equal(123, db.Model.GetEntityTypes().Count());
         Assert.False(db.Database.HasPendingModelChanges());
+
         await db.Database.MigrateAsync();
         Assert.Empty(await db.Database.GetPendingMigrationsAsync());
         Assert.Equal(db.Database.GetMigrations().Count(), (await db.Database.GetAppliedMigrationsAsync()).Count());
@@ -78,18 +79,34 @@ public sealed class SchemaTests(DatabaseFixture fixture) : IClassFixture<Databas
     {
         var s = await fixture.SeedAsync();
         await using var db = fixture.CreateContext();
-        var carrier = new Carrier { FabId = s.Fab, CarrierCode = Guid.NewGuid().ToString(), CarrierType = "FOUP", SlotCapacity = 1, Status = "Available" };
+
+        var carrier = new Carrier
+        {
+            FabId = s.Fab,
+            CarrierCode = Guid.NewGuid().ToString(),
+            CarrierType = "FOUP",
+            SlotCapacity = 1,
+            Status = "Available"
+        };
         db.Add(carrier);
         await db.SaveChangesAsync();
+
         var invalid = new CarrierSlot { CarrierId = carrier.Id, SlotNo = 2 };
         db.Add(invalid);
         await Reject(() => db.SaveChangesAsync(), "23514");
+
         db.Entry(invalid).State = EntityState.Detached;
         var slot = new CarrierSlot { CarrierId = carrier.Id, SlotNo = 1 };
         db.Add(slot);
         db.Add(new CarrierLoad { CarrierSlotId = slot.Id, WaferId = s.Wafer, LoadedAt = DateTime.UtcNow });
         await db.SaveChangesAsync();
-        var otherWafer = new Wafer { WaferCode = Guid.NewGuid().ToString(), WaferSizeMm = 300, LifecycleStatus = "Active" };
+
+        var otherWafer = new Wafer
+        {
+            WaferCode = Guid.NewGuid().ToString(),
+            WaferSizeMm = 300,
+            LifecycleStatus = "Active"
+        };
         db.Add(otherWafer);
         db.Add(new CarrierLoad { CarrierSlotId = slot.Id, WaferId = otherWafer.Id, LoadedAt = DateTime.UtcNow });
         await Reject(() => db.SaveChangesAsync(), "23505", "23P01");
@@ -111,10 +128,25 @@ public sealed class SchemaTests(DatabaseFixture fixture) : IClassFixture<Databas
     {
         var s = await fixture.SeedAsync();
         await using var db = fixture.CreateContext();
-        var a = new HoldRecord { LotId = s.Lot, ReasonCodeId = s.Reason, HoldScope = "All", HeldAt = DateTime.UtcNow, HeldById = s.User };
-        var b = new HoldRecord { LotId = s.Lot, ReasonCodeId = s.Reason, HoldScope = "All", HeldAt = DateTime.UtcNow, HeldById = s.User };
+        var a = new HoldRecord
+        {
+            LotId = s.Lot,
+            ReasonCodeId = s.Reason,
+            HoldScope = "All",
+            HeldAt = DateTime.UtcNow,
+            HeldById = s.User
+        };
+        var b = new HoldRecord
+        {
+            LotId = s.Lot,
+            ReasonCodeId = s.Reason,
+            HoldScope = "All",
+            HeldAt = DateTime.UtcNow,
+            HeldById = s.User
+        };
         db.AddRange(a, b);
         await db.SaveChangesAsync();
+
         a.ReleasedAt = DateTime.UtcNow;
         a.ReleasedById = s.User;
         a.ReleaseReason = "Reviewed";
@@ -124,8 +156,12 @@ public sealed class SchemaTests(DatabaseFixture fixture) : IClassFixture<Databas
 
     private static ProcessRun Run(Seed s) => new()
     {
-        StepExecutionId = s.Execution, EquipmentId = s.Equipment, RecipeVersionId = s.RecipeVersion,
-        TrackInAt = DateTime.UtcNow, TrackInById = s.User, Status = "Running"
+        StepExecutionId = s.Execution,
+        EquipmentId = s.Equipment,
+        RecipeVersionId = s.RecipeVersion,
+        TrackInAt = DateTime.UtcNow,
+        TrackInById = s.User,
+        Status = "Running"
     };
 
     [Fact]
@@ -150,7 +186,17 @@ public sealed class SchemaTests(DatabaseFixture fixture) : IClassFixture<Databas
         var run = Run(s);
         db.Add(run);
         var key = Guid.NewGuid().ToString();
-        TrackEvent Event() => new() { ProcessRunId = run.Id, EventType = "TrackIn", OccurredAt = DateTime.UtcNow, RecordedAt = DateTime.UtcNow, ActorId = s.User, Source = "Test", CorrelationId = Guid.NewGuid(), IdempotencyKey = key };
+        TrackEvent Event() => new()
+        {
+            ProcessRunId = run.Id,
+            EventType = "TrackIn",
+            OccurredAt = DateTime.UtcNow,
+            RecordedAt = DateTime.UtcNow,
+            ActorId = s.User,
+            Source = "Test",
+            CorrelationId = Guid.NewGuid(),
+            IdempotencyKey = key
+        };
         db.Add(Event());
         await db.SaveChangesAsync();
         db.Add(Event());
@@ -196,6 +242,7 @@ public sealed class SchemaTests(DatabaseFixture fixture) : IClassFixture<Databas
         version.ReleasedAt = DateTime.UtcNow;
         version.ReleasedById = s.User;
         await db.SaveChangesAsync();
+
         version.Version = "2";
         await Reject(() => db.SaveChangesAsync(), "23514");
         db.Entry(version).State = EntityState.Detached;
@@ -209,9 +256,19 @@ public sealed class SchemaTests(DatabaseFixture fixture) : IClassFixture<Databas
     {
         var s = await fixture.SeedAsync();
         await using var db = fixture.CreateContext();
-        var audit = new AuditLog { UserId = s.User, EntityType = "Lot", EntityId = s.Lot, Action = "Create", OccurredAt = DateTime.UtcNow, CorrelationId = Guid.NewGuid(), SourceChannel = "Test" };
+        var audit = new AuditLog
+        {
+            UserId = s.User,
+            EntityType = "Lot",
+            EntityId = s.Lot,
+            Action = "Create",
+            OccurredAt = DateTime.UtcNow,
+            CorrelationId = Guid.NewGuid(),
+            SourceChannel = "Test"
+        };
         db.Add(audit);
         await db.SaveChangesAsync();
+
         audit.Action = "Changed";
         await Reject(() => db.SaveChangesAsync(), "23514");
         db.Entry(audit).State = EntityState.Unchanged;
@@ -224,11 +281,29 @@ public sealed class SchemaTests(DatabaseFixture fixture) : IClassFixture<Databas
     {
         var s = await fixture.SeedAsync();
         await using var db = fixture.CreateContext();
-        var warehouse = new Warehouse { FabId = s.Fab, Code = Guid.NewGuid().ToString(), Name = "Test stock", Kind = "Finished" };
+        var warehouse = new Warehouse
+        {
+            FabId = s.Fab,
+            Code = Guid.NewGuid().ToString(),
+            Name = "Test stock",
+            Kind = "Finished"
+        };
         db.Add(warehouse);
-        db.Add(new WarehouseStock { WarehouseId = warehouse.Id, ProductId = s.Product, Quantity = 1, UnitOfMeasure = "wafer" });
+        db.Add(new WarehouseStock
+        {
+            WarehouseId = warehouse.Id,
+            ProductId = s.Product,
+            Quantity = 1,
+            UnitOfMeasure = "wafer"
+        });
         await db.SaveChangesAsync();
-        db.Add(new WarehouseStock { WarehouseId = warehouse.Id, ProductId = s.Product, Quantity = 2, UnitOfMeasure = "wafer" });
+        db.Add(new WarehouseStock
+        {
+            WarehouseId = warehouse.Id,
+            ProductId = s.Product,
+            Quantity = 2,
+            UnitOfMeasure = "wafer"
+        });
         await Reject(() => db.SaveChangesAsync(), "23505");
     }
 
@@ -241,8 +316,12 @@ public sealed class SchemaTests(DatabaseFixture fixture) : IClassFixture<Databas
         db.Add(Membership(s, s.Lot, start, start.AddSeconds(30)));
         db.Add(Membership(s, s.OtherLot, start.AddSeconds(30)));
         await db.SaveChangesAsync();
-        var first = await db.Database.SqlQuery<long>($"SELECT current_wafer_count AS \"Value\" FROM production.lot_quantities WHERE lot_id = {s.Lot}").SingleAsync();
-        var second = await db.Database.SqlQuery<long>($"SELECT current_wafer_count AS \"Value\" FROM production.lot_quantities WHERE lot_id = {s.OtherLot}").SingleAsync();
+        var first = await db.Database.SqlQuery<long>(
+            $"SELECT current_wafer_count AS \"Value\" FROM production.lot_quantities WHERE lot_id = {s.Lot}")
+            .SingleAsync();
+        var second = await db.Database.SqlQuery<long>(
+            $"SELECT current_wafer_count AS \"Value\" FROM production.lot_quantities WHERE lot_id = {s.OtherLot}")
+            .SingleAsync();
         Assert.Equal(0, first);
         Assert.Equal(1, second);
     }
@@ -260,6 +339,9 @@ public sealed class SchemaTests(DatabaseFixture fixture) : IClassFixture<Databas
             await db.Database.MigrateAsync();
             Assert.Equal(db.Database.GetMigrations().Count(), (await db.Database.GetAppliedMigrationsAsync()).Count());
         }
-        finally { await scratch.DisposeAsync(); }
+        finally
+        {
+            await scratch.DisposeAsync();
+        }
     }
 }

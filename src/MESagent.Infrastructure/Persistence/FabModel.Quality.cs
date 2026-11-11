@@ -25,6 +25,7 @@ internal static partial class FabModel
             b.Property(x => x.Category).HasColumnName("category").HasMaxLength(32);
             b.HasIndex(x => new { x.Category, x.Code }).IsUnique();
         });
+
         modelBuilder.Entity<IssueType>(b =>
         {
             b.ToTable("issue_types", "quality", t =>
@@ -43,6 +44,7 @@ internal static partial class FabModel
             b.Property(x => x.IsBlocking).HasColumnName("is_blocking");
             b.HasIndex(x => x.Code).IsUnique();
         });
+
         modelBuilder.Entity<Issue>(b =>
         {
             b.ToTable("issues", "quality", t =>
@@ -57,7 +59,10 @@ internal static partial class FabModel
             b.Property(x => x.WorkOrderId).HasColumnName("work_order_id");
             b.HasOne<WorkOrder>().WithMany().HasForeignKey(x => x.WorkOrderId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.StepExecutionId).HasColumnName("step_execution_id");
-            b.HasOne<StepExecution>().WithMany().HasForeignKey(x => x.StepExecutionId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<StepExecution>()
+                .WithMany()
+                .HasForeignKey(x => x.StepExecutionId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.LotId).HasColumnName("lot_id");
             b.HasOne<Lot>().WithMany().HasForeignKey(x => x.LotId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.WaferId).HasColumnName("wafer_id");
@@ -86,6 +91,7 @@ internal static partial class FabModel
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.DispositionById).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.DispositionAt).HasColumnName("disposition_at");
         });
+
         modelBuilder.Entity<IssueAction>(b =>
         {
             b.ToTable("issue_actions", "quality", t =>
@@ -113,6 +119,7 @@ internal static partial class FabModel
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.VerifiedById).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.Notes).HasColumnName("notes");
         });
+
         modelBuilder.Entity<HoldRecord>(b =>
         {
             b.ToTable("hold_records", "quality", t =>
@@ -140,6 +147,7 @@ internal static partial class FabModel
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.ReleasedById).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.ReleaseReason).HasColumnName("release_reason");
         });
+
         modelBuilder.Entity<MaterialHold>(b =>
         {
             b.ToTable("material_holds", "quality", t =>
@@ -165,6 +173,7 @@ internal static partial class FabModel
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.ReleasedById).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.ReleaseReason).HasColumnName("release_reason");
         });
+
         modelBuilder.Entity<LotRelease>(b =>
         {
             b.ToTable("lot_releases", "quality", t =>
@@ -186,6 +195,7 @@ internal static partial class FabModel
             b.Property(x => x.IssueId).HasColumnName("issue_id");
             b.HasOne<Issue>().WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Restrict);
         });
+
         modelBuilder.Entity<InspectionPlan>(b =>
         {
             b.ToTable("inspection_plans", "quality", t =>
@@ -209,6 +219,7 @@ internal static partial class FabModel
             b.HasOne<InspectionPlan>().WithMany().HasForeignKey(x => x.RootId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
         });
+
         modelBuilder.Entity<IncomingInspection>(b =>
         {
             b.ToTable("incoming_inspections", "quality", t =>
@@ -222,7 +233,10 @@ internal static partial class FabModel
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             b.Property(x => x.RowVersion).HasColumnName("xmin").IsRowVersion();
             b.Property(x => x.InspectionPlanId).HasColumnName("inspection_plan_id");
-            b.HasOne<InspectionPlan>().WithMany().HasForeignKey(x => x.InspectionPlanId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<InspectionPlan>()
+                .WithMany()
+                .HasForeignKey(x => x.InspectionPlanId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.MaterialId).HasColumnName("material_id");
             b.HasOne<Material>().WithMany().HasForeignKey(x => x.MaterialId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.MaterialLotId).HasColumnName("material_lot_id");
@@ -244,6 +258,7 @@ internal static partial class FabModel
             b.Property(x => x.IssueId).HasColumnName("issue_id");
             b.HasOne<Issue>().WithMany().HasForeignKey(x => x.IssueId).OnDelete(DeleteBehavior.Restrict);
         });
+
         modelBuilder.Entity<InspectionResult>(b =>
         {
             b.ToTable("inspection_results", "quality", t =>
@@ -256,7 +271,10 @@ internal static partial class FabModel
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             b.Property(x => x.RowVersion).HasColumnName("xmin").IsRowVersion();
             b.Property(x => x.InspectionId).HasColumnName("inspection_id");
-            b.HasOne<IncomingInspection>().WithMany().HasForeignKey(x => x.InspectionId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<IncomingInspection>()
+                .WithMany()
+                .HasForeignKey(x => x.InspectionId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.CriterionName).HasColumnName("criterion_name").HasMaxLength(200);
             b.Property(x => x.CriterionType).HasColumnName("criterion_type").HasMaxLength(32);
             b.Property(x => x.Required).HasColumnName("required");
@@ -269,6 +287,7 @@ internal static partial class FabModel
             b.Property(x => x.IsPassed).HasColumnName("is_passed");
             b.Property(x => x.Notes).HasColumnName("notes");
         });
+
         modelBuilder.Entity<QualityCheckTemplate>(b =>
         {
             b.ToTable("quality_check_templates", "quality", t =>
@@ -291,6 +310,7 @@ internal static partial class FabModel
             b.Property(x => x.Parameters).HasColumnName("parameters").HasColumnType("jsonb");
             b.HasIndex(x => new { x.RouteVersionId, x.Name, x.Version }).IsUnique();
         });
+
         modelBuilder.Entity<SpecificationVersion>(b =>
         {
             b.ToTable("specification_versions", "quality", t =>
@@ -315,6 +335,7 @@ internal static partial class FabModel
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.ReleasedById).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(x => new { x.ParameterCode, x.Version }).IsUnique();
         });
+
         modelBuilder.Entity<QualityCheck>(b =>
         {
             b.ToTable("quality_checks", "quality", t =>
@@ -331,7 +352,10 @@ internal static partial class FabModel
             b.Property(x => x.ProcessRunId).HasColumnName("process_run_id");
             b.HasOne<ProcessRun>().WithMany().HasForeignKey(x => x.ProcessRunId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.QualityCheckTemplateId).HasColumnName("quality_check_template_id");
-            b.HasOne<QualityCheckTemplate>().WithMany().HasForeignKey(x => x.QualityCheckTemplateId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<QualityCheckTemplate>()
+                .WithMany()
+                .HasForeignKey(x => x.QualityCheckTemplateId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.CheckedById).HasColumnName("checked_by_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.CheckedById).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.CheckedAt).HasColumnName("checked_at");
@@ -339,6 +363,7 @@ internal static partial class FabModel
             b.Property(x => x.AllPassed).HasColumnName("all_passed");
             b.Property(x => x.Notes).HasColumnName("notes");
         });
+
         modelBuilder.Entity<Measurement>(b =>
         {
             b.ToTable("measurements", "quality", t =>
@@ -363,7 +388,10 @@ internal static partial class FabModel
             b.Property(x => x.SampleNumber).HasColumnName("sample_number");
             b.Property(x => x.SamplePoint).HasColumnName("sample_point").HasMaxLength(64);
             b.Property(x => x.SpecificationVersionId).HasColumnName("specification_version_id");
-            b.HasOne<SpecificationVersion>().WithMany().HasForeignKey(x => x.SpecificationVersionId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<SpecificationVersion>()
+                .WithMany()
+                .HasForeignKey(x => x.SpecificationVersionId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.ParameterCode).HasColumnName("parameter_code").HasMaxLength(64);
             b.Property(x => x.ParameterType).HasColumnName("parameter_type").HasMaxLength(32);
             b.Property(x => x.Unit).HasColumnName("unit").HasMaxLength(32);
@@ -375,10 +403,14 @@ internal static partial class FabModel
             b.Property(x => x.IsPassed).HasColumnName("is_passed");
             b.Property(x => x.MeasuredAt).HasColumnName("measured_at");
             b.Property(x => x.MeasurementEquipmentId).HasColumnName("measurement_equipment_id");
-            b.HasOne<Equipment>().WithMany().HasForeignKey(x => x.MeasurementEquipmentId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<Equipment>()
+                .WithMany()
+                .HasForeignKey(x => x.MeasurementEquipmentId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.RecordedById).HasColumnName("recorded_by_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.RecordedById).OnDelete(DeleteBehavior.Restrict);
         });
+
         modelBuilder.Entity<QualityTrigger>(b =>
         {
             b.ToTable("quality_triggers", "quality", t =>
@@ -392,7 +424,10 @@ internal static partial class FabModel
             b.Property(x => x.Name).HasColumnName("name").HasMaxLength(200);
             b.Property(x => x.TriggerType).HasColumnName("trigger_type").HasMaxLength(32);
             b.Property(x => x.QualityCheckTemplateId).HasColumnName("quality_check_template_id");
-            b.HasOne<QualityCheckTemplate>().WithMany().HasForeignKey(x => x.QualityCheckTemplateId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<QualityCheckTemplate>()
+                .WithMany()
+                .HasForeignKey(x => x.QualityCheckTemplateId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.EquipmentId).HasColumnName("equipment_id");
             b.HasOne<Equipment>().WithMany().HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.ProductId).HasColumnName("product_id");
@@ -403,6 +438,7 @@ internal static partial class FabModel
             b.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             b.Property(x => x.Version).HasColumnName("version");
         });
+
         modelBuilder.Entity<QualityTask>(b =>
         {
             b.ToTable("quality_tasks", "quality", t =>
@@ -414,7 +450,10 @@ internal static partial class FabModel
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             b.Property(x => x.RowVersion).HasColumnName("xmin").IsRowVersion();
             b.Property(x => x.QualityTriggerId).HasColumnName("quality_trigger_id");
-            b.HasOne<QualityTrigger>().WithMany().HasForeignKey(x => x.QualityTriggerId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<QualityTrigger>()
+                .WithMany()
+                .HasForeignKey(x => x.QualityTriggerId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.Status).HasColumnName("status").HasMaxLength(32);
             b.Property(x => x.LotId).HasColumnName("lot_id");
             b.HasOne<Lot>().WithMany().HasForeignKey(x => x.LotId).OnDelete(DeleteBehavior.Restrict);
@@ -430,6 +469,7 @@ internal static partial class FabModel
             b.Property(x => x.CompletedById).HasColumnName("completed_by_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.CompletedById).OnDelete(DeleteBehavior.Restrict);
         });
+
         modelBuilder.Entity<ScrapEntry>(b =>
         {
             b.ToTable("scrap_entries", "quality", t =>
@@ -444,7 +484,10 @@ internal static partial class FabModel
             b.Property(x => x.WorkOrderId).HasColumnName("work_order_id");
             b.HasOne<WorkOrder>().WithMany().HasForeignKey(x => x.WorkOrderId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.StepExecutionId).HasColumnName("step_execution_id");
-            b.HasOne<StepExecution>().WithMany().HasForeignKey(x => x.StepExecutionId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<StepExecution>()
+                .WithMany()
+                .HasForeignKey(x => x.StepExecutionId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.ReasonCodeId).HasColumnName("reason_code_id");
             b.HasOne<ReasonCode>().WithMany().HasForeignKey(x => x.ReasonCodeId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.Quantity).HasColumnName("quantity");
@@ -455,6 +498,7 @@ internal static partial class FabModel
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.ReportedById).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.ReportedAt).HasColumnName("reported_at");
         });
+
         modelBuilder.Entity<WaferDisposition>(b =>
         {
             b.ToTable("wafer_dispositions", "quality", t =>

@@ -33,6 +33,7 @@ internal static partial class FabModel
             b.Property(x => x.ReasonCodeId).HasColumnName("reason_code_id");
             b.HasOne<ReasonCode>().WithMany().HasForeignKey(x => x.ReasonCodeId).OnDelete(DeleteBehavior.Restrict);
         });
+
         modelBuilder.Entity<BusinessEvent>(b =>
         {
             b.ToTable("business_events", "audit", t =>
@@ -52,6 +53,7 @@ internal static partial class FabModel
             b.Property(x => x.OccurredAt).HasColumnName("occurred_at");
             b.Property(x => x.CorrelationId).HasColumnName("correlation_id");
         });
+
         modelBuilder.Entity<Attachment>(b =>
         {
             b.ToTable("attachments", "audit", t =>
@@ -73,6 +75,7 @@ internal static partial class FabModel
             b.Property(x => x.UploadedById).HasColumnName("uploaded_by_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.UploadedById).OnDelete(DeleteBehavior.Restrict);
         });
+
         modelBuilder.Entity<CommandReceipt>(b =>
         {
             b.ToTable("command_receipts", "audit", t =>
@@ -94,6 +97,7 @@ internal static partial class FabModel
             b.Property(x => x.CompletedAt).HasColumnName("completed_at");
             b.HasIndex(x => new { x.Scope, x.IdempotencyKey }).IsUnique();
         });
+
         modelBuilder.Entity<OutboxMessage>(b =>
         {
             b.ToTable("outbox_messages", "audit", t =>

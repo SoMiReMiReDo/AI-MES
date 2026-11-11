@@ -24,6 +24,7 @@ internal static partial class FabModel
             b.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             b.HasIndex(x => x.Code).IsUnique();
         });
+
         modelBuilder.Entity<EquipmentGroup>(b =>
         {
             b.ToTable("equipment_groups", "equipment", t =>
@@ -42,6 +43,7 @@ internal static partial class FabModel
             b.HasOne<Fab>().WithMany().HasForeignKey(x => x.FabId).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(x => new { x.FabId, x.Code }).IsUnique();
         });
+
         modelBuilder.Entity<Equipment>(b =>
         {
             b.ToTable("equipment", "equipment", t =>
@@ -61,12 +63,19 @@ internal static partial class FabModel
             b.Property(x => x.LineId).HasColumnName("line_id");
             b.HasOne<Line>().WithMany().HasForeignKey(x => x.LineId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.EquipmentGroupId).HasColumnName("equipment_group_id");
-            b.HasOne<EquipmentGroup>().WithMany().HasForeignKey(x => x.EquipmentGroupId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<EquipmentGroup>()
+                .WithMany()
+                .HasForeignKey(x => x.EquipmentGroupId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.EquipmentTypeId).HasColumnName("equipment_type_id");
-            b.HasOne<EquipmentType>().WithMany().HasForeignKey(x => x.EquipmentTypeId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<EquipmentType>()
+                .WithMany()
+                .HasForeignKey(x => x.EquipmentTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.OperationalState).HasColumnName("operational_state").HasMaxLength(32);
             b.HasIndex(x => x.Code).IsUnique();
         });
+
         modelBuilder.Entity<Chamber>(b =>
         {
             b.ToTable("chambers", "equipment", t =>
@@ -85,6 +94,7 @@ internal static partial class FabModel
             b.HasOne<Equipment>().WithMany().HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(x => new { x.EquipmentId, x.Code }).IsUnique();
         });
+
         modelBuilder.Entity<EquipmentEvent>(b =>
         {
             b.ToTable("equipment_events", "equipment", t =>
@@ -98,7 +108,10 @@ internal static partial class FabModel
             b.Property(x => x.EquipmentId).HasColumnName("equipment_id");
             b.HasOne<Equipment>().WithMany().HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.MachineConnectionId).HasColumnName("machine_connection_id");
-            b.HasOne<MachineConnection>().WithMany().HasForeignKey(x => x.MachineConnectionId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<MachineConnection>()
+                .WithMany()
+                .HasForeignKey(x => x.MachineConnectionId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.EventType).HasColumnName("event_type").HasMaxLength(32);
             b.Property(x => x.StateFrom).HasColumnName("state_from").HasMaxLength(32);
             b.Property(x => x.StateTo).HasColumnName("state_to").HasMaxLength(32);
@@ -108,6 +121,7 @@ internal static partial class FabModel
             b.Property(x => x.CorrelationId).HasColumnName("correlation_id");
             b.Property(x => x.IsSimulated).HasColumnName("is_simulated");
         });
+
         modelBuilder.Entity<EquipmentState>(b =>
         {
             b.ToTable("equipment_states", "equipment", t =>
@@ -127,6 +141,7 @@ internal static partial class FabModel
             b.Property(x => x.Source).HasColumnName("source").HasMaxLength(32);
             b.Property(x => x.Metadata).HasColumnName("metadata").HasColumnType("jsonb");
         });
+
         modelBuilder.Entity<Downtime>(b =>
         {
             b.ToTable("downtimes", "equipment", t =>
@@ -156,6 +171,7 @@ internal static partial class FabModel
             b.Property(x => x.ClassifiedById).HasColumnName("classified_by_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.ClassifiedById).OnDelete(DeleteBehavior.Restrict);
         });
+
         modelBuilder.Entity<Tool>(b =>
         {
             b.ToTable("tools", "equipment", t =>
@@ -171,11 +187,15 @@ internal static partial class FabModel
             b.Property(x => x.Description).HasColumnName("description");
             b.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             b.Property(x => x.EquipmentTypeId).HasColumnName("equipment_type_id");
-            b.HasOne<EquipmentType>().WithMany().HasForeignKey(x => x.EquipmentTypeId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<EquipmentType>()
+                .WithMany()
+                .HasForeignKey(x => x.EquipmentTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.Status).HasColumnName("status").HasMaxLength(32);
             b.Property(x => x.NextServiceAt).HasColumnName("next_service_at");
             b.HasIndex(x => x.Code).IsUnique();
         });
+
         modelBuilder.Entity<MaintenanceSchedule>(b =>
         {
             b.ToTable("maintenance_schedules", "equipment", t =>
@@ -202,6 +222,7 @@ internal static partial class FabModel
             b.Property(x => x.NextDueAt).HasColumnName("next_due_at");
             b.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
         });
+
         modelBuilder.Entity<MaintenanceEvent>(b =>
         {
             b.ToTable("maintenance_events", "equipment", t =>
@@ -222,7 +243,10 @@ internal static partial class FabModel
             b.Property(x => x.EquipmentId).HasColumnName("equipment_id");
             b.HasOne<Equipment>().WithMany().HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.ScheduleId).HasColumnName("schedule_id");
-            b.HasOne<MaintenanceSchedule>().WithMany().HasForeignKey(x => x.ScheduleId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<MaintenanceSchedule>()
+                .WithMany()
+                .HasForeignKey(x => x.ScheduleId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.AssignedToId).HasColumnName("assigned_to_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.AssignedToId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.ScheduledAt).HasColumnName("scheduled_at");
@@ -230,6 +254,7 @@ internal static partial class FabModel
             b.Property(x => x.CompletedAt).HasColumnName("completed_at");
             b.Property(x => x.ResolutionNotes).HasColumnName("resolution_notes");
         });
+
         modelBuilder.Entity<EquipmentQualification>(b =>
         {
             b.ToTable("equipment_qualifications", "equipment", t =>
@@ -246,13 +271,17 @@ internal static partial class FabModel
             b.Property(x => x.OperationId).HasColumnName("operation_id");
             b.HasOne<Operation>().WithMany().HasForeignKey(x => x.OperationId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.RecipeVersionId).HasColumnName("recipe_version_id");
-            b.HasOne<RecipeVersion>().WithMany().HasForeignKey(x => x.RecipeVersionId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<RecipeVersion>()
+                .WithMany()
+                .HasForeignKey(x => x.RecipeVersionId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.QualificationStatus).HasColumnName("qualification_status").HasMaxLength(32);
             b.Property(x => x.ValidFrom).HasColumnName("valid_from");
             b.Property(x => x.ValidTo).HasColumnName("valid_to");
             b.Property(x => x.QualifiedById).HasColumnName("qualified_by_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.QualifiedById).OnDelete(DeleteBehavior.Restrict);
         });
+
         modelBuilder.Entity<WorkerQualification>(b =>
         {
             b.ToTable("worker_qualifications", "equipment", t =>
@@ -269,13 +298,17 @@ internal static partial class FabModel
             b.Property(x => x.OperationId).HasColumnName("operation_id");
             b.HasOne<Operation>().WithMany().HasForeignKey(x => x.OperationId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.RecipeVersionId).HasColumnName("recipe_version_id");
-            b.HasOne<RecipeVersion>().WithMany().HasForeignKey(x => x.RecipeVersionId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<RecipeVersion>()
+                .WithMany()
+                .HasForeignKey(x => x.RecipeVersionId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.QualificationStatus).HasColumnName("qualification_status").HasMaxLength(32);
             b.Property(x => x.ValidFrom).HasColumnName("valid_from");
             b.Property(x => x.ValidTo).HasColumnName("valid_to");
             b.Property(x => x.QualifiedById).HasColumnName("qualified_by_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.QualifiedById).OnDelete(DeleteBehavior.Restrict);
         });
+
         modelBuilder.Entity<Reticle>(b =>
         {
             b.ToTable("reticles", "equipment", t =>
@@ -296,6 +329,7 @@ internal static partial class FabModel
             b.Property(x => x.UsageCount).HasColumnName("usage_count");
             b.HasIndex(x => new { x.Code, x.Revision }).IsUnique();
         });
+
         modelBuilder.Entity<ReticleUsage>(b =>
         {
             b.ToTable("reticle_usages", "equipment", t =>
@@ -314,6 +348,7 @@ internal static partial class FabModel
             b.Property(x => x.LoadedAt).HasColumnName("loaded_at");
             b.Property(x => x.UnloadedAt).HasColumnName("unloaded_at");
         });
+
         modelBuilder.Entity<MaterialMount>(b =>
         {
             b.ToTable("material_mounts", "equipment", t =>

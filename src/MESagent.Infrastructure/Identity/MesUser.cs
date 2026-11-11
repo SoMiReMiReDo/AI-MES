@@ -13,4 +13,8 @@ public sealed class MesUser : IdentityUser<Guid>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
-public sealed class MesRole : IdentityRole<Guid>;
+public sealed class MesRole : IdentityRole<Guid>
+{
+    public bool IsActive { get; set; } = true;
+    public bool IsSystem { get; set; }
+}

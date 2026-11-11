@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable></PropertyGroup>
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/MESagent.Infrastructure/MESagent.Infrastructure.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

@@ -7577,6 +7577,10 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("device_uuid");
 
+                    b.Property<Guid>("FabId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fab_id");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -7615,6 +7619,9 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.HasIndex("WorkstationId");
+
+                    b.HasIndex("FabId", "Code")
+                        .IsUnique();
 
                     b.ToTable("terminals", "organization");
                 });
@@ -8790,6 +8797,14 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("concurrency_stamp");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_system");
+
                     b.Property<string>("Name")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
@@ -8918,9 +8933,123 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
 
-                    b.HasIndex("WorkerId");
+                    b.HasIndex("WorkerId")
+                        .IsUnique()
+                        .HasFilter("worker_id IS NOT NULL");
 
                     b.ToTable("users", "security");
+                });
+
+            modelBuilder.Entity("MESagent.Infrastructure.Identity.SecurityEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("event_type");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("outcome");
+
+                    b.Property<Guid?>("SessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("session_id");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAt");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("security_events", "security");
+                });
+
+            modelBuilder.Entity("MESagent.Infrastructure.Identity.UserSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("AbsoluteExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("absolute_expires_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("IdleExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("idle_expires_at");
+
+                    b.Property<DateTime>("LastActivityAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_activity_at");
+
+                    b.Property<bool>("Restricted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("restricted");
+
+                    b.Property<string>("RevokeReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("revoke_reason");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<string>("SecurityStamp")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("security_stamp");
+
+                    b.Property<Guid?>("TerminalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("terminal_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TerminalId");
+
+                    b.HasIndex("UserId", "RevokedAt");
+
+                    b.ToTable("user_sessions", "security", t =>
+                        {
+                            t.HasCheckConstraint("ck_session_times", "absolute_expires_at > created_at AND idle_expires_at <= absolute_expires_at");
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -10658,6 +10787,12 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("MESagent.Domain.Entities.Terminal", b =>
                 {
+                    b.HasOne("MESagent.Domain.Entities.Fab", null)
+                        .WithMany()
+                        .HasForeignKey("FabId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("MESagent.Domain.Entities.Workstation", null)
                         .WithMany()
                         .HasForeignKey("WorkstationId")
@@ -10990,6 +11125,28 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("WorkerId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("MESagent.Infrastructure.Identity.SecurityEvent", b =>
+                {
+                    b.HasOne("MESagent.Infrastructure.Identity.MesUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("MESagent.Infrastructure.Identity.UserSession", b =>
+                {
+                    b.HasOne("MESagent.Domain.Entities.Terminal", null)
+                        .WithMany()
+                        .HasForeignKey("TerminalId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MESagent.Infrastructure.Identity.MesUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>

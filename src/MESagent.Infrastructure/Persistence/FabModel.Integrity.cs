@@ -32,7 +32,10 @@ internal static partial class FabModel
         b.Entity<StepExecution>().HasIndex(x => x.LotId).IsUnique().HasFilter("exited_at IS NULL");
         b.Entity<EquipmentState>().HasIndex(x => x.EquipmentId).IsUnique().HasFilter("ended_at IS NULL");
         b.Entity<HoldRecord>().HasIndex(x => new { x.LotId, x.HeldAt }).HasFilter("released_at IS NULL");
-        b.Entity<WarehouseStock>().HasIndex(x => new { x.WarehouseId, x.MaterialId, x.ProductId, x.MaterialLotId }).IsUnique().AreNullsDistinct(false);
+        b.Entity<WarehouseStock>()
+            .HasIndex(x => new { x.WarehouseId, x.MaterialId, x.ProductId, x.MaterialLotId })
+            .IsUnique()
+            .AreNullsDistinct(false);
         b.Entity<MaterialLot>().HasAlternateKey(x => new { x.Id, x.MaterialId });
         b.Entity<WarehouseStock>().HasOne<MaterialLot>().WithMany()
             .HasForeignKey(x => new { x.MaterialLotId, x.MaterialId })
@@ -44,7 +47,12 @@ internal static partial class FabModel
         b.Entity<AuditLog>().HasIndex(x => new { x.EntityType, x.EntityId, x.OccurredAt });
         b.Entity<AuditLog>().HasIndex(x => x.CorrelationId);
         b.Entity<BusinessEvent>().HasIndex(x => x.CorrelationId);
-        b.Entity<OutboxMessage>().HasIndex(x => new { x.NextAttemptAt, x.OccurredAt }).HasFilter("published_at IS NULL");
-        b.Entity<MachineMessage>().HasIndex(x => new { x.MachineConnectionId, x.SourceMessageId }).IsUnique().HasFilter("source_message_id IS NOT NULL");
+        b.Entity<OutboxMessage>()
+            .HasIndex(x => new { x.NextAttemptAt, x.OccurredAt })
+            .HasFilter("published_at IS NULL");
+        b.Entity<MachineMessage>()
+            .HasIndex(x => new { x.MachineConnectionId, x.SourceMessageId })
+            .IsUnique()
+            .HasFilter("source_message_id IS NOT NULL");
     }
 }

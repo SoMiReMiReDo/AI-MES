@@ -391,6 +391,12 @@
           "System.Composition.Runtime": "9.0.0"
         }
       },
+      "mesagent.application": {
+        "type": "Project",
+        "dependencies": {
+          "MESagent.Domain": "[1.0.0, )"
+        }
+      },
       "mesagent.domain": {
         "type": "Project"
       }

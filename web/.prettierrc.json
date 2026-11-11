@@ -1,0 +1,14 @@
+{
+  "printWidth": 80,
+  "semi": true,
+  "singleQuote": false,
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": ["**/*.ts", "**/*.tsx", "**/*.css"],
+      "options": {
+        "tabWidth": 4
+      }
+    }
+  ]
+}

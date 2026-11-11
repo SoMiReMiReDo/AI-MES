@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../MESagent.Infrastructure/MESagent.Infrastructure.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />

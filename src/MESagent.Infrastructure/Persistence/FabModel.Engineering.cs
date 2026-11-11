@@ -28,6 +28,7 @@ internal static partial class FabModel
             b.Property(x => x.ExternalSystem).HasColumnName("external_system").HasMaxLength(64);
             b.HasIndex(x => x.Code).IsUnique();
         });
+
         modelBuilder.Entity<Route>(b =>
         {
             b.ToTable("routes", "engineering", t =>
@@ -46,6 +47,7 @@ internal static partial class FabModel
             b.HasOne<Product>().WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(x => x.Code).IsUnique();
         });
+
         modelBuilder.Entity<RouteVersion>(b =>
         {
             b.ToTable("route_versions", "engineering", t =>
@@ -69,6 +71,7 @@ internal static partial class FabModel
             b.Property(x => x.ChangeReason).HasColumnName("change_reason");
             b.HasIndex(x => new { x.RouteId, x.Version }).IsUnique();
         });
+
         modelBuilder.Entity<ProductRevision>(b =>
         {
             b.ToTable("product_revisions", "engineering", t =>
@@ -97,6 +100,7 @@ internal static partial class FabModel
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.ReleasedById).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(x => new { x.ProductId, x.RevisionCode }).IsUnique();
         });
+
         modelBuilder.Entity<Operation>(b =>
         {
             b.ToTable("operations", "engineering", t =>
@@ -113,11 +117,15 @@ internal static partial class FabModel
             b.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             b.Property(x => x.SegmentType).HasColumnName("segment_type").HasMaxLength(32);
             b.Property(x => x.EquipmentTypeId).HasColumnName("equipment_type_id");
-            b.HasOne<EquipmentType>().WithMany().HasForeignKey(x => x.EquipmentTypeId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<EquipmentType>()
+                .WithMany()
+                .HasForeignKey(x => x.EquipmentTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.StandardInstruction).HasColumnName("standard_instruction");
             b.Property(x => x.Parameters).HasColumnName("parameters").HasColumnType("jsonb");
             b.HasIndex(x => x.Code).IsUnique();
         });
+
         modelBuilder.Entity<RouteStep>(b =>
         {
             b.ToTable("route_steps", "engineering", t =>
@@ -137,11 +145,15 @@ internal static partial class FabModel
             b.Property(x => x.Name).HasColumnName("name").HasMaxLength(200);
             b.Property(x => x.Instruction).HasColumnName("instruction");
             b.Property(x => x.EquipmentTypeId).HasColumnName("equipment_type_id");
-            b.HasOne<EquipmentType>().WithMany().HasForeignKey(x => x.EquipmentTypeId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<EquipmentType>()
+                .WithMany()
+                .HasForeignKey(x => x.EquipmentTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.RequiresConfirmation).HasColumnName("requires_confirmation");
             b.Property(x => x.Parameters).HasColumnName("parameters").HasColumnType("jsonb");
             b.HasIndex(x => new { x.RouteVersionId, x.SequenceNo }).IsUnique();
         });
+
         modelBuilder.Entity<Recipe>(b =>
         {
             b.ToTable("recipes", "engineering", t =>
@@ -158,6 +170,7 @@ internal static partial class FabModel
             b.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             b.HasIndex(x => x.Code).IsUnique();
         });
+
         modelBuilder.Entity<RecipeVersion>(b =>
         {
             b.ToTable("recipe_versions", "engineering", t =>
@@ -179,6 +192,7 @@ internal static partial class FabModel
             b.Property(x => x.Parameters).HasColumnName("parameters").HasColumnType("jsonb");
             b.HasIndex(x => new { x.RecipeId, x.Version }).IsUnique();
         });
+
         modelBuilder.Entity<RecipeApplicability>(b =>
         {
             b.ToTable("recipe_applicabilities", "engineering", t =>
@@ -191,7 +205,10 @@ internal static partial class FabModel
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             b.Property(x => x.RowVersion).HasColumnName("xmin").IsRowVersion();
             b.Property(x => x.RecipeVersionId).HasColumnName("recipe_version_id");
-            b.HasOne<RecipeVersion>().WithMany().HasForeignKey(x => x.RecipeVersionId).OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<RecipeVersion>()
+                .WithMany()
+                .HasForeignKey(x => x.RecipeVersionId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.RouteStepId).HasColumnName("route_step_id");
             b.HasOne<RouteStep>().WithMany().HasForeignKey(x => x.RouteStepId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.EquipmentId).HasColumnName("equipment_id");
@@ -199,6 +216,7 @@ internal static partial class FabModel
             b.Property(x => x.EffectiveFrom).HasColumnName("effective_from");
             b.Property(x => x.EffectiveTo).HasColumnName("effective_to");
         });
+
         modelBuilder.Entity<NumberSequence>(b =>
         {
             b.ToTable("number_sequences", "engineering", t =>
@@ -223,6 +241,7 @@ internal static partial class FabModel
             b.Property(x => x.LastResetKey).HasColumnName("last_reset_key").HasMaxLength(64);
             b.HasIndex(x => x.Name).IsUnique();
         });
+
         modelBuilder.Entity<OutputDefinition>(b =>
         {
             b.ToTable("output_definitions", "engineering", t =>
@@ -244,6 +263,7 @@ internal static partial class FabModel
             b.Property(x => x.SortOrder).HasColumnName("sort_order");
             b.HasIndex(x => new { x.RouteStepId, x.Key }).IsUnique();
         });
+
         modelBuilder.Entity<ChecklistItem>(b =>
         {
             b.ToTable("checklist_items", "engineering", t =>
@@ -260,6 +280,7 @@ internal static partial class FabModel
             b.Property(x => x.IsRequired).HasColumnName("is_required");
             b.Property(x => x.SortOrder).HasColumnName("sort_order");
         });
+
         modelBuilder.Entity<EngineeringDocument>(b =>
         {
             b.ToTable("engineering_documents", "engineering", t =>
@@ -289,6 +310,7 @@ internal static partial class FabModel
             b.Property(x => x.UploadedById).HasColumnName("uploaded_by_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.UploadedById).OnDelete(DeleteBehavior.Restrict);
         });
+
         modelBuilder.Entity<QTimeRule>(b =>
         {
             b.ToTable("q_time_rules", "engineering", t =>

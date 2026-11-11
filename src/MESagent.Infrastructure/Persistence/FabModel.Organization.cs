@@ -25,6 +25,7 @@ internal static partial class FabModel
             b.Property(x => x.Timezone).HasColumnName("timezone").HasMaxLength(64);
             b.HasIndex(x => x.Code).IsUnique();
         });
+
         modelBuilder.Entity<Area>(b =>
         {
             b.ToTable("areas", "organization", t =>
@@ -43,6 +44,7 @@ internal static partial class FabModel
             b.HasOne<Fab>().WithMany().HasForeignKey(x => x.FabId).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(x => new { x.FabId, x.Code }).IsUnique();
         });
+
         modelBuilder.Entity<Line>(b =>
         {
             b.ToTable("lines", "organization", t =>
@@ -61,6 +63,7 @@ internal static partial class FabModel
             b.HasOne<Area>().WithMany().HasForeignKey(x => x.AreaId).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(x => new { x.AreaId, x.Code }).IsUnique();
         });
+
         modelBuilder.Entity<Location>(b =>
         {
             b.ToTable("locations", "organization", t =>
@@ -80,6 +83,7 @@ internal static partial class FabModel
             b.Property(x => x.LocationType).HasColumnName("location_type").HasMaxLength(32);
             b.HasIndex(x => new { x.AreaId, x.Code }).IsUnique();
         });
+
         modelBuilder.Entity<Worker>(b =>
         {
             b.ToTable("workers", "organization", t =>
@@ -98,6 +102,7 @@ internal static partial class FabModel
             b.HasOne<Fab>().WithMany().HasForeignKey(x => x.FabId).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(x => new { x.FabId, x.Code }).IsUnique();
         });
+
         modelBuilder.Entity<Workstation>(b =>
         {
             b.ToTable("workstations", "organization", t =>
@@ -118,6 +123,7 @@ internal static partial class FabModel
             b.HasOne<Area>().WithMany().HasForeignKey(x => x.AreaId).OnDelete(DeleteBehavior.Restrict);
             b.HasIndex(x => new { x.AreaId, x.Code }).IsUnique();
         });
+
         modelBuilder.Entity<Terminal>(b =>
         {
             b.ToTable("terminals", "organization", t =>
@@ -138,7 +144,11 @@ internal static partial class FabModel
             b.Property(x => x.LastSeenAt).HasColumnName("last_seen_at");
             b.Property(x => x.AppVersion).HasColumnName("app_version").HasMaxLength(64);
             b.HasIndex(x => x.DeviceUuid).IsUnique();
+            b.Property(x => x.FabId).HasColumnName("fab_id");
+            b.HasOne<Fab>().WithMany().HasForeignKey(x => x.FabId).OnDelete(DeleteBehavior.Restrict);
+            b.HasIndex(x => new { x.FabId, x.Code }).IsUnique();
         });
+
         modelBuilder.Entity<Shift>(b =>
         {
             b.ToTable("shifts", "organization", t =>
@@ -163,6 +173,7 @@ internal static partial class FabModel
             b.Property(x => x.SortOrder).HasColumnName("sort_order");
             b.HasIndex(x => new { x.FabId, x.Code }).IsUnique();
         });
+
         modelBuilder.Entity<ShiftHandover>(b =>
         {
             b.ToTable("shift_handovers", "organization", t =>

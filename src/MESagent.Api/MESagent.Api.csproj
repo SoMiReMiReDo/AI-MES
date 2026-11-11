@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="../MESagent.Application/MESagent.Application.csproj" />
+    <ProjectReference Include="../MESagent.Infrastructure/MESagent.Infrastructure.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+</Project>

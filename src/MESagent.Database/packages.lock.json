@@ -358,12 +358,19 @@
           "System.Composition.Runtime": "9.0.0"
         }
       },
+      "mesagent.application": {
+        "type": "Project",
+        "dependencies": {
+          "MESagent.Domain": "[1.0.0, )"
+        }
+      },
       "mesagent.domain": {
         "type": "Project"
       },
       "mesagent.infrastructure": {
         "type": "Project",
         "dependencies": {
+          "MESagent.Application": "[1.0.0, )",
           "MESagent.Domain": "[1.0.0, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.12, )",
           "Microsoft.EntityFrameworkCore": "[10.0.12, )",
