@@ -1,0 +1,17 @@
+DROP TRIGGER protect_wafer_identity ON production.wafers;
+DROP FUNCTION production.protect_wafer_identity();
+DROP TRIGGER protect_managed_lot ON production.lots;
+DROP FUNCTION production.protect_managed_lot();
+DROP TRIGGER protect_membership_interval ON production.lot_memberships;
+DROP TRIGGER protect_load_interval ON production.carrier_loads;
+DROP FUNCTION production.protect_production_interval();
+DROP TRIGGER validate_membership_scope ON production.lot_memberships;
+DROP FUNCTION production.validate_membership_scope();
+DROP TRIGGER validate_load_scope ON production.carrier_loads;
+DROP FUNCTION production.validate_load_scope();
+DROP TRIGGER immutable_history ON production.carrier_movements;
+ALTER TABLE production.carriers DROP CONSTRAINT ck_carrier_wafer_size;
+ALTER TABLE production.wafers DROP CONSTRAINT ck_wafer_stable_scope;
+DELETE FROM security.role_permissions WHERE permission_id IN (SELECT id FROM security.permissions WHERE code LIKE 'production.%');
+DELETE FROM security.user_permissions WHERE permission_id IN (SELECT id FROM security.permissions WHERE code LIKE 'production.%');
+DELETE FROM security.permissions WHERE code LIKE 'production.%';

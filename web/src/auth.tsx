@@ -3,6 +3,7 @@ import { Alert, Button, Form, Input } from "antd";
 import { useState } from "react";
 import { api, refreshCsrf, signIn } from "./api";
 import { Brand } from "./shared";
+import { ThemeToggle } from "./theme";
 
 export function Login({
     onDone,
@@ -16,6 +17,7 @@ export function Login({
 
     return (
         <div className="login-scene">
+            <ThemeToggle className="theme-corner" />
             <section className="login-intro">
                 <div className="eyebrow">CONNECTED MANUFACTURING</div>
                 <h1>

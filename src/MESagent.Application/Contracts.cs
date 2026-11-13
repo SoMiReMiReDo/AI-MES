@@ -92,3 +92,5 @@ public sealed class OrgRow
     public string Etag =>
         "\"" + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(Version.ToString())) + "\"";
 }
+
+public sealed record EngineeringFile(byte[] Content, string Filename);

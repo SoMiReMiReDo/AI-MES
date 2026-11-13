@@ -271,7 +271,9 @@ public sealed partial class OrganizationIdentityAccessControlBackend(
     public async Task<OrganizationIdentityAccessControlResult> Execute(RequestActor a, OrganizationIdentityAccessControlRequest r)
     {
         actor = a;
-        await using var tx = await db.Database.BeginTransactionAsync();
+        var isolation = r.Method == "GET" && r.Path != "auth/me"
+            ? System.Data.IsolationLevel.RepeatableRead : System.Data.IsolationLevel.ReadCommitted;
+        await using var tx = await db.Database.BeginTransactionAsync(isolation);
         // Serializes the small OrganizationIdentityAccessControl administrative workload and its shared parent/security invariants.
         // All mutations, including login and bootstrap, use this same database lock.
         if (r.Method != "GET" || r.Path == "auth/me")
@@ -287,7 +289,16 @@ public sealed partial class OrganizationIdentityAccessControlBackend(
             Fail(403, "PasswordChangeRequired", "请先修改初始密码");
         await LoadAccess();
         OrganizationIdentityAccessControlResult result;
-        if (r.Path.StartsWith("organization/"))
+        if (r.Path.StartsWith("execution/") || r.Path.StartsWith("equipment/"))
+            result = await new MESagent.Infrastructure.DispatchAndProductionExecution.ExecutionBackend(
+                db, options.DeploymentFabId, actor, Require, p => hasScope && permissions.Contains(p), clock).Execute(r);
+        else if (r.Path.StartsWith("production/"))
+            result = await new MESagent.Infrastructure.LotWaferCarrierGenealogy.ProductionBackend(
+                db, options.DeploymentFabId, actor, Require, p => hasScope && permissions.Contains(p), clock).Execute(r);
+        else if (r.Path.StartsWith("engineering/") || r.Path.StartsWith("planning/"))
+            result = await new MESagent.Infrastructure.ProductProcessVersionManagement.ManufacturingBackend(
+                db, options.DeploymentFabId, actor, Require, clock).Execute(r);
+        else if (r.Path.StartsWith("organization/"))
             result = await Organization(r);
         else if (r.Path.StartsWith("security/"))
             result = await Security(r);

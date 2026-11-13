@@ -1,6 +1,6 @@
 # MESagent
 
-面向半导体制造的 MES + Agent + WebUI 项目，采用 C# 后端并以 Docker 交付。已建立 PostgreSQL 18 + EF Core 10 数据基础，并完成 Application/API/React WebUI 初始化及 组织结构、人员与场所、账号会话及角色权限 的组织、账号与权限功能。Agent、生产流程和 OrganizationIdentityAccessControl 扩展功能尚未实现；Docker 打包按用户要求后置。
+面向半导体制造的 MES + Agent + WebUI 项目，采用 C# 后端并以 Docker 交付。已建立 PostgreSQL 18 + EF Core 10，并完成身份权限、工艺/工单、批次/载具/血缘及 F5 首版派工过站的 API 与 React WebUI。完整质量处置、设备资源、Agent 和 F1 扩展功能待后续；Docker 打包按用户要求后置。
 
 ## 本地网页启动与验证
 
@@ -23,6 +23,8 @@ npm run dev --prefix web
 
 浏览器打开 [网页工作台](http://127.0.0.1:5173)。前端将 API 请求代理到 `127.0.0.1:5080`。两个终端保持运行，停止服务时分别按 `Ctrl+C`。
 
+本地 F5 迁移与增量权限已应用，重启后端即可加载新代码。其他已有环境升级时运行 `python3 scripts/database.py migrate` 和 `python3 scripts/app.py provision-execution`；详细步骤见 [F5 实现与本地验收](docs/feature-development/dispatch-and-production-execution-implementation.md)。
+
 初始账号保存在本地 `.local/initial-admin.txt`（Git 忽略）。首次登录需要修改密码；若已经修改，使用新密码。改密后删除初始凭据文件。
 
 建议依次验证：登录与改密 → 组织结构 → 员工、工位与终端 → 账号授权 → 角色权限 → 审计记录。
@@ -33,7 +35,7 @@ npm run dev --prefix web
 npm ci --prefix web
 ```
 
-全新环境的数据库、管理员初始化及测试步骤见 [OrganizationIdentityAccessControl 实现与开发说明](docs/feature-development/organization-identity-access-control-implementation.md)。
+全新环境的数据库、管理员初始化及测试步骤见 [F1-`OrganizationIdentityAccessControl` 实现与开发说明](docs/feature-development/organization-identity-access-control-implementation.md)。
 
 ## 项目记忆与规划
 
@@ -48,7 +50,7 @@ npm ci --prefix web
 - [数据库字段字典](docs/development-process/05-database-catalog.md)。
 - [数据库实施与连接说明](docs/development-process/06-database-implementation.md)。
 
-首版围绕 Lot/Wafer、工艺与配方版本、设备履历、生产执行、质量处置和追溯建设。当前数据库包含 116 张业务/支撑表、7 张 Identity 表、2 个派生视图，另有迁移历史表；OrganizationIdentityAccessControl 基础功能已有 API 与 WebUI，其它业务模块仍待开发。
+首版围绕 Lot/Wafer、工艺与配方版本、设备履历、生产执行、质量处置和追溯建设。当前数据库包含 119 张业务/支撑表、7 张 Identity 表、2 个派生视图，已应用 7 条迁移；F1～F4 基础及 F5-01～05 已实现，后续范围见 [待补全清单](docs/feature-development/deferred-capabilities.md)。
 
 `docs/` 中原有 [OpenMES 开发手册](docs/README.md)、门户与课程仍作为参考材料保存，其 Laravel/React 功能不属于本项目已实现能力。
 

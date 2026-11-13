@@ -9,7 +9,15 @@ import {
     UserOutlined,
 } from "@ant-design/icons";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { App as AntApp, Button, ConfigProvider, Space, Spin, Tag } from "antd";
+import {
+    App as AntApp,
+    Button,
+    ConfigProvider,
+    Space,
+    Spin,
+    Tag,
+    theme,
+} from "antd";
 import zhCN from "antd/locale/zh_CN";
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -30,8 +38,12 @@ import { Profile } from "./profile";
 import { qc } from "./queryClient";
 import { Roles } from "./roles";
 import { Brand, Denied, setDisplayTimezone } from "./shared";
+import { ThemeProvider, ThemeToggle, useTheme } from "./theme";
 import "./style.css";
+import { Manufacturing } from "./manufacturing";
 import { Users } from "./users";
+import { Production } from "./production";
+import { Execution, EquipmentRegister } from "./execution";
 
 function Application() {
     const location = useLocation();
@@ -104,6 +116,30 @@ function Application() {
     setDisplayTimezone(me.fab?.timezone || "Asia/Shanghai");
     const can = (p: string) => me.permissions?.includes(p) ?? false;
     const nav = [
+        ["/execution", "生产执行", <AppstoreOutlined />, can("execution.read")],
+        ["/equipment", "设备台账", <DesktopOutlined />, can("equipment.read")],
+        [
+            "/production",
+            "生产管理",
+            <AppstoreOutlined />,
+            [
+                "production.lots.read",
+                "production.wafers.read",
+                "production.carriers.read",
+            ].some(can),
+        ],
+        [
+            "/engineering",
+            "工艺管理",
+            <AppstoreOutlined />,
+            can("engineering.read"),
+        ],
+        [
+            "/planning",
+            "工单管理",
+            <AppstoreOutlined />,
+            can("planning.work-orders.read"),
+        ],
         ["/", "工作台", <AppstoreOutlined />, true],
         [
             "/settings/organization",
@@ -179,6 +215,7 @@ function Application() {
                             "基础管理"}
                     </div>
                     <Space size="middle">
+                        <ThemeToggle />
                         <Tag color="cyan">{me.fab?.code || "未分配厂区"}</Tag>
                         <span>{me.displayName}</span>
                         <Button
@@ -192,6 +229,64 @@ function Application() {
                 </header>
                 <main>
                     <Routes>
+                        <Route
+                            path="/execution"
+                            element={
+                                can("execution.read") ? (
+                                    <Execution me={me} />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
+                        <Route
+                            path="/equipment"
+                            element={
+                                can("equipment.read") ? (
+                                    <EquipmentRegister me={me} />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
+                        <Route
+                            path="/production"
+                            element={
+                                [
+                                    "production.lots.read",
+                                    "production.wafers.read",
+                                    "production.carriers.read",
+                                ].some(can) ? (
+                                    <Production me={me} />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
+                        <Route
+                            path="/engineering"
+                            element={
+                                can("engineering.read") ? (
+                                    <Manufacturing key="engineering" me={me} />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
+                        <Route
+                            path="/planning"
+                            element={
+                                can("planning.work-orders.read") ? (
+                                    <Manufacturing
+                                        key="planning"
+                                        me={me}
+                                        planning
+                                    />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
                         <Route path="/" element={<Dashboard me={me} />} />
                         <Route
                             path="/settings/organization"
@@ -272,16 +367,29 @@ function Application() {
     );
 }
 
-createRoot(document.getElementById("root")!).render(
-    <React.StrictMode>
+function Root() {
+    const { mode } = useTheme();
+    const dark = mode === "dark";
+    return (
         <ConfigProvider
             locale={zhCN}
             theme={{
+                algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm,
                 token: {
-                    colorPrimary: "#17625c",
+                    colorPrimary: dark ? "#12857a" : "#17625c",
                     borderRadius: 7,
                     fontFamily:
                         'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif',
+                    ...(dark
+                        ? {
+                              colorTextBase: "#d8e4e5",
+                              colorBgLayout: "#0c1719",
+                              colorBgContainer: "#132527",
+                              colorBgElevated: "#17292c",
+                              colorBorder: "#223a3d",
+                              colorBorderSecondary: "#1d3235",
+                          }
+                        : {}),
                 },
             }}
         >
@@ -293,5 +401,13 @@ createRoot(document.getElementById("root")!).render(
                 </QueryClientProvider>
             </AntApp>
         </ConfigProvider>
+    );
+}
+
+createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+        <ThemeProvider>
+            <Root />
+        </ThemeProvider>
     </React.StrictMode>,
 );

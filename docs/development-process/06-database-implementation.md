@@ -1,19 +1,21 @@
 # Fab 数据库实施说明
 
-日期：2026-11-11（Asia/Shanghai）。用户已明确启动数据库开发；本次交付数据库结构、迁移与验证，不代表 MES 业务接口、WebUI 或 Agent 已实现。
+更新：2026-11-13（Asia/Shanghai）。本文记录数据库结构与迁移；F1～F4 基础及 F5 首版已实现，完整质量处置、设备资源、Agent 和 Docker 仍待后续。
+
+2026-11-13 已应用第 7 条迁移 `DispatchAndProductionExecution`，新增步骤设备/配方指派、Run 适用关系与执行历史保护，表数保持 119 业务/支撑 + 7 Identity。迁移前本地生产相关表为空且已备份；运行角色以 `provision-execution` 精确增量授权，未改密码、未增加 DDL/DELETE。字段字典与 DDL 已同步，验收见 [F5 实现记录](../feature-development/dispatch-and-production-execution-implementation.md)。下文保留各阶段历史记录。
 
 ## 1. 已建立的结构
 
 技术组合：.NET SDK **10.0.401**、EF Core / Identity **10.0.12**、Npgsql EF Provider **10.0.3**、PostgreSQL **18.6**。NuGet 精确版本在根目录 `Directory.Packages.props` 管理，各项目提交 `packages.lock.json`；本地 `dotnet-ef` 固定为 10.0.12。数据库镜像在 `compose.yaml` 固定版本及 SHA256 摘要。
 
-共 **121 张应用表**：114 张业务表 + 7 张 Identity 表；另有 EF 迁移历史表和 2 个派生视图。
+共 **126 张应用表**：119 张业务/支撑表 + 7 张 Identity 表；另有 EF 迁移历史表和 2 个派生视图。
 
 | schema | 表数 | 主要对象 |
 | --- | ---: | --- |
 | organization | 9 | Fab、Area、Line、位置、员工、工位、终端、班次、交接 |
-| security | 11 | Identity 用户/角色/授权基础 7 表，操作权限、角色权限、直接授权、用户厂区范围 |
+| security | 13 | Identity 用户/角色/授权基础 7 表，操作权限、角色权限、直接授权、用户厂区范围、会话与安全事件 |
 | engineering | 14 | 产品/版本、路线/版本/步骤、工序、Recipe/版本/适用关系、编号、输出定义、点检、文档、Q-time 规则 |
-| production | 25 | 工单/快照/变更/停工、Lot、Wafer、归属、载具槽位与移动、加工/逐片参与/事件、拆合批、返工与共炉结构 |
+| production | 28 | 工单/快照/变更/停工、Lot、Wafer、归属、载具槽位与移动、加工/逐片参与/事件、拆合批、返工与共炉结构、首次投放/终点完成/步骤继承 |
 | quality | 18 | 原因、异常及整改、Lot/物料 Hold、独立放行、来料检验、规格版本、量测、质检触发/任务、报废及逐片处置 |
 | equipment | 15 | 设备分类/组/设备/腔体、事件/状态/停机、工具/保养、设备和人员资格、光罩/使用、材料上机 |
 | materials | 15 | 公司、物料分类/主数据/来源/批次/分装、BOM、分配/拣选/消耗、仓库/库存/流水/单据 |
@@ -27,7 +29,7 @@
 | 清单中的来源 / 对象 | 实际落地 |
 | --- | --- |
 | `batches` | `production.lots`；`lot_number` 是业务批号，原批号保留为 `legacy_batch_number`；完工量 `produced_qty` 是待业务命令维护的受控快照，不能累加每站通过量 |
-| `serial_units` | `production.wafers`；归属独立放入 `lot_memberships`，不再保存另一个可自由修改的当前批次字段；工单由对应时点的 Lot 追溯 |
+| `serial_units` | `production.wafers`；归属独立放入 `lot_memberships`，不再保存另一个可自由修改的当前批次字段；F4 新片额外固定工单/厂区，历史批次仍按对应时点归属追溯 |
 | Lot 当前片数 / 报废量 | `production.lot_quantities` 从有效归属、逐片报废事实计算；当前片数按有效归属计数，报废操作未来必须在同一事务关闭归属并写处置 |
 | `batch_steps` / `unit_step_history` | `step_executions` + `process_runs` + `process_run_wafers` + `track_events`，保存步骤到访、加工、实际晶圆集合及操作责任人 |
 | `process_templates` / `template_steps` | `routes` / `route_versions` / `route_steps`，同一工序的不同路线位置分别有身份 |
@@ -120,3 +122,11 @@ Track-in 权限、Hold 阻塞、设备/Recipe 资格匹配、发布状态校验�
 - EF 导出的 `database/mesagent.sql` 在独立空库连续执行两次成功，结构统计与 EF 迁移建库一致。
 - 对当前空业务库执行 `pg_dump -Fc` 并恢复到独立临时库成功，核对表/视图/外键/迁移/排斥约束数量一致。这是结构恢复验证，尚不是带生产数据和附件的恢复演练。
 - Docker 容器重启后数据库和迁移记录仍在，持久卷生效；测试库和恢复验证库均已清理。
+
+## 8. F4 增量迁移（2026-11-12）
+
+第 6 条迁移 `20261112033140_LotWaferCarrierGenealogy` 已应用；新增三个不可变生产事实表及 Wafer 稳定归属、载具尺寸、Lot 关闭语义，并保护历史区间只关闭一次。迁移前本地 Lot/Wafer/Carrier 均为空，备份已保存于 Git 忽略的本地目录；未向业务库写测试生产数据。
+
+`production.lot_quantities` 仍为当前成员/处置时 Lot 报废数，不是 WIP 或工单完工量。F4 的内部完工/报废收尾能力已具备，F5/F6 真正执行入口及工单进度仍待联调。历史未实现描述保留为初始建库边界，当前证据以 [F4 实现记录](../feature-development/lot-wafer-carrier-genealogy-implementation.md) 为准。
+
+已验证 17 项数据库测试（含全迁移回滚/重建）和 39 项 API/协作测试；最小权限角色可执行建批、投放与装载，无生产 DDL/血缘删除权限。`scripts/app.py serve` 使用 `mesagent_app`，迁移/初始化使用所有者；DDL 与字典已重新导出。

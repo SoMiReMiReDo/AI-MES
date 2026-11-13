@@ -8,7 +8,7 @@ internal static class SchemaCatalog
     {
         output.WriteLine("# 数据库对象与字段字典\n");
         output.WriteLine("由 `MESagent.Database catalog` 从 EF Core 当前模型导出；重新生成命令：`python3 scripts/database.py catalog`。\n");
-        output.WriteLine("业务表使用 UUID 主键、UTC 时间和 PostgreSQL `xmin` 并发令牌（系统列，不是额外业务列）。可空字段带 `?`。角色、授权和登录信息采用 ASP.NET Core Identity。实施边界与验证见 [数据库实施说明](06-database-implementation.md)。\n");
+        output.WriteLine("业务对象使用 UUID 主键；时间采用 UTC，可修改实体使用 PostgreSQL `xmin` 并发令牌（系统列）。追加型生产事实不提供更新令牌。可空字段带 `?`。角色、授权和登录信息采用 ASP.NET Core Identity。实施边界与验证见 [数据库实施说明](06-database-implementation.md)。\n");
         foreach (var schema in db.Model.GetEntityTypes().GroupBy(e => e.GetSchema()).OrderBy(g => g.Key))
         {
             output.WriteLine($"## {schema.Key}（{schema.Count()} 张表）\n");

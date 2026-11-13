@@ -1,8 +1,8 @@
-# OrganizationIdentityAccessControl 接口与验收清单
+# F1-`OrganizationIdentityAccessControl` 接口与验收清单
 
 日期：2026-11-11｜版本：v0.1｜状态：契约与验收基线；对应 API 和自动测试已建立
 
-本文配套 [OrganizationIdentityAccessControl 功能设计](organization-identity-access-control.md)，用于拆分开发任务与验收；字段最终生成 OpenAPI，不能以本文代替已运行接口。
+本文配套 [F1-`OrganizationIdentityAccessControl` 功能设计](organization-identity-access-control.md)，用于拆分开发任务与验收；字段最终生成 OpenAPI，不能以本文代替已运行接口。
 
 ## 1. 公共契约
 
@@ -143,7 +143,7 @@ fabIds 在单厂部署中只允许空集合或包含 DeploymentFabId 的集合�
 | `PUT /security/roles/{id}/permissions` | 完整 permissionCodes、reason | security.roles.manage、If-Match；200 + ETag；原子替换并撤销受影响会话 |
 | `POST /security/roles/{id}/activate` | reason | security.roles.manage、If-Match；200 + ETag |
 | `POST /security/roles/{id}/deactivate` | reason | 同上；系统角色拒绝；普通角色停用撤销成员会话 |
-| `GET /security/audit-logs` | 分页，actorId/action/entityType/entityId/from/to | security.audit.read；只提供 OrganizationIdentityAccessControl 白名单对象审计，不泄露其它域审计 |
+| `GET /security/audit-logs` | 分页，actorId/action/entityType/entityId/from/to | security.audit.read；只提供 F1-`OrganizationIdentityAccessControl` 白名单对象审计，不泄露其它域审计 |
 | `GET /security/events` | 分页，eventType/outcome/from/to/userId | security.audit.read；受限安全事件，不回显原始凭据/请求 |
 
 审计查询默认最近 7 天，单次时间范围建议最大 90 天；查询历史更早记录仍可按较小时间窗翻查，查询窗口不等于留存期限。禁止前端下载整张用户或审计表；若未来增加导出，应定义任务与专门权限。
@@ -156,38 +156,38 @@ fabIds 在单厂部署中只允许空集合或包含 DeploymentFabId 的集合�
 
 | 验收 ID | 需求 | 操作/条件 | 预期结果 |
 | --- | --- | --- | --- |
-| AC01 | OrganizationStructure | 管理员创建区域、产线、位置并刷新 | 层级准确；Location 位于 Area 下；实际数据持久化 |
-| AC02 | OrganizationStructure | 同作用域重复编码、不同区域相同 Line 编码 | 同范围 409；不同合法范围可创建；大小写规范化不能绕过唯一约束 |
-| AC03 | OrganizationStructure | 创建到停用父节点；停用有有效子对象的区域；并发新增子项与停用父项 | 409 或按锁顺序有一方完成后另一方被拒；不存在停用父项下新增有效子项，无部分更新 |
-| AC04 | OrganizationStructure | 停用无未结依赖的位置后查询历史；启用但父区域停用 | 历史可读且标停用；新绑定拒绝；重新启用拒绝 |
-| AC05 | OrganizationStructure | UTC 事件跨本地午夜；非法时区及普通 API 改时区 | 日期筛选与 Fab 时区一致；非法/不允许变更被拒绝 |
-| AC06 | OrganizationStructure/04 | 两人使用同一 ETag 修改名称 | 一人成功；另一人 412；不覆盖成功结果 |
-| AC07 | WorkforceAndTerminals | 工位绑定不同 Area 的 Line；终端绑定其它 Fab 的工位 | 服务端拒绝；数据库加固约束同步验证 |
-| AC08 | WorkforceAndTerminals | 登记无工位终端；越权查询；重复 UUID/厂内编码 | 有明确 Fab 范围；越权 404；重复 409 |
-| AC09 | WorkforceAndTerminals | 两个账号绑定同一员工；跨厂绑定员工 | 拒绝，数据库唯一约束和服务端校验均有效 |
-| AC10 | WorkforceAndTerminals/03 | 停用员工，再启用员工；仅有员工维护权限时停用有关联账号的员工 | 关联账号及会话原子停用/撤销；启用员工不自动启用账号；缺少安全管理权限的请求被拒绝 |
-| AC11 | WorkforceAndTerminals | 终端停用/换绑或工位产线变更，旧 Cookie 再访问 | 受影响会话无效；旧审计场所不变；手工 terminalId 不绕过登录 |
-| AC12 | AccountsAndSessions | 管理员建号，临时密码登录后直接调用业务 API | 仅允许受限白名单；业务读写均 403，而非只靠页面跳转 |
-| AC13 | AccountsAndSessions | 首登改密成功、响应丢失后分别尝试新旧密码 | 旧密码及旧会话无效；新密码可登录，ForcePasswordChange 已清除 |
-| AC14 | AccountsAndSessions | 连续错误 5 次、锁定期登录、到期或管理员解锁 | 计数及期限正确；匿名提示一致；解锁不改变 IsActive |
-| AC15 | AccountsAndSessions | 已登录期间攻击者触发自动锁定；管理员再手动锁定 | 自动锁定只阻止新登录；手动锁定撤销已有会话 |
-| AC16 | AccountsAndSessions | 退出当前会话后重放复制的旧 Cookie；同账号另一个会话 | 已退出会话失效；另一会话按原状态有效；全部退出时全部失效 |
-| AC17 | AccountsAndSessions | 重置密码、停用账号后旧 Cookie 请求；随后只启用账号 | 下一次授权检查拒绝旧会话；启用不恢复旧会话或清除改密要求 |
-| AC18 | AccountsAndSessions | 空闲/绝对超时、受限超时、后台轮询 | 按测试时钟到期；后台轮询不无限续期；超时需要登录 |
-| AC19 | AccountsAndSessions | 首次登录缺防伪头、登录后跨站写、修改 localStorage 模拟管理员 | 写请求拒绝；客户端状态不能增加服务端权限 |
-| AC20 | AccountsAndSessions | 未知用户/错密码/停用/锁定；超限登录 | 对匿名响应不泄露账户状态；限流返回 429；事件记录无密码 |
-| AC21 | RolesAndAuthorization | Viewer 直接调用组织修改、账号列表及导出猜测路径 | 写入与人员/安全读取拒绝；不存在未授权导出后门 |
-| AC22 | RolesAndAuthorization | 用户有动作权限无 Fab 范围；请求伪造 FabId 或子对象 ID | 列表/计数/详情/写入均不泄露越权数据；关联校验同样拒绝 |
-| AC23 | RolesAndAuthorization | 删除角色权限、停用角色、移除用户角色/范围后调用旧请求 | 下一次检查使用新权限或拒绝旧会话；角色 Cookie 内容不能维持旧授权 |
-| AC24 | RolesAndAuthorization | 插入 UserPermission、UserClaim 或提交 `*` 权限 | 不能获得额外动作；UI 不提供个人直接授权；未知权限整体拒绝 |
-| AC25 | RolesAndAuthorization | 普通自定义角色请求安全管理权限；受保护角色被编辑 | 服务端拒绝，无部分角色关系变化 |
-| AC26 | RolesAndAuthorization | 两管理员并发移除/锁定对方；员工停用关联最后管理员 | 管理锁及不变量保证至少一名可用管理员；隐蔽路径也被拦截 |
-| AC27 | RolesAndAuthorization | 普通角色多成员，修改角色权限时模拟事务中途失败 | 权限、成员会话/安全戳及审计全部回滚；不存在部分撤权 |
+| AC01 | F1-01-`OrganizationStructure` | 管理员创建区域、产线、位置并刷新 | 层级准确；Location 位于 Area 下；实际数据持久化 |
+| AC02 | F1-01-`OrganizationStructure` | 同作用域重复编码、不同区域相同 Line 编码 | 同范围 409；不同合法范围可创建；大小写规范化不能绕过唯一约束 |
+| AC03 | F1-01-`OrganizationStructure` | 创建到停用父节点；停用有有效子对象的区域；并发新增子项与停用父项 | 409 或按锁顺序有一方完成后另一方被拒；不存在停用父项下新增有效子项，无部分更新 |
+| AC04 | F1-01-`OrganizationStructure` | 停用无未结依赖的位置后查询历史；启用但父区域停用 | 历史可读且标停用；新绑定拒绝；重新启用拒绝 |
+| AC05 | F1-01-`OrganizationStructure` | UTC 事件跨本地午夜；非法时区及普通 API 改时区 | 日期筛选与 Fab 时区一致；非法/不允许变更被拒绝 |
+| AC06 | F1-01/F1-04 | 两人使用同一 ETag 修改名称 | 一人成功；另一人 412；不覆盖成功结果 |
+| AC07 | F1-02-`WorkforceAndTerminals` | 工位绑定不同 Area 的 Line；终端绑定其它 Fab 的工位 | 服务端拒绝；数据库加固约束同步验证 |
+| AC08 | F1-02-`WorkforceAndTerminals` | 登记无工位终端；越权查询；重复 UUID/厂内编码 | 有明确 Fab 范围；越权 404；重复 409 |
+| AC09 | F1-02-`WorkforceAndTerminals` | 两个账号绑定同一员工；跨厂绑定员工 | 拒绝，数据库唯一约束和服务端校验均有效 |
+| AC10 | F1-02/F1-03 | 停用员工，再启用员工；仅有员工维护权限时停用有关联账号的员工 | 关联账号及会话原子停用/撤销；启用员工不自动启用账号；缺少安全管理权限的请求被拒绝 |
+| AC11 | F1-02-`WorkforceAndTerminals` | 终端停用/换绑或工位产线变更，旧 Cookie 再访问 | 受影响会话无效；旧审计场所不变；手工 terminalId 不绕过登录 |
+| AC12 | F1-03-`AccountsAndSessions` | 管理员建号，临时密码登录后直接调用业务 API | 仅允许受限白名单；业务读写均 403，而非只靠页面跳转 |
+| AC13 | F1-03-`AccountsAndSessions` | 首登改密成功、响应丢失后分别尝试新旧密码 | 旧密码及旧会话无效；新密码可登录，ForcePasswordChange 已清除 |
+| AC14 | F1-03-`AccountsAndSessions` | 连续错误 5 次、锁定期登录、到期或管理员解锁 | 计数及期限正确；匿名提示一致；解锁不改变 IsActive |
+| AC15 | F1-03-`AccountsAndSessions` | 已登录期间攻击者触发自动锁定；管理员再手动锁定 | 自动锁定只阻止新登录；手动锁定撤销已有会话 |
+| AC16 | F1-03-`AccountsAndSessions` | 退出当前会话后重放复制的旧 Cookie；同账号另一个会话 | 已退出会话失效；另一会话按原状态有效；全部退出时全部失效 |
+| AC17 | F1-03-`AccountsAndSessions` | 重置密码、停用账号后旧 Cookie 请求；随后只启用账号 | 下一次授权检查拒绝旧会话；启用不恢复旧会话或清除改密要求 |
+| AC18 | F1-03-`AccountsAndSessions` | 空闲/绝对超时、受限超时、后台轮询 | 按测试时钟到期；后台轮询不无限续期；超时需要登录 |
+| AC19 | F1-03-`AccountsAndSessions` | 首次登录缺防伪头、登录后跨站写、修改 localStorage 模拟管理员 | 写请求拒绝；客户端状态不能增加服务端权限 |
+| AC20 | F1-03-`AccountsAndSessions` | 未知用户/错密码/停用/锁定；超限登录 | 对匿名响应不泄露账户状态；限流返回 429；事件记录无密码 |
+| AC21 | F1-04-`RolesAndAuthorization` | Viewer 直接调用组织修改、账号列表及导出猜测路径 | 写入与人员/安全读取拒绝；不存在未授权导出后门 |
+| AC22 | F1-04-`RolesAndAuthorization` | 用户有动作权限无 Fab 范围；请求伪造 FabId 或子对象 ID | 列表/计数/详情/写入均不泄露越权数据；关联校验同样拒绝 |
+| AC23 | F1-04-`RolesAndAuthorization` | 删除角色权限、停用角色、移除用户角色/范围后调用旧请求 | 下一次检查使用新权限或拒绝旧会话；角色 Cookie 内容不能维持旧授权 |
+| AC24 | F1-04-`RolesAndAuthorization` | 插入 UserPermission、UserClaim 或提交 `*` 权限 | 不能获得额外动作；UI 不提供个人直接授权；未知权限整体拒绝 |
+| AC25 | F1-04-`RolesAndAuthorization` | 普通自定义角色请求安全管理权限；受保护角色被编辑 | 服务端拒绝，无部分角色关系变化 |
+| AC26 | F1-04-`RolesAndAuthorization` | 两管理员并发移除/锁定对方；员工停用关联最后管理员 | 管理锁及不变量保证至少一名可用管理员；隐蔽路径也被拦截 |
+| AC27 | F1-04-`RolesAndAuthorization` | 普通角色多成员，修改角色权限时模拟事务中途失败 | 权限、成员会话/安全戳及审计全部回滚；不存在部分撤权 |
 | AC28 | 组织结构、人员与场所、账号会话及角色权限 | 审计落库失败、唯一冲突、授权集合版本冲突 | 业务写入整体回滚；错误码准确，不返回假成功 |
 | AC29 | 组织结构、人员与场所、账号会话及角色权限 | 请求 ID 贯穿 API、审计、安全事件 | 可关联定位；审计中无密码、Cookie、哈希、安全戳及全量请求体 |
 | AC30 | AccountsAndSessions/04 | 数据库断开时携带仍未过期 Cookie 请求 | 认证失败关闭访问，返回可解释暂不可用；不信任过期缓存 |
-| AC31 | OrganizationIdentityAccessControl/F14 | 空环境迁移并引导；已有管理员时再次引导 | 初始角色/Fab/账号正确；不重复或覆盖人工授权；无固定默认密码 |
-| AC32 | OrganizationIdentityAccessControl/F14 | 容器重启；持久化密钥与会话；恢复演练 | 未到期会话可验证，已撤销会话不复活；恢复流程明确恢复点后会话统一撤销策略 |
+| AC31 | OrganizationIdentityAccessControl/F14-`DockerDeliveryAcceptance` | 空环境迁移并引导；已有管理员时再次引导 | 初始角色/Fab/账号正确；不重复或覆盖人工授权；无固定默认密码 |
+| AC32 | OrganizationIdentityAccessControl/F14-`DockerDeliveryAcceptance` | 容器重启；持久化密钥与会话；恢复演练 | 未到期会话可验证，已撤销会话不复活；恢复流程明确恢复点后会话统一撤销策略 |
 
 ## 7. 开发验证分层
 
@@ -201,4 +201,4 @@ fabIds 在单厂部署中只允许空集合或包含 DeploymentFabId 的集合�
 
 建议试点夹具：一个部署 Fab、两个 Area、一条 Line、两个 Location、两个 Worker、一个 Workstation、两个 Terminal（一个未绑定）、两个管理员、一个操作员与一个 Viewer。第二 Fab 仅用于负向隔离测试，不出现在正常管理 UI。
 
-OrganizationIdentityAccessControl 完成记录须逐项标注通过/失败/不适用及证据，不能仅写“页面可打开”。ShiftsAndHandovers/06 不进入本轮通过统计；迁移、API、UI 和初始化流程都完成后再更新 MEMORY 中的实现状态。
+F1-`OrganizationIdentityAccessControl` 完成记录须逐项标注通过/失败/不适用及证据，不能仅写“页面可打开”。ShiftsAndHandovers/06 不进入本轮通过统计；迁移、API、UI 和初始化流程都完成后再更新 MEMORY 中的实现状态。

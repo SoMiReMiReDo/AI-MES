@@ -25,6 +25,7 @@ def config():
     env['ASPNETCORE_ENVIRONMENT'] = 'Development'
     env['ASPNETCORE_URLS'] = 'http://127.0.0.1:5080'
     env['DataProtection__Path'] = str(ROOT / '.local/keys')
+    env['MES_DOCUMENT_ROOT'] = str(ROOT / '.local/engineering-documents')
 
     return env, values
 
@@ -52,6 +53,15 @@ def main():
     env, values = config()
 
     if cmd == 'serve':
+        # Development requests use the provisioned runtime role; migrations/bootstrap keep the owner connection.
+        app_password = values.get('MES_APP_DB_PASSWORD', '')
+        if len(app_password) != 64 or not all(c in '0123456789abcdef' for c in app_password):
+            raise SystemExit('先运行 configure 和 provision 配置运行账号')
+        port = int(values.get('MES_DB_PORT', '55432'))
+        env['ConnectionStrings__Mes'] = (
+            f'Host=127.0.0.1;Port={port};Database=mesagent;'
+            f'Username=mesagent_app;Password={app_password}'
+        )
         subprocess.run(
             ['dotnet', 'run', '--no-launch-profile', '--project', 'src/MESagent.Api'],
             cwd=ROOT,
@@ -103,6 +113,32 @@ def main():
             env=env,
             check=True
         )
+    elif cmd == 'provision-execution':
+        # Incremental F5 upgrade: keep the existing login, password and all unrelated grants unchanged.
+        sql = """DO $$ BEGIN
+IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='mesagent_app' AND NOT rolsuper) THEN
+    RAISE EXCEPTION 'Existing non-superuser mesagent_app role is required';
+END IF;
+END $$;
+GRANT INSERT,UPDATE ON production.process_runs,production.process_run_wafers,
+    equipment.equipment,equipment.equipment_states TO mesagent_app;
+GRANT UPDATE ON production.step_documents TO mesagent_app;
+GRANT INSERT ON production.track_events,production.checklist_completions,production.output_values,
+    production.process_confirmations,equipment.equipment_types,equipment.equipment_groups,
+    equipment.equipment_events TO mesagent_app;
+"""
+        subprocess.run(
+            [
+                'docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-v',
+                'ON_ERROR_STOP=1', '-U', 'mesagent_owner', '-d', 'mesagent'
+            ],
+            input=sql,
+            text=True,
+            cwd=ROOT,
+            check=True,
+            stdout=subprocess.DEVNULL
+        )
+        print('已增量授予既有运行角色 F5 写权限；未修改账号密码，无新增 DDL/DELETE 权限。')
     elif cmd == 'provision':
         # PostgreSQL psql receives SQL through stdin; the generated password is hex-only.
         pwd = values['MES_APP_DB_PASSWORD']
@@ -117,7 +153,20 @@ GRANT USAGE ON SCHEMA organization,security,audit TO mesagent_app;
 GRANT SELECT ON ALL TABLES IN SCHEMA organization,security,audit TO mesagent_app;
 GRANT INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA organization,security TO mesagent_app;
 REVOKE UPDATE,DELETE ON security.security_events FROM mesagent_app;
-GRANT INSERT ON audit.audit_logs TO mesagent_app;
+GRANT INSERT ON audit.audit_logs, audit.command_receipts TO mesagent_app;
+GRANT INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA engineering TO mesagent_app;
+GRANT INSERT,UPDATE ON production.work_orders TO mesagent_app;
+GRANT INSERT ON production.work_order_snapshots TO mesagent_app;
+GRANT INSERT,UPDATE ON production.lots,production.wafers,production.carriers,production.carrier_loads,
+    production.lot_memberships,production.step_executions TO mesagent_app;
+GRANT INSERT ON production.carrier_slots,production.carrier_movements,production.genealogy_events,
+    production.genealogy_details,production.wafer_releases,production.wafer_completions,
+    production.step_execution_inheritances,production.step_documents,audit.business_events TO mesagent_app;
+GRANT INSERT,UPDATE ON production.process_runs,production.process_run_wafers,production.step_documents,
+    equipment.equipment,equipment.equipment_states TO mesagent_app;
+GRANT INSERT ON production.track_events,production.checklist_completions,production.output_values,
+    production.process_confirmations,equipment.equipment_types,equipment.equipment_groups,
+    equipment.equipment_events TO mesagent_app;
 GRANT USAGE ON SCHEMA engineering,production,equipment,quality,materials,integration TO mesagent_app;
 GRANT SELECT ON ALL TABLES IN SCHEMA engineering,production,equipment,quality,materials,integration TO mesagent_app;
 """
@@ -133,9 +182,9 @@ GRANT SELECT ON ALL TABLES IN SCHEMA engineering,production,equipment,quality,ma
             stdout=subprocess.DEVNULL
         )
 
-        print('已配置 OrganizationIdentityAccessControl 运行角色；无 DDL 权限、无生产表写权限。')
+        print('已配置应用运行角色；无 DDL 权限，仅开放 F1～F5 及最小设备能力所需写权限。')
     else:
-        raise SystemExit('用法: python3 scripts/app.py configure|serve|bootstrap|bootstrap-generated|recover-admin|test|provision')
+        raise SystemExit('用法: python3 scripts/app.py configure|serve|bootstrap|bootstrap-generated|recover-admin|test|provision|provision-execution')
 
 
 if __name__ == '__main__':

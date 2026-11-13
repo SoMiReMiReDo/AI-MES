@@ -355,6 +355,12 @@ internal static partial class FabModel
             b.Property(x => x.AssignedById).HasColumnName("assigned_by_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.AssignedById).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.AssignedAt).HasColumnName("assigned_at");
+            b.Property(x => x.AssignedEquipmentId).HasColumnName("assigned_equipment_id");
+            b.HasOne<Equipment>().WithMany().HasForeignKey(x => x.AssignedEquipmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            b.Property(x => x.AssignedRecipeVersionId).HasColumnName("assigned_recipe_version_id");
+            b.HasOne<RecipeVersion>().WithMany().HasForeignKey(x => x.AssignedRecipeVersionId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.PassedQty).HasColumnName("passed_qty");
             b.Property(x => x.ScrapQty).HasColumnName("scrap_qty");
             b.HasIndex(x => new { x.LotId, x.RouteStepId, x.VisitNo }).IsUnique();
@@ -383,6 +389,9 @@ internal static partial class FabModel
             b.Property(x => x.ChamberId).HasColumnName("chamber_id");
             b.HasOne<Chamber>().WithMany().HasForeignKey(x => x.ChamberId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.RecipeVersionId).HasColumnName("recipe_version_id");
+            b.Property(x => x.RecipeApplicabilityId).HasColumnName("recipe_applicability_id");
+            b.HasOne<RecipeApplicability>().WithMany().HasForeignKey(x => x.RecipeApplicabilityId)
+                .OnDelete(DeleteBehavior.Restrict);
             b.HasOne<RecipeVersion>()
                 .WithMany()
                 .HasForeignKey(x => x.RecipeVersionId)
@@ -493,6 +502,7 @@ internal static partial class FabModel
             b.Property(x => x.RecordedById).HasColumnName("recorded_by_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.RecordedById).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.RecordedAt).HasColumnName("recorded_at");
+            b.HasIndex(x => new { x.StepExecutionId, x.OutputId }).IsUnique();
         });
 
         modelBuilder.Entity<ChecklistCompletion>(b =>

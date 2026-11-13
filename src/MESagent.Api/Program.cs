@@ -177,12 +177,13 @@ app.Use(async (ctx, next) =>
             AppException a => (a.Status, a.Code, a.Message),
             AntiforgeryValidationException => (400, "CsrfInvalid", "防伪令牌无效，请刷新页面"),
             DbUpdateConcurrencyException => (412, "VersionConflict", "内容已发生变化，请刷新后重试"),
-            DbUpdateException { InnerException: PostgresException { SqlState: "23505" } } =>
+            DbUpdateException { InnerException: PostgresException { SqlState: "23505" or "23P01" } } =>
                 (409, "CodeConflict", "编号或关联已存在"),
             DbUpdateException { InnerException: PostgresException { SqlState: "23503" or "23514" } } =>
                 (409, "ValidationFailed", "关联或业务约束不满足"),
             ArgumentException or FormatException or JsonException =>
                 (400, "ValidationFailed", "请求字段或格式无效"),
+            BadHttpRequestException { StatusCode: 413 } => (413, "RequestTooLarge", "请求超过允许大小"),
             BadHttpRequestException => (400, "ValidationFailed", "请求格式无效"),
             NpgsqlException => (503, "DependencyUnavailable", "数据库暂不可用"),
             _ => (500, "InternalError", "请求处理失败，请联系管理员并提供追踪 ID")
@@ -201,6 +202,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.Use(async (ctx, next) =>
 {
+    if (ctx.Request.Path == "/api/v1/engineering/documents" && ctx.Request.Method == "POST")
+    {
+        var limit = ctx.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>();
+        if (limit is { IsReadOnly: false }) limit.MaxRequestBodySize = 15 * 1024 * 1024;
+    }
     if (ctx.Request.Path.StartsWithSegments("/api")
         && ctx.Request.Method is not ("GET" or "HEAD" or "OPTIONS"))
         await ctx.RequestServices.GetRequiredService<IAntiforgery>().ValidateRequestAsync(ctx);
@@ -260,6 +266,23 @@ async Task<IResult> Dispatch(HttpContext ctx, OrganizationIdentityAccessControlS
         }
         throw new AppException(401, "SessionInvalid", "请先登录");
     }
+    if (path == "engineering/documents" && ctx.Request.Method == "POST" && ctx.Request.HasFormContentType)
+    {
+        var form = await ctx.Request.ReadFormAsync();
+        var file = form.Files.GetFile("file") ?? throw new AppException(422, "FileRequired", "请选择 PDF");
+        if (file.Length > 10485760) throw new AppException(422, "FileTooLarge", "文件超过 10 MiB");
+        using var buffer = new MemoryStream();
+        await file.CopyToAsync(buffer);
+        ctx.Request.Body = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            entityType = form["entityType"].ToString(),
+            entityId = form["entityId"].ToString(),
+            revision = form["revision"].ToString(),
+            filename = file.FileName,
+            content = Convert.ToBase64String(buffer.ToArray())
+        }));
+        ctx.Request.ContentType = "application/json";
+    }
     using var body = ctx.Request.HasJsonContentType()
         ? await JsonDocument.ParseAsync(ctx.Request.Body)
         : JsonDocument.Parse("{}");
@@ -274,7 +297,12 @@ async Task<IResult> Dispatch(HttpContext ctx, OrganizationIdentityAccessControlS
             path,
             body.RootElement,
             ctx.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString()),
-            ctx.Request.Headers.IfMatch.FirstOrDefault()));
+            ctx.Request.Headers.IfMatch.FirstOrDefault(),
+            ctx.Request.Headers["Idempotency-Key"].FirstOrDefault()));
+    if (result.Replayed)
+        ctx.Response.Headers["Idempotency-Replayed"] = "true";
+    if (result.Location is not null)
+        ctx.Response.Headers.Location = result.Location;
     if (result.Version is not null)
         ctx.Response.Headers.ETag = result.Version;
     if (path is "auth/logout" or "account/change-password" or "account/sessions/revoke-all")
@@ -287,6 +315,8 @@ async Task<IResult> Dispatch(HttpContext ctx, OrganizationIdentityAccessControlS
         if (json.TryGetProperty("id", out var id))
             ctx.Response.Headers.Location = ctx.Request.Path + "/" + id.GetString();
     }
+    if (result.Data is EngineeringFile fileResult)
+        return Results.File(fileResult.Content, "application/pdf", fileResult.Filename);
     return result.Status == 204 ? Results.NoContent() : Results.Json(result.Data, statusCode: result.Status);
 }
 
@@ -324,6 +354,33 @@ foreach (var root in new[] { "organization/{resource}", "security/users", "secur
     api.MapMethods("/" + root + "/{id:guid}/{action}", ["GET", "POST", "PUT"], Dispatch);
 }
 api.MapPost("/security/users/{id:guid}/sessions/revoke-all", Dispatch);
+
+// Explicit production contracts are included in OpenAPI; shared dispatch still owns authentication.
+api.MapPost("/production/lots", Dispatch).Accepts<CreateProductionLot>("application/json");
+api.MapPut("/production/lots/{id:guid}", Dispatch).Accepts<UpdateProductionLot>("application/json");
+api.MapPost("/production/lots/{id:guid}/split", Dispatch).Accepts<SplitProductionLot>("application/json");
+api.MapPost("/production/lots/{id:guid}/split-preview", Dispatch).Accepts<SplitProductionLot>("application/json");
+api.MapPost("/production/lot-merges", Dispatch).Accepts<MergeProductionLots>("application/json");
+api.MapPost("/production/lot-merges/preview", Dispatch).Accepts<MergeProductionLots>("application/json");
+api.MapPost("/production/carriers", Dispatch).Accepts<CreateProductionCarrier>("application/json");
+api.MapPut("/production/carriers/{id:guid}", Dispatch).Accepts<UpdateProductionCarrier>("application/json");
+api.MapPost("/production/carriers/{id:guid}/move", Dispatch).Accepts<MoveProductionCarrier>("application/json");
+api.MapPost("/production/carrier-load-commands", Dispatch).Accepts<ChangeCarrierLoads>("application/json");
+
+api.MapPost("/execution/lots/{id:guid}/assign", Dispatch).Accepts<AssignProductionLot>("application/json");
+api.MapPost("/execution/lots/{id:guid}/track-in", Dispatch).Accepts<TrackInProductionLot>("application/json");
+api.MapPost("/execution/runs/{id:guid}/records", Dispatch).Accepts<RecordProductionWork>("application/json");
+api.MapPost("/execution/runs/{id:guid}/track-out", Dispatch).Accepts<TrackOutProductionRun>("application/json");
+api.MapPost("/execution/runs/{id:guid}/abort", Dispatch).Accepts<ReasonRequest>("application/json");
+api.MapPost("/equipment/types", Dispatch).Accepts<CreateEquipmentReference>("application/json");
+api.MapPost("/equipment/groups", Dispatch).Accepts<CreateEquipmentReference>("application/json");
+api.MapPost("/equipment/tools", Dispatch).Accepts<CreateExecutionEquipment>("application/json");
+api.MapPut("/equipment/tools/{id:guid}", Dispatch).Accepts<UpdateExecutionEquipment>("application/json");
+api.MapPost("/equipment/tools/{id:guid}/state", Dispatch).Accepts<ChangeExecutionEquipmentState>("application/json");
+api.MapGet("/planning/work-orders/{id:guid}/progress", Dispatch).Produces<ProductionProgressView>();
+api.MapPost("/planning/work-orders/{id:guid}/recalculate", Dispatch).Accepts<ReasonRequest>("application/json");
+foreach (var module in new[] { "engineering", "planning", "production", "execution", "equipment" })
+    api.MapMethods("/" + module + "/{**resource}", ["GET", "POST", "PUT"], Dispatch);
 
 app.Run();
 

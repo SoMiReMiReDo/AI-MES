@@ -1,9 +1,12 @@
 import { test, expect } from "@playwright/test";
+import { productionFlow } from "./production-flow";
+import { executionFlow } from "./execution-flow";
 
 test("真实浏览器：首登改密、组织维护、账号分权、退出与撤权", async ({
     page,
     browser,
 }) => {
+    test.setTimeout(180000);
     const suffix = Date.now().toString();
     const initial = process.env.MES_E2E_PASSWORD!;
     const final = initial + "-changed";
@@ -118,6 +121,95 @@ test("真实浏览器：首登改密、组织维护、账号分权、退出与�
         viewer.getByRole("heading", { name: "登录工作台" }),
     ).toBeVisible();
     await context.close();
+    // Manufacturing shares the same authenticated session and permission pipeline.
+    await page.getByRole("link", { name: "工艺管理" }).click();
+    await page.getByRole("tab", { name: "产品", exact: true }).click();
+    await page.getByRole("button", { name: "新建产品", exact: true }).click();
+    await page.getByLabel("编码", { exact: true }).fill("FAB" + suffix);
+    await page.getByLabel("名称", { exact: true }).fill("浏览器晶圆产品");
+    await page.getByLabel("单位", { exact: true }).fill("wafer");
+    await page.getByRole("button", { name: "保 存", exact: true }).click();
+    await expect(
+        page.getByRole("cell", { name: "浏览器晶圆产品", exact: true }),
+    ).toBeVisible();
+    const create = async (path: string, data: any, etag?: string) => {
+        const response = await page.request.post("/api/v1/" + path, {
+            headers: {
+                "X-CSRF-TOKEN": csrf.requestToken,
+                "Idempotency-Key": crypto.randomUUID(),
+                ...(etag ? { "If-Match": etag } : {}),
+            },
+            data,
+        });
+        expect(response.ok(), await response.text()).toBeTruthy();
+        return response.json();
+    };
+    const products = await page.request
+        .get("/api/v1/engineering/products")
+        .then((r) => r.json());
+    const product = products.items.find((x: any) => x.code === "FAB" + suffix);
+    const route = await create("engineering/routes", {
+        code: "R" + suffix,
+        name: "测试路线",
+        productId: product.id,
+    });
+    const version = await create("engineering/route-versions", {
+        routeId: route.id,
+        version: "1",
+    });
+    const operation = await create("engineering/operations", {
+        code: "OP" + suffix,
+        name: "光刻",
+        segmentType: "Process",
+    });
+    await create("engineering/route-steps", {
+        routeVersionId: version.id,
+        operationId: operation.id,
+        sequenceNo: 1,
+        name: "首站",
+    });
+    await create(
+        `engineering/route-versions/${version.id}/release`,
+        { reason: "浏览器验收" },
+        version.etag,
+    );
+    const revision = await create("engineering/product-revisions", {
+        productId: product.id,
+        routeVersionId: version.id,
+        revisionCode: "A",
+    });
+    await create(
+        `engineering/product-revisions/${revision.id}/release`,
+        { reason: "浏览器验收" },
+        revision.etag,
+    );
+    const workOrder = await create("planning/work-orders", {
+        orderNo: "WO" + suffix,
+        productId: product.id,
+        productRevisionId: revision.id,
+        plannedQty: 25,
+    });
+    await page.getByRole("link", { name: "工单管理" }).click();
+    await expect(
+        page.getByRole("cell", { name: "WO" + suffix, exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: /下\s*达/, exact: true }).click();
+    await page.getByPlaceholder("填写操作原因").fill("浏览器下达验收");
+    await page.getByRole("button", { name: "确 定", exact: true }).click();
+    await expect(page.getByText("Released", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "执行概况", exact: true }).click();
+    await expect(
+        page.getByText("生产进度按唯一晶圆事实统计", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText(/计划：25；投放：0/)).toBeVisible();
+    await page.screenshot({
+        path: "test-results/manufacturing.png",
+        animations: "disabled",
+        fullPage: true,
+    });
+    await page.getByRole("button", { name: "关闭", exact: true }).click();
+    await productionFlow(page, "WO" + suffix, suffix);
+    await executionFlow(page, suffix);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     await page.screenshot({ path: "test-results/mobile.png", fullPage: true });

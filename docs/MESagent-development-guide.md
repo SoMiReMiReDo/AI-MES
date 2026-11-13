@@ -1,14 +1,16 @@
 # MESagent 数据架构开发文档
 
-更新：2026-11-11｜适用阶段：数据库与 OrganizationIdentityAccessControl 基础功能已实现；生产应用服务待开发。
+更新：2026-11-13｜适用阶段：数据库、F1～F4 基础及 F5-01～05 已实现；完整质量处置、设备资源和 Docker 待后续。
 
 本文说明当前工程如何组织、核心对象如何关联、数据库保护哪些规则，以及开发者如何扩展模型。字段全集见 [数据库字段字典](development-process/05-database-catalog.md)，实施与验证记录见 [数据库实施说明](development-process/06-database-implementation.md)。
 
 ## 1. 当前交付与边界
 
-已完成 C# 数据实体、EF Core 映射、PostgreSQL 数据库、版本化迁移、命令行管理工具和真实数据库测试。数据库包含 116 张业务/支撑表、7 张 Identity 表、2 个派生视图，另有迁移历史表；已应用 4 条迁移。
+已完成 C# 数据实体、EF Core 映射、PostgreSQL 数据库、版本化迁移、命令行管理工具和真实数据库测试。数据库包含 119 张业务/支撑表、7 张 Identity 表、2 个派生视图，另有迁移历史表；已应用 7 条迁移。
 
-当前已实现 组织结构、人员与场所、账号会话及角色权限 的 API、登录与管理 WebUI，详见 [OrganizationIdentityAccessControl 实现说明](feature-development/organization-identity-access-control-implementation.md)。Agent、设备驱动及后台 Outbox 消费程序尚未实现。共炉、光罩、Q-time、返工、资格管理等对象已有结构，不能据此认为这些业务已经可用。
+当前已实现 组织结构、人员与场所、账号会话及角色权限 的 API、登录与管理 WebUI，详见 [F1-`OrganizationIdentityAccessControl` 实现说明](feature-development/organization-identity-access-control-implementation.md)。Agent、设备驱动及后台 Outbox 消费程序尚未实现。共炉、光罩、Q-time、返工、资格管理等对象已有结构，不能据此认为这些业务已经可用。
+
+F2 工艺、F3 工单、F4 批次/载具/血缘及 [F5 执行](feature-development/dispatch-and-production-execution-implementation.md)已接通首版。实际 Run 驱动终点完成与工单进度，最小设备台账/人工状态/占用已实现；完整 F6 处置和 F7 资源规则仍待开发。
 
 技术基线：.NET SDK 10.0.401；EF Core / Identity 10.0.12；Npgsql EF Provider 10.0.3；PostgreSQL 18.6。版本集中管理于 [Directory.Packages.props](../Directory.Packages.props)，NuGet 锁文件随项目保存。
 
@@ -16,17 +18,17 @@
 
 | 项目 | 当前职责 | 关键入口 |
 | --- | --- | --- |
-| Domain | 纯 C# 业务实体与字段，不依赖 EF Core；尚未形成完整领域行为 | [Entities](../src/MESagent.Domain/Entities) |
-| Infrastructure | DbContext、Identity、映射/迁移、OrganizationIdentityAccessControl 持久化用例与事务实现 | [MesDbContext.cs](../src/MESagent.Infrastructure/Persistence/MesDbContext.cs) |
-| Application | OrganizationIdentityAccessControl 应用入口、接口契约、权限目录与配置，不依赖 EF/Identity | [OrganizationIdentityAccessControl.cs](../src/MESagent.Application/OrganizationIdentityAccessControl.cs) |
-| API / WebUI | 认证/防伪/HTTP 与 React 管理页面 | [API](../src/MESagent.Api/Program.cs) / [WebUI](../web/src/main.tsx) |
+| Domain | 纯 C# 实体与组织/工艺/片集/执行值规则，不依赖 EF Core | [Entities](../src/MESagent.Domain/Entities) |
+| Infrastructure | DbContext、Identity、映射/迁移及身份、工艺/工单、生产、执行模块的持久化/事务用例 | [MesDbContext.cs](../src/MESagent.Infrastructure/Persistence/MesDbContext.cs) |
+| Application | 共享应用入口、模块类型契约、权限目录与配置，不依赖 EF/Identity | [OrganizationIdentityAccessControl.cs](../src/MESagent.Application/OrganizationIdentityAccessControl.cs) |
+| API / WebUI | 认证/防伪/HTTP 与 React 管理、派工和生产执行页面 | [API](../src/MESagent.Api/Program.cs) / [WebUI](../web/src/main.tsx) |
 | Database | 建库/升级、迁移状态查询、字段字典导出 | [Program.cs](../src/MESagent.Database/Program.cs) |
 | Database.Tests | 在隔离 PostgreSQL 数据库中验证约束、并发和迁移 | [SchemaTests.cs](../tests/MESagent.Database.Tests/SchemaTests.cs) |
 | 原 MESagent 控制台 | 保留的启动骨架，不承载 MES 业务服务 | [Program.cs](../src/MESagent/Program.cs) |
 
 项目依赖方向为 Application → Domain、Infrastructure → Application/Domain；API 在组合入口注册 Infrastructure；Database → Infrastructure。Infrastructure 通过 EF Core 的 Npgsql Provider 访问 PostgreSQL。
 
-Application 与 API 已创建。OrganizationIdentityAccessControl 提供统一应用入口，身份和数据库事务适配位于 Infrastructure/OrganizationIdentityAccessControl；后续模块继续复用授权边界并抽取独立领域规则。Agent 本轮仅预留位置。
+Application 与 API 已创建。F1-`OrganizationIdentityAccessControl` 提供统一应用入口，身份和数据库事务适配位于 Infrastructure/OrganizationIdentityAccessControl；后续模块继续复用授权边界并抽取独立领域规则。Agent 本轮仅预留位置。
 
 ## 3. 数据库模块
 
@@ -89,7 +91,7 @@ Measurement 保存规格版本、单位、实测值、采样范围和判定；Wa
 
 JSONB 用于参数、载荷、扩展和快照；Lot、Wafer、版本、设备、Hold 等核心关联应继续使用显式外键。字段类型、长度和可空性由各模块 `FabModel.*.cs` 配置；跨对象复合外键及特殊索引集中在 [FabModel.Integrity.cs](../src/MESagent.Infrastructure/Persistence/FabModel.Integrity.cs)。
 
-业务实体使用 PostgreSQL 系统列 `xmin` 作为 EF 乐观并发令牌。读取后再修改时，若记录已被其他事务改变，SaveChanges 抛出并发异常；OrganizationIdentityAccessControl API 使用 ETag/If-Match 并返回 412 冲突；未来生产 API 同样不能直接覆盖。
+业务实体使用 PostgreSQL 系统列 `xmin` 作为 EF 乐观并发令牌。读取后再修改时，若记录已被其他事务改变，SaveChanges 抛出并发异常；F1-`OrganizationIdentityAccessControl` API 使用 ETag/If-Match 并返回 412 冲突；未来生产 API 同样不能直接覆盖。
 
 MesDbContext 在常规 SaveChanges 路径更新 UpdatedAt；直接 SQL 或批量更新不会自动经过这一逻辑，开发者需显式处理时间及并发条件。DbContext 本身没有自动生成审计、Outbox 或完整业务事务。
 
@@ -126,7 +128,7 @@ python3 scripts/database.py status
 
 连接地址为 `127.0.0.1:55432/mesagent`，本地迁移账号为 `mesagent_owner`，密码位于 Git 忽略的 `.env`。脚本不会覆盖已有 `.env`。数据库由 [compose.yaml](../compose.yaml) 管理，使用独立持久卷；`stop` 停止容器但保留数据。
 
-当前账号用于本地建库和迁移。OrganizationIdentityAccessControl 已提供独立运行角色配置草案及应用层厂区过滤；当前本地开发命令仍使用开发连接，生产最小权限账号联调随交付阶段验证。未实现数据库 RLS。
+当前账号用于本地建库和迁移。F1-`OrganizationIdentityAccessControl` 已提供独立运行角色配置草案及应用层厂区过滤；当前本地开发命令仍使用开发连接，生产最小权限账号联调随交付阶段验证。未实现数据库 RLS。
 
 ## 8. 修改模型与迁移流程
 
@@ -148,7 +150,7 @@ python3 scripts/database.py catalog
 
 ## 9. 测试与问题定位
 
-已记录 17 项真实 PostgreSQL 测试通过，覆盖约束、区间冲突、幂等、xmin、回滚、发布保护、审计、库存和派生数量；新增 17 项 OrganizationIdentityAccessControl HTTP 集成测试通过。测试在随机命名的 `mesagent_test_*` 数据库运行并清理，缺少测试连接时会失败，不用内存数据库代替。本轮 OrganizationIdentityAccessControl 开发已执行上述 34 项测试；浏览器与部署验证边界见 OrganizationIdentityAccessControl 实现记录。
+已记录 17 项真实 PostgreSQL 测试通过，覆盖约束、区间冲突、幂等、xmin、回滚、发布保护、审计、库存和派生数量；新增 17 项 F1-`OrganizationIdentityAccessControl` HTTP 集成测试通过。测试在随机命名的 `mesagent_test_*` 数据库运行并清理，缺少测试连接时会失败，不用内存数据库代替。本轮 F1-`OrganizationIdentityAccessControl` 开发已执行上述 34 项测试；浏览器与部署验证边界见 F1-`OrganizationIdentityAccessControl` 实现记录。
 
 | 现象 | 优先检查 |
 | --- | --- |

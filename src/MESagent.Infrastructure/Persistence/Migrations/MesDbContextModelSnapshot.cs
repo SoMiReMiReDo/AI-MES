@@ -546,6 +546,11 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("uuidv7()");
 
+                    b.Property<decimal?>("AllowedWaferSizeMm")
+                        .HasPrecision(20, 6)
+                        .HasColumnType("numeric(20,6)")
+                        .HasColumnName("allowed_wafer_size_mm");
+
                     b.Property<string>("CarrierCode")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -3048,6 +3053,15 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("uuidv7()");
 
+                    b.Property<string>("CloseReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("close_reason");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("completed_at");
@@ -5023,7 +5037,8 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("RecordedById");
 
-                    b.HasIndex("StepExecutionId");
+                    b.HasIndex("StepExecutionId", "OutputId")
+                        .IsUnique();
 
                     b.ToTable("output_values", "production", t =>
                         {
@@ -5294,6 +5309,10 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("equipment_id");
 
+                    b.Property<Guid?>("RecipeApplicabilityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recipe_applicability_id");
+
                     b.Property<Guid>("RecipeVersionId")
                         .HasColumnType("uuid")
                         .HasColumnName("recipe_version_id");
@@ -5343,6 +5362,8 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                     b.HasIndex("EquipmentId")
                         .IsUnique()
                         .HasFilter("status = 'Running'");
+
+                    b.HasIndex("RecipeApplicabilityId");
 
                     b.HasIndex("RecipeVersionId");
 
@@ -7167,6 +7188,14 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("assigned_by_id");
 
+                    b.Property<Guid?>("AssignedEquipmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assigned_equipment_id");
+
+                    b.Property<Guid?>("AssignedRecipeVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assigned_recipe_version_id");
+
                     b.Property<DateTime?>("ConfirmedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("confirmed_at");
@@ -7249,6 +7278,10 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AssignedById");
 
+                    b.HasIndex("AssignedEquipmentId");
+
+                    b.HasIndex("AssignedRecipeVersionId");
+
                     b.HasIndex("ConfirmedById");
 
                     b.HasIndex("LotId")
@@ -7270,6 +7303,37 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_step_executions_2", "exited_at IS NULL OR exited_at >= entered_at");
                         });
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.StepExecutionInheritance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("GenealogyEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("genealogy_event_id");
+
+                    b.Property<Guid>("SourceStepExecutionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_step_execution_id");
+
+                    b.Property<Guid>("TargetStepExecutionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_step_execution_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceStepExecutionId");
+
+                    b.HasIndex("TargetStepExecutionId");
+
+                    b.HasIndex("GenealogyEventId", "SourceStepExecutionId", "TargetStepExecutionId")
+                        .IsUnique();
+
+                    b.ToTable("step_execution_inheritances", "production");
                 });
 
             modelBuilder.Entity("MESagent.Domain.Entities.StockDocument", b =>
@@ -7880,6 +7944,10 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<Guid?>("FabId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fab_id");
+
                     b.Property<string>("LifecycleStatus")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -7922,17 +7990,88 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(20,6)")
                         .HasColumnName("wafer_size_mm");
 
+                    b.Property<Guid?>("WorkOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_order_id");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("FabId");
 
                     b.HasIndex("OriginMaterialLotId");
 
                     b.HasIndex("WaferCode")
                         .IsUnique();
 
+                    b.HasIndex("WorkOrderId");
+
                     b.ToTable("wafers", "production", t =>
                         {
                             t.HasCheckConstraint("ck_wafers_1", "wafer_size_mm > 0");
                         });
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.WaferCompletion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CommandId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("command_id");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<Guid>("CompletedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("completed_by_id");
+
+                    b.Property<Guid>("LotIdAtCompletion")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lot_id_at_completion");
+
+                    b.Property<Guid>("ProcessRunId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("process_run_id");
+
+                    b.Property<Guid>("RouteStepId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("route_step_id");
+
+                    b.Property<Guid>("RouteVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("route_version_id");
+
+                    b.Property<Guid>("WaferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("wafer_id");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_order_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompletedById");
+
+                    b.HasIndex("LotIdAtCompletion");
+
+                    b.HasIndex("ProcessRunId");
+
+                    b.HasIndex("RouteStepId");
+
+                    b.HasIndex("RouteVersionId");
+
+                    b.HasIndex("WaferId")
+                        .IsUnique();
+
+                    b.HasIndex("WorkOrderId");
+
+                    b.ToTable("wafer_completions", "production");
                 });
 
             modelBuilder.Entity("MESagent.Domain.Entities.WaferDisposition", b =>
@@ -8024,6 +8163,61 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasFilter("disposition_type = 'Scrap'");
 
                     b.ToTable("wafer_dispositions", "quality");
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.WaferRelease", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CommandId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("command_id");
+
+                    b.Property<Guid>("InitialLotId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("initial_lot_id");
+
+                    b.Property<DateTime>("ReleasedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("released_at");
+
+                    b.Property<Guid>("ReleasedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("released_by_id");
+
+                    b.Property<Guid>("RouteVersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("route_version_id");
+
+                    b.Property<int>("SnapshotVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("snapshot_version");
+
+                    b.Property<Guid>("WaferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("wafer_id");
+
+                    b.Property<Guid>("WorkOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("work_order_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InitialLotId");
+
+                    b.HasIndex("ReleasedById");
+
+                    b.HasIndex("RouteVersionId");
+
+                    b.HasIndex("WaferId")
+                        .IsUnique();
+
+                    b.HasIndex("WorkOrderId");
+
+                    b.ToTable("wafer_releases", "production");
                 });
 
             modelBuilder.Entity("MESagent.Domain.Entities.Warehouse", b =>
@@ -10244,6 +10438,11 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("MESagent.Domain.Entities.RecipeApplicability", null)
+                        .WithMany()
+                        .HasForeignKey("RecipeApplicabilityId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MESagent.Domain.Entities.RecipeVersion", null)
                         .WithMany()
                         .HasForeignKey("RecipeVersionId")
@@ -10673,6 +10872,16 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasForeignKey("AssignedById")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("MESagent.Domain.Entities.Equipment", null)
+                        .WithMany()
+                        .HasForeignKey("AssignedEquipmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MESagent.Domain.Entities.RecipeVersion", null)
+                        .WithMany()
+                        .HasForeignKey("AssignedRecipeVersionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MESagent.Infrastructure.Identity.MesUser", null)
                         .WithMany()
                         .HasForeignKey("ConfirmedById")
@@ -10707,6 +10916,27 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("RouteStepId", "RouteVersionId")
                         .HasPrincipalKey("Id", "RouteVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.StepExecutionInheritance", b =>
+                {
+                    b.HasOne("MESagent.Domain.Entities.GenealogyEvent", null)
+                        .WithMany()
+                        .HasForeignKey("GenealogyEventId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.StepExecution", null)
+                        .WithMany()
+                        .HasForeignKey("SourceStepExecutionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.StepExecution", null)
+                        .WithMany()
+                        .HasForeignKey("TargetStepExecutionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -10854,10 +11084,65 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("MESagent.Domain.Entities.Wafer", b =>
                 {
+                    b.HasOne("MESagent.Domain.Entities.Fab", null)
+                        .WithMany()
+                        .HasForeignKey("FabId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MESagent.Domain.Entities.MaterialLot", null)
                         .WithMany()
                         .HasForeignKey("OriginMaterialLotId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MESagent.Domain.Entities.WorkOrder", null)
+                        .WithMany()
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.WaferCompletion", b =>
+                {
+                    b.HasOne("MESagent.Infrastructure.Identity.MesUser", null)
+                        .WithMany()
+                        .HasForeignKey("CompletedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.Lot", null)
+                        .WithMany()
+                        .HasForeignKey("LotIdAtCompletion")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.ProcessRun", null)
+                        .WithMany()
+                        .HasForeignKey("ProcessRunId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.RouteStep", null)
+                        .WithMany()
+                        .HasForeignKey("RouteStepId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.RouteVersion", null)
+                        .WithMany()
+                        .HasForeignKey("RouteVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.Wafer", null)
+                        .WithMany()
+                        .HasForeignKey("WaferId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.WorkOrder", null)
+                        .WithMany()
+                        .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("MESagent.Domain.Entities.WaferDisposition", b =>
@@ -10904,6 +11189,39 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                     b.HasOne("MESagent.Domain.Entities.Wafer", null)
                         .WithMany()
                         .HasForeignKey("WaferId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.WaferRelease", b =>
+                {
+                    b.HasOne("MESagent.Domain.Entities.Lot", null)
+                        .WithMany()
+                        .HasForeignKey("InitialLotId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Infrastructure.Identity.MesUser", null)
+                        .WithMany()
+                        .HasForeignKey("ReleasedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.RouteVersion", null)
+                        .WithMany()
+                        .HasForeignKey("RouteVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.Wafer", null)
+                        .WithMany()
+                        .HasForeignKey("WaferId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.WorkOrder", null)
+                        .WithMany()
+                        .HasForeignKey("WorkOrderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

@@ -73,6 +73,8 @@ public sealed class WorkOrderChangeRequest
 /// <summary>Production / lots，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
 public sealed class Lot
 {
+    public DateTime? ClosedAt { get; set; }
+    public string? CloseReason { get; set; }
     public Guid Id { get; set; } = Guid.CreateVersion7();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -88,7 +90,7 @@ public sealed class Lot
     public string LotType { get; set; } = null!;
     public int Priority { get; set; }
     public int TargetQty { get; set; }
-    // Completion snapshot, updated by the future terminal-operation command, never by station summation.
+    // Completion snapshot, updated by the terminal-operation command, never by station summation.
     public int ProducedQty { get; set; }
     public string Status { get; set; } = null!;
     public DateTime? StartedAt { get; set; }
@@ -102,6 +104,9 @@ public sealed class Lot
 /// <summary>Production / wafers，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
 public sealed class Wafer
 {
+    // Nullable only for legacy rows; managed production always assigns both.
+    public Guid? FabId { get; set; }
+    public Guid? WorkOrderId { get; set; }
     public Guid Id { get; set; } = Guid.CreateVersion7();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -159,6 +164,7 @@ public sealed class LotMembership
 /// <summary>Production / carriers，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
 public sealed class Carrier
 {
+    public decimal? AllowedWaferSizeMm { get; set; }
     public Guid Id { get; set; } = Guid.CreateVersion7();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -231,6 +237,8 @@ public sealed class StepExecution
     public bool RequiresConfirmation { get; set; }
     public Guid? AssignedById { get; set; }
     public DateTime? AssignedAt { get; set; }
+    public Guid? AssignedEquipmentId { get; set; }
+    public Guid? AssignedRecipeVersionId { get; set; }
     public int PassedQty { get; set; }
     public int ScrapQty { get; set; }
 }
@@ -246,6 +254,7 @@ public sealed class ProcessRun
     public Guid EquipmentId { get; set; }
     public Guid? ChamberId { get; set; }
     public Guid RecipeVersionId { get; set; }
+    public Guid? RecipeApplicabilityId { get; set; }
     public DateTime TrackInAt { get; set; }
     public DateTime? TrackOutAt { get; set; }
     public Guid TrackInById { get; set; }

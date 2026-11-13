@@ -1,8 +1,8 @@
-# OrganizationIdentityAccessControl 组织、身份与访问控制
+# F1-`OrganizationIdentityAccessControl` 组织、身份与访问控制
 
 日期：2026-11-11｜版本：v0.1｜状态：设计基线；01～04 首版代码已完成，验证范围见实现记录
 
-实现进度、与设计的差异及运行方式以 [OrganizationIdentityAccessControl 实现记录](organization-identity-access-control-implementation.md) 为准。下文保留设计提出时的基础与模型差异，不将未执行验收标为通过。
+实现进度、与设计的差异及运行方式以 [F1-`OrganizationIdentityAccessControl` 实现记录](organization-identity-access-control-implementation.md) 为准。下文保留设计提出时的基础与模型差异，不将未执行验收标为通过。
 
 关联：[功能目录](../development-process/07-fab-function-catalog.md) · [实现架构](../development-process/08-feature-implementation-architecture.md) · [接口与验收](organization-identity-access-control-api-and-acceptance.md)
 
@@ -14,12 +14,12 @@
 
 | 功能 ID | 本轮设计深度 | 交付内容 |
 | --- | --- | --- |
-| OrganizationStructure | 完整 | 厂区、区域、产线、位置的查询、维护、启停与历史读取 |
-| WorkforceAndTerminals | 完整 | 员工、工位、登录终端台账；员工与账号关联、操作场所上下文 |
-| AccountsAndSessions | 完整 | 登录/退出、资料、改密/重置、锁定/解锁、停用/启用、首登改密、会话撤销 |
-| RolesAndAuthorization | 完整 | 角色、权限目录、角色授权、用户角色、厂区范围、对象级授权 |
-| ShiftsAndHandovers | 扩展边界 | 班次、生产日、跨午夜与双向交接的后续要求及模型缺口 |
-| FederatedIdentityAndMultiFab | 扩展边界 | 双因素、SSO、多厂的启用条件；本期无对应配置入口 |
+| F1-01-`OrganizationStructure` | 完整 | 厂区、区域、产线、位置的查询、维护、启停与历史读取 |
+| F1-02-`WorkforceAndTerminals` | 完整 | 员工、工位、登录终端台账；员工与账号关联、操作场所上下文 |
+| F1-03-`AccountsAndSessions` | 完整 | 登录/退出、资料、改密/重置、锁定/解锁、停用/启用、首登改密、会话撤销 |
+| F1-04-`RolesAndAuthorization` | 完整 | 角色、权限目录、角色授权、用户角色、厂区范围、对象级授权 |
+| F1-05-`ShiftsAndHandovers` | 扩展边界 | 班次、生产日、跨午夜与双向交接的后续要求及模型缺口 |
+| F1-06-`FederatedIdentityAndMultiFab` | 扩展边界 | 双因素、SSO、多厂的启用条件；本期无对应配置入口 |
 
 本文为设计基线，用户随后已授权编码；实际实现见上述记录。下面的页面、规则、默认参数和模型增补均为设计方案；现场密码策略、会话时长可在实现验收前配置调整，不把建议值记作用户已逐项确认。
 
@@ -35,24 +35,24 @@
 | Permission/RolePermission/UserFabScope | 权限及角色关系、用户厂区范围 | 权限种子、应用授权、范围解析、授权变更事务 |
 | UserPermission | 仅用户—权限授予关系，无显式拒绝语义 | 本期不读入有效权限、不开放编辑；初始化发现遗留记录时报告人工核对 |
 | MesRole | 标准 Identity 角色，没有业务启停字段 | 增加角色启停及受保护标识，配套并发控制 |
-| Shift/ShiftHandover | 班次时刻、交接业务日与单方确认字段 | 双方确认、交接明细与历史班次规则，留待 ShiftsAndHandovers |
+| Shift/ShiftHandover | 班次时刻、交接业务日与单方确认字段 | 双方确认、交接明细与历史班次规则，留待 F1-05-`ShiftsAndHandovers` |
 | AuditLog | 有用户、对象、动作、前后值、请求关联及来源 | 自动记录、脱敏、授权查询；匿名登录失败另需安全事件结构 |
 
 现有 Identity 表不等于完整登录功能；Identity user_tokens 也不能直接当作活跃浏览器会话清单。
 
 ## 3. 角色、页面与默认职责
 
-| 角色模板 | 默认用途 | OrganizationIdentityAccessControl 默认权限 |
+| 角色模板 | 默认用途 | F1-`OrganizationIdentityAccessControl` 默认权限 |
 | --- | --- | --- |
-| 系统管理员 `SystemAdmin` | 组织和安全管理 | OrganizationIdentityAccessControl 组织/人员/账号/角色/范围/安全日志管理；不隐含生产放行、报废或工艺发布 |
-| 操作员 `Operator` | 后续生产操作台 | 组织只读、本人资料与改密；生产动作由 F05 单独配置 |
+| 系统管理员 `SystemAdmin` | 组织和安全管理 | F1-`OrganizationIdentityAccessControl` 组织/人员/账号/角色/范围/安全日志管理；不隐含生产放行、报废或工艺发布 |
+| 操作员 `Operator` | 后续生产操作台 | 组织只读、本人资料与改密；生产动作由 F5-`DispatchAndProductionExecution` 单独配置 |
 | 工艺工程师 `ProcessEngineer` | 后续产品/路线/配方维护 | 组织只读、本人资料与改密 |
 | 质量工程师 `QualityEngineer` | 后续检验与处置 | 组织只读、本人资料与改密 |
 | 计划员 `Planner` | 后续工单与计划 | 组织只读、本人资料与改密 |
 | 设备工程师 `EquipmentEngineer` | 后续设备与维护 | 组织只读、本人资料与改密；不因此得到终端或账号管理权限 |
 | 只读用户 `Viewer` | 后续看板与追溯查询 | 组织只读、本人资料与改密；没有批量导出和人员名录权限 |
 
-角色模板是初始建议，普通模板可调整或停用。SystemAdmin 为受保护角色，不允许删除、停用或修改其 OrganizationIdentityAccessControl 管理权限集合；成员可由另一管理员管理，仍须有部署厂区范围。生产授权应显式叠加对应业务角色。
+角色模板是初始建议，普通模板可调整或停用。SystemAdmin 为受保护角色，不允许删除、停用或修改其 F1-`OrganizationIdentityAccessControl` 管理权限集合；成员可由另一管理员管理，仍须有部署厂区范围。生产授权应显式叠加对应业务角色。
 
 | 页面/路由建议 | 主要操作与反馈 |
 | --- | --- |
@@ -65,11 +65,11 @@
 | `/settings/terminals` | 终端编号、部署厂区、工位绑定、最后联系时间和版本；不展示为物理机台 |
 | `/settings/users` | 账号列表、状态、员工绑定、角色、厂区范围、解锁/重置/撤销会话；敏感操作单独确认 |
 | `/settings/roles` | 角色列表、权限勾选、成员与变更影响；只展示已交付权限 |
-| `/settings/security-events` | OrganizationIdentityAccessControl 审计与登录/会话安全事件；按时间、操作人、动作、结果筛选 |
+| `/settings/security-events` | F1-`OrganizationIdentityAccessControl` 审计与登录/会话安全事件；按时间、操作人、动作、结果筛选 |
 
 列表提供关键字、启停/状态筛选和分页；详情保留停用对象入口。按钮不可用时显示业务原因。并发冲突后保留表单供比较，重新读取后再提交，不静默覆盖他人修改。
 
-## 4. OrganizationStructure：组织结构与启停
+## 4. F1-01-`OrganizationStructure`：组织结构与启停
 
 ### 4.1 对象与字段
 
@@ -86,7 +86,7 @@ flowchart TD
     Worker -. "至多一个账号" .-> User["MesUser：登录身份"]
 ```
 
-位置与产线是 Area 下的不同对象，不把 Location 强行挂到 Line。工位也不等于设备；设备台账属于 F07。
+位置与产线是 Area 下的不同对象，不把 Location 强行挂到 Line。工位也不等于设备；设备台账属于 F7-`EquipmentMaintenanceResources`。
 
 | 对象 | 可维护字段 | 编码唯一范围 |
 | --- | --- | --- |
@@ -95,7 +95,7 @@ flowchart TD
 | Line | Code、Name、Description、AreaId、IsActive | Area 内 |
 | Location | Code、Name、Description、AreaId、LocationType、IsActive | Area 内 |
 
-设计统一 Code 为 1～64 位大写 ASCII 字母、数字、`-_.`，首字符字母或数字；输入去两端空白再大写，预检已有数据冲突后增加一致约束。Name 去空白后 1～200 字符，Description 最多 2,000 字符。LocationType 首期为受控枚举 `Storage/Buffer/Process/Other`，具体仓储功能由 F08 定义。现有字段长度不等于已经实施这些输入规则。
+设计统一 Code 为 1～64 位大写 ASCII 字母、数字、`-_.`，首字符字母或数字；输入去两端空白再大写，预检已有数据冲突后增加一致约束。Name 去空白后 1～200 字符，Description 最多 2,000 字符。LocationType 首期为受控枚举 `Storage/Buffer/Process/Other`，具体仓储功能由 F8-`MaterialConsumptionInventory` 定义。现有字段长度不等于已经实施这些输入规则。
 
 ### 4.2 业务规则
 
@@ -107,7 +107,7 @@ flowchart TD
 6. 停用 Fab 时先处理其有效子对象；保留管理员登录及重新启用入口、既有范围与历史查询。Fab 停用不是撤销用户范围，也不是删除记录。
 7. 启用子对象须先启用父对象。编号不因停用而释放，不能创建同编码新对象替换历史。
 
-停用依赖按当前启用模块注册检查器；OrganizationIdentityAccessControl 首期至少检查组织子对象、员工绑定、工位终端和已有设备/载具/加工相关引用。后续模块上线时同步增加检查，不能把“没有 API”解释为“数据库没有未结记录”。依赖关系无法明确判断时返回需处理的引用，禁止猜测迁移或自动收尾。
+停用依赖按当前启用模块注册检查器；F1-`OrganizationIdentityAccessControl` 首期至少检查组织子对象、员工绑定、工位终端和已有设备/载具/加工相关引用。后续模块上线时同步增加检查，不能把“没有 API”解释为“数据库没有未结记录”。依赖关系无法明确判断时返回需处理的引用，禁止猜测迁移或自动收尾。
 
 新增绑定、启用子项与停用父项共用组织锁约定：在事务中按固定层级及 ID 顺序锁定相关父节点，再检查有效性和依赖、执行写入。仅对子记录使用 xmin 不能阻止“父项刚停用、另一事务又创建子项”的竞争；后续生产创建引用的用例也须遵守这一约定。
 
@@ -117,7 +117,7 @@ Fab.Timezone 使用经过服务器校验的 IANA 时区标识；演示建议 `As
 
 Fab 创建后时区不开放普通编辑；变更需确认历史显示、生产日和班次影响后另行迁移。不能直接以浏览器本地时区代替 Fab 时区，也不能修改旧事件 UTC 时间来“修正显示”。
 
-## 5. WorkforceAndTerminals：员工、工位与终端
+## 5. F1-02-`WorkforceAndTerminals`：员工、工位与终端
 
 | 对象 | 规则 |
 | --- | --- |
@@ -137,7 +137,7 @@ Fab 创建后时区不开放普通编辑；变更需确认历史显示、生产�
 
 LastSeenAt 仅由成功认证的终端上下文请求限频更新，AppVersion 为客户端报告信息，均不充当安全证据。多人共用终端时必须退出再由下一人登录，禁止共享操作员账号。
 
-## 6. AccountsAndSessions：账号与会话
+## 6. F1-03-`AccountsAndSessions`：账号与会话
 
 ### 6.1 建号与生命周期
 
@@ -198,7 +198,7 @@ SPA 先获取请求防伪令牌，登录、退出以及所有 Cookie 认证写�
 
 空闲计时由服务端明确的交互端点策略推进，轮询、CSRF 获取和终端心跳不推进；实现时逐端点标注并测试。该计时衡量系统请求活动，不宣称证明真人持续在场。
 
-## 7. RolesAndAuthorization：角色、权限与对象范围
+## 7. F1-04-`RolesAndAuthorization`：角色、权限与对象范围
 
 ### 7.1 权限目录
 
@@ -215,7 +215,7 @@ Permission.Code 为代码定义的稳定标识，部署幂等初始化。WebUI �
 | `security.sessions.revoke` | 管理员查看并撤销目标会话 |
 | `security.roles.read` / `security.roles.manage` | 角色/权限目录查询 / 角色维护及权限集合变更 |
 | `security.assignments.manage` | 用户角色、厂区范围变更 |
-| `security.audit.read` | OrganizationIdentityAccessControl 业务审计及安全事件查询 |
+| `security.audit.read` | F1-`OrganizationIdentityAccessControl` 业务审计及安全事件查询 |
 
 manage 不隐式包含 read，角色编辑器提示配套授权但两者分别保存；管理员种子同时授予需要的读写权限。普通本人资料、本人会话和改密通过“已认证且目标是本人”的专门策略，不要求管理权限；受限改密会话仍仅允许 §6.1 的白名单。
 
@@ -271,7 +271,7 @@ Identity 安全戳用于认证失效，ConcurrencyStamp 用于编辑冲突，两
 
 初始化顺序：应用增量迁移 → 显式创建/选定部署 Fab → 幂等同步权限定义和角色模板 → 创建首个管理员/绑定范围 → 强制首登改密 → 进入组织维护。密码通过交互或部署密钥输入，不出现在命令行参数、Git、种子数据或文档中；已有管理员时拒绝重复引导。
 
-| 层/模块 | OrganizationIdentityAccessControl 责任 |
+| 层/模块 | F1-`OrganizationIdentityAccessControl` 责任 |
 | --- | --- |
 | Application/Organization | 组织用例、归属/启停规则、影响查询、员工/工位/终端上下文 |
 | Application/AccessControl | 账号、角色、范围、有效权限、会话策略接口；统一对象授权 |
@@ -284,7 +284,7 @@ Identity 安全戳用于认证失效，ConcurrencyStamp 用于编辑冲突，两
 
 ## 10. ShiftsAndHandovers/06 扩展边界
 
-### ShiftsAndHandovers：班次、生产日与交接
+### F1-05-`ShiftsAndHandovers`：班次、生产日与交接
 
 未来需明确班次有效星期、节假日/例外日历、厂级或产线级范围与重叠策略。建议跨午夜班次的生产日为 Fab 本地开始日期，例如 11 月 11 日 20:00 至次日 08:00 属于 11 月 11 日；该口径待启用时确认。遇夏令时的重复/缺失时刻必须明确解析规则，生成的实际 UTC 起止写入交接事实。
 
@@ -294,7 +294,7 @@ Identity 安全戳用于认证失效，ConcurrencyStamp 用于编辑冲突，两
 
 本期无班次排班、交接单页面和统计；不因此阻塞 组织结构、人员与场所、账号会话及角色权限。若现场试点必须按班交接，应单独前移并完善验收。
 
-### FederatedIdentityAndMultiFab：双因素、SSO、多厂
+### F1-06-`FederatedIdentityAndMultiFab`：双因素、SSO、多厂
 
 | 扩展 | 启用前需确认与验证 |
 | --- | --- |
@@ -306,6 +306,6 @@ Identity 安全戳用于认证失效，ConcurrencyStamp 用于编辑冲突，两
 
 ## 11. 完成标准与后续
 
-组织结构、人员与场所、账号会话及角色权限 的规则、模型、接口与真实页面全部通过 [接口与验收清单](organization-identity-access-control-api-and-acceptance.md) 后才可标为“已实现”。ShiftsAndHandovers/06 继续标为扩展，整体 OrganizationIdentityAccessControl 不因此宣称全部六项交付。
+组织结构、人员与场所、账号会话及角色权限 的规则、模型、接口与真实页面全部通过 [接口与验收清单](organization-identity-access-control-api-and-acceptance.md) 后才可标为“已实现”。ShiftsAndHandovers/06 继续标为扩展，整体 F1-`OrganizationIdentityAccessControl` 不因此宣称全部六项交付。
 
 后续编码前根据本文生成增量迁移和任务，核查实际数据中的重复员工绑定、未归属终端及编码冲突；不自动修复未知业务数据。具体现场岗位、终端可信度、生产动作的人员资格要求在相应生产模块中继续确认。

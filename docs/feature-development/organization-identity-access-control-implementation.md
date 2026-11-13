@@ -1,4 +1,4 @@
-# OrganizationIdentityAccessControl 实现与本地开发
+# F1-`OrganizationIdentityAccessControl` 实现与本地开发
 
 更新：2026-11-11｜状态：架构初始化与 组织结构、人员与场所、账号会话及角色权限 首版代码已完成；Docker 打包按用户要求后置。
 
@@ -7,13 +7,13 @@
 | 范围 | 当前能力 |
 | --- | --- |
 | 工程基础 | 新建 Application、ASP.NET Core API、React WebUI 和 HTTP 集成测试项目；保留原控制台、Domain、Infrastructure、Database 与数据库测试 |
-| OrganizationStructure 组织 | 厂区维护，区域、产线、位置创建/查询/编辑/启停；编码规范化、父级有效性、停用影响检查、历史可读、ETag 冲突保护 |
-| WorkforceAndTerminals 人员与场所 | 员工、工位、终端台账；员工与账号唯一关联；工位同区域、终端同厂校验；关联变更和停用撤销受影响会话 |
-| AccountsAndSessions 身份 | 本地账号、Cookie、防伪、首登改密、本人资料、改密/重置、自动/手动锁定、启停、会话列表与撤销、初始化及本地管理员恢复 |
-| RolesAndAuthorization 授权 | 角色、权限集合、用户角色与厂区范围；受保护管理员、个人直接授权不生效、服务端对象校验、审计与安全事件 |
+| F1-01-`OrganizationStructure` 组织 | 厂区维护，区域、产线、位置创建/查询/编辑/启停；编码规范化、父级有效性、停用影响检查、历史可读、ETag 冲突保护 |
+| F1-02-`WorkforceAndTerminals` 人员与场所 | 员工、工位、终端台账；员工与账号唯一关联；工位同区域、终端同厂校验；关联变更和停用撤销受影响会话 |
+| F1-03-`AccountsAndSessions` 身份 | 本地账号、Cookie、防伪、首登改密、本人资料、改密/重置、自动/手动锁定、启停、会话列表与撤销、初始化及本地管理员恢复 |
+| F1-04-`RolesAndAuthorization` 授权 | 角色、权限集合、用户角色与厂区范围；受保护管理员、个人直接授权不生效、服务端对象校验、审计与安全事件 |
 | WebUI | 登录/改密、工作台、组织树与列表、员工/工位/终端、账号/授权、角色/权限、个人设置及审计查询；桌面与窄屏布局 |
 
-ShiftsAndHandovers 班次交接、FederatedIdentityAndMultiFab 双因素/SSO/多厂保持扩展边界；Agent 仅保留架构位置。生产过站、工艺、质量等其它模块仍只有原有数据基础，不能据此认为已有业务功能。
+F1-05-`ShiftsAndHandovers` 班次交接、F1-06-`FederatedIdentityAndMultiFab` 双因素/SSO/多厂保持扩展边界；Agent 仅保留架构位置。生产过站、工艺、质量等其它模块仍只有原有数据基础，不能据此认为已有业务功能。
 
 ## 2. 代码入口与依赖
 
@@ -27,9 +27,9 @@ ShiftsAndHandovers 班次交接、FederatedIdentityAndMultiFab 双因素/SSO/多
 | [web/src](../../web/src) | 按组织、账号、角色、审计、个人设置等页面拆分；共用请求封装和查询缓存 |
 | [API tests](../../tests/MESagent.Api.Tests/OrganizationIdentityAccessControlTests.cs) | 真实认证、HTTP 和 PostgreSQL 集成验证 |
 
-编译依赖：Application → Domain；Infrastructure → Application/Domain；API 在组合入口注册 Infrastructure。API 不直接修改业务实体。当前 OrganizationIdentityAccessControl 的数据库事务编排集中在 Infrastructure 的用例适配实现中，Application 保持无 EF/Identity 依赖的统一入口及契约；以后新增模块继续抽取可独立测试的业务规则，避免将用例搬入控制器。
+编译依赖：Application → Domain；Infrastructure → Application/Domain；API 在组合入口注册 Infrastructure。API 不直接修改业务实体。当前 F1-`OrganizationIdentityAccessControl` 的数据库事务编排集中在 Infrastructure 的用例适配实现中，Application 保持无 EF/Identity 依赖的统一入口及契约；以后新增模块继续抽取可独立测试的业务规则，避免将用例搬入控制器。
 
-OrganizationIdentityAccessControl 管理写请求、登录和初始化共用数据库事务级 advisory lock，优先保证管理员保护、授权变更与组织启停的一致性。该锁用于单厂初期的低频管理工作，不作为未来高频生产命令的并发方案。普通查询仍在数据库中先限制范围，再统计和分页；组织审计也按来源对象校验 Fab。
+F1-`OrganizationIdentityAccessControl` 管理写请求、登录和初始化共用数据库事务级 advisory lock，优先保证管理员保护、授权变更与组织启停的一致性。该锁用于单厂初期的低频管理工作，不作为未来高频生产命令的并发方案。普通查询仍在数据库中先限制范围，再统计和分页；组织审计也按来源对象校验 Fab。
 
 ## 3. 数据库变化
 
@@ -110,7 +110,7 @@ npm run generate:api --prefix web
 | --- | --- |
 | .NET 编译 | 已通过，0 警告、0 错误 |
 | 既有 PostgreSQL 测试 | 17 项通过，包含迁移回滚/重应用、约束、并发与历史保护 |
-| OrganizationIdentityAccessControl HTTP 集成测试 | 17 项通过；真实数据库、Cookie 和防伪；覆盖首登、撤权、跨厂拒绝、员工/终端绑定、锁定、限流、审计事务回滚、审计范围及本地恢复 |
+| F1-`OrganizationIdentityAccessControl` HTTP 集成测试 | 17 项通过；真实数据库、Cookie 和防伪；覆盖首登、撤权、跨厂拒绝、员工/终端绑定、锁定、限流、审计事务回滚、审计范围及本地恢复 |
 | TypeScript/Vite 构建 | 已通过；当前 UI bundle 较大，后续可按页面继续拆分加载 |
 | Chrome 完整流程 | 已通过一次：首登改密 → 区域创建 → 只读账号拒绝越权 → 停用账号后会话失效 → 退出；完成桌面与移动截图检查 |
 | 最新版本浏览器复测 | 最后一次复测未执行：自动审批服务额度达到上限。前述 Chrome 结果来自页面文件拆分前，不冒充最终源码完整回归 |
@@ -130,6 +130,6 @@ python3 scripts/e2e.py
 
 ## 7. 下一步
 
-根据后续授权进入 F02 工艺基础及相关业务模块。保持同一服务端权限与事务入口；后续生产模块引用组织对象时必须重新检查有效性和所属厂区。班次、SSO、多厂和 Agent 不随本轮代码完成自动进入实施范围。
+根据后续授权进入 F2-`ProductProcessVersionManagement` 工艺基础及相关业务模块。保持同一服务端权限与事务入口；后续生产模块引用组织对象时必须重新检查有效性和所属厂区。班次、SSO、多厂和 Agent 不随本轮代码完成自动进入实施范围。
 
 命名调整（2026-11-11）：代码模块统一采用 `OrganizationIdentityAccessControl`，文档和浏览器测试文件采用 `organization-identity-access-control`。已应用迁移 ID、数据库约束名称和既有 Cookie Data Protection 用途保持原值，避免影响迁移历史与已签发会话。

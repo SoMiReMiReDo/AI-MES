@@ -20,7 +20,7 @@ public sealed class SchemaTests(DatabaseFixture fixture) : IClassFixture<Databas
     public async Task Fresh_database_has_all_tables_and_repeat_migration_is_safe()
     {
         await using var db = fixture.CreateContext();
-        Assert.Equal(123, db.Model.GetEntityTypes().Count());
+        Assert.Equal(126, db.Model.GetEntityTypes().Count());
         Assert.False(db.Database.HasPendingModelChanges());
 
         await db.Database.MigrateAsync();

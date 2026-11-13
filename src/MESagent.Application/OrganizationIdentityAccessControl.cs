@@ -23,9 +23,10 @@ public sealed record OrganizationIdentityAccessControlRequest(
     string Path,
     JsonElement Body,
     IReadOnlyDictionary<string, string> Query,
-    string? Version);
+    string? Version,
+    string? IdempotencyKey = null);
 
-public sealed record OrganizationIdentityAccessControlResult(object? Data = null, string? Version = null, int Status = 200);
+public sealed record OrganizationIdentityAccessControlResult(object? Data = null, string? Version = null, int Status = 200, bool Replayed = false, string? Location = null);
 
 public sealed record LoginRequest(string Username, string Password, Guid? TerminalId = null);
 
@@ -73,6 +74,39 @@ public static class PermissionCatalog
 {
     public static readonly string[] All =
     [
+        "execution.read",
+        "execution.dispatch",
+        "execution.track-in",
+        "execution.record",
+        "execution.track-out",
+        "execution.abort",
+        "equipment.read",
+        "equipment.manage",
+        "equipment.state",
+        "planning.work-orders.recalculate",
+        "production.lots.read",
+        "production.lots.create",
+        "production.lots.manage",
+        "production.lots.release",
+        "production.lots.split",
+        "production.lots.merge",
+        "production.lots.cancel",
+        "production.wafers.read",
+        "production.genealogy.read",
+        "production.carriers.read",
+        "production.carriers.manage",
+        "production.carriers.load",
+        "production.carriers.move",
+        "engineering.read",
+        "engineering.manage",
+        "engineering.release",
+        "engineering.numbers.allocate",
+        "engineering.documents.manage",
+        "planning.work-orders.read",
+        "planning.work-orders.manage",
+        "planning.work-orders.release",
+        "planning.work-orders.cancel",
+        "planning.work-orders.close",
         "org.structure.read",
         "org.structure.manage",
         "org.workers.read",

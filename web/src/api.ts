@@ -23,6 +23,7 @@ export async function api<T = any>(
     method = "GET",
     body?: unknown,
     etag?: string | null,
+    idempotencyKey?: string,
 ): Promise<T> {
     if (method !== "GET" && !csrf) await refreshCsrf();
     const r = await fetch("/api/v1/" + path, {
@@ -33,6 +34,7 @@ export async function api<T = any>(
                 ? { "Content-Type": "application/json" }
                 : {}),
             ...(method !== "GET" ? { "X-CSRF-TOKEN": csrf } : {}),
+            ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
             ...(etag ? { "If-Match": etag } : {}),
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
