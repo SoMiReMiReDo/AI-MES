@@ -43,7 +43,7 @@ public sealed partial class ProductionBackend
             currentWaferCount = members.Count,
             releasedQty = await db.Set<WaferRelease>().CountAsync(x => ids.Contains(x.WaferId)),
             inProcessQty = wafers.Count(x => x.LifecycleStatus == "Active"),
-            completedQty = (int?)null,
+            completedQty = await db.Set<WaferCompletion>().CountAsync(x => x.LotIdAtCompletion == lot.Id),
             scrapQty = await db.Set<WaferDisposition>().CountAsync(x => x.LotIdAtEvent == lot.Id
                 && x.DispositionType == "Scrap")
         };
@@ -52,8 +52,8 @@ public sealed partial class ProductionBackend
             .CountAsync(x => x.LotId == lot.Id && x.ReleasedAt == null);
         result["currentStep"] = await db.Set<StepExecution>()
             .SingleOrDefaultAsync(x => x.LotId == lot.Id && x.ExitedAt == null);
-        result["coverage"] = "PendingIntegration";
-        result["missingDependencies"] = new[] { "F5 真实执行与终点完成", "F6 完整质量处置" };
+        result["coverage"] = "ProductionFacts";
+        result["missingDependencies"] = Array.Empty<string>();
         result["asOf"] = Now;
         result["allowedActions"] = new[]
         {
@@ -96,7 +96,9 @@ public sealed partial class ProductionBackend
             var load = loads.SingleOrDefault(x => x.CarrierSlotId == slot.Id);
             items.Add(new
             {
-                slot.Id, slot.SlotNo, occupied = load != null,
+                slot.Id,
+                slot.SlotNo,
+                occupied = load != null,
                 wafer = load != null && can("production.wafers.read") ? await WaferView(await Wafer(load.WaferId)) : null
             });
         }
@@ -216,7 +218,13 @@ public sealed partial class ProductionBackend
         var evt = await db.Set<GenealogyEvent>().SingleAsync(x => x.Id == id);
         return new
         {
-            evt.Id, evt.EventType, evt.Reason, evt.OccurredAt, evt.PerformedById, details, lotNumbers,
+            evt.Id,
+            evt.EventType,
+            evt.Reason,
+            evt.OccurredAt,
+            evt.PerformedById,
+            details,
+            lotNumbers,
             inheritances = await db.Set<StepExecutionInheritance>().Where(x => x.GenealogyEventId == id).ToListAsync()
         };
     }
@@ -254,8 +262,15 @@ public sealed partial class ProductionBackend
         var items = new List<object>();
         foreach (var evt in ordered)
             items.Add(await GenealogyView(evt.Id));
-        return new { items, total = events.Count, page,
-            pageSize = size, truncated, hasMore = events.Count > page * size || truncated };
+        return new
+        {
+            items,
+            total = events.Count,
+            page,
+            pageSize = size,
+            truncated,
+            hasMore = events.Count > page * size || truncated
+        };
     }
 
     private sealed record HistoryItem(Guid Id, string Type, DateTime OccurredAt, object Data);
@@ -276,8 +291,14 @@ public sealed partial class ProductionBackend
         var (page, size) = Paging(r);
         return new
         {
-            items = sorted.Skip((page - 1) * size).Take(size), total = sorted.Length, page, pageSize = size,
-            truncated, coverage = "PendingIntegration", missingDependencies = new[] { "F5/F6 完整生产履历" }, asOf = Now
+            items = sorted.Skip((page - 1) * size).Take(size),
+            total = sorted.Length,
+            page,
+            pageSize = size,
+            truncated,
+            coverage = "PendingIntegration",
+            missingDependencies = new[] { "F5/F6 完整生产履历" },
+            asOf = Now
         };
     }
 
@@ -293,8 +314,11 @@ public sealed partial class ProductionBackend
             await Lot(member.LotId);
             records.Add(new(member.Id, "Membership", member.ValidFrom, new
             {
-                member.LotId, lotNumber = (await Lot(member.LotId)).LotNumber,
-                member.ValidFrom, member.ValidTo, member.ChangeEventId
+                member.LotId,
+                lotNumber = (await Lot(member.LotId)).LotNumber,
+                member.ValidFrom,
+                member.ValidTo,
+                member.ChangeEventId
             }));
         }
         foreach (var load in loads.Take(1000))
@@ -317,8 +341,11 @@ public sealed partial class ProductionBackend
         var moves = await db.Set<CarrierMovement>().Where(x => x.CarrierId == carrier.Id)
             .OrderBy(x => x.MovedAt).Take(1001).ToListAsync();
         var records = moves.Take(1000).Select(x => new HistoryItem(x.Id, "Movement", x.MovedAt, x)).ToList();
-        var loads = await (from load in db.Set<CarrierLoad>() join slot in db.Set<CarrierSlot>()
-                           on load.CarrierSlotId equals slot.Id where slot.CarrierId == carrier.Id select load)
+        var loads = await (from load in db.Set<CarrierLoad>()
+                           join slot in db.Set<CarrierSlot>()
+                           on load.CarrierSlotId equals slot.Id
+                           where slot.CarrierId == carrier.Id
+                           select load)
             .OrderBy(x => x.LoadedAt).Take(1001).ToListAsync();
         foreach (var load in loads.Take(1000))
         {

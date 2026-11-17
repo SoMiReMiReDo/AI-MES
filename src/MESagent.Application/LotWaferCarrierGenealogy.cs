@@ -51,9 +51,10 @@ public interface ILotWaferCarrierGenealogyBackend
 // Invoked by F5/F6 inside the authenticated caller's transaction, never directly from HTTP payloads.
 public interface IProductionLifecycle
 {
-    Task<Guid> EnterWaitingStep(Guid lotId, Guid routeStepId, DateTime time, Guid callerCommandId);
+    Task<Guid> EnterWaitingStep(Guid lotId, Guid routeStepId, DateTime time, Guid callerCommandId,
+        Guid? qualityReleaseId = null);
 
-    Task CompleteAtRouteEnd(Guid runId, Guid callerCommandId);
+    Task CompleteAtRouteEnd(Guid runId, Guid callerCommandId, Guid? qualityReleaseId = null);
 
     Task CloseMembershipForScrap(Guid dispositionId, Guid callerCommandId);
 }

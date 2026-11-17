@@ -17,5 +17,6 @@ internal static partial class FabModel
         ConfigureSecurity(modelBuilder);
         ConfigureIntegrity(modelBuilder);
         ConfigureProductionFacts(modelBuilder);
+        ConfigureQualityLifecycle(modelBuilder);
     }
 }

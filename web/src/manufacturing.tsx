@@ -184,7 +184,7 @@ export function Manufacturing({
                 <Alert
                     type="info"
                     showIcon
-                    message="生产进度按唯一晶圆投放与终点完成事实统计；完整质量处置待后续接通。"
+                    message="生产进度按唯一晶圆投放、终点完成与逐片报废事实统计。"
                 />
             ) : (
                 <Tabs

@@ -1,12 +1,13 @@
 import { test, expect } from "@playwright/test";
 import { productionFlow } from "./production-flow";
 import { executionFlow } from "./execution-flow";
+import { qualityFlow } from "./quality-flow";
 
 test("真实浏览器：首登改密、组织维护、账号分权、退出与撤权", async ({
     page,
     browser,
 }) => {
-    test.setTimeout(180000);
+    test.setTimeout(300000);
     const suffix = Date.now().toString();
     const initial = process.env.MES_E2E_PASSWORD!;
     const final = initial + "-changed";
@@ -210,6 +211,7 @@ test("真实浏览器：首登改密、组织维护、账号分权、退出与�
     await page.getByRole("button", { name: "关闭", exact: true }).click();
     await productionFlow(page, "WO" + suffix, suffix);
     await executionFlow(page, suffix);
+    await qualityFlow(page, suffix);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     await page.screenshot({ path: "test-results/mobile.png", fullPage: true });

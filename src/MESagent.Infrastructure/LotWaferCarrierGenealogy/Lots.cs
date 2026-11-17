@@ -51,8 +51,12 @@ public sealed partial class ProductionBackend
     {
         var evt = new GenealogyEvent
         {
-            EventType = type, Reason = reason, OccurredAt = time, PerformedById = actor.UserId,
-            IdempotencyKey = commandId.ToString(), CorrelationId = actor.CorrelationId
+            EventType = type,
+            Reason = reason,
+            OccurredAt = time,
+            PerformedById = actor.UserId,
+            IdempotencyKey = commandId.ToString(),
+            CorrelationId = actor.CorrelationId
         };
         db.Add(evt);
         return evt;
@@ -62,11 +66,17 @@ public sealed partial class ProductionBackend
     {
         db.Add(new GenealogyDetail
         {
-            EventId = evt.Id, WaferId = wafer.Id, FromLotId = source, ToLotId = target.Id
+            EventId = evt.Id,
+            WaferId = wafer.Id,
+            FromLotId = source,
+            ToLotId = target.Id
         });
         db.Add(new LotMembership
         {
-            WaferId = wafer.Id, LotId = target.Id, ValidFrom = evt.OccurredAt, ChangeEventId = evt.Id
+            WaferId = wafer.Id,
+            LotId = target.Id,
+            ValidFrom = evt.OccurredAt,
+            ChangeEventId = evt.Id
         });
     }
 
@@ -86,11 +96,18 @@ public sealed partial class ProductionBackend
         var baseline = await Baseline(order);
         var lot = new Lot
         {
-            FabId = fabId, WorkOrderId = order.Id, SnapshotVersion = order.SnapshotVersion,
-            ProductRevisionId = baseline.Revision.Id, RouteVersionId = baseline.Route.Id,
-            LotNumber = await Number(input.LotNumber, order.ProductId), LotAssignedAt = Now,
-            Priority = input.Priority, Notes = Text(input.Notes, 2000, false), LotType = "Production",
-            Status = "Draft", TargetQty = input.Wafers.Length
+            FabId = fabId,
+            WorkOrderId = order.Id,
+            SnapshotVersion = order.SnapshotVersion,
+            ProductRevisionId = baseline.Revision.Id,
+            RouteVersionId = baseline.Route.Id,
+            LotNumber = await Number(input.LotNumber, order.ProductId),
+            LotAssignedAt = Now,
+            Priority = input.Priority,
+            Notes = Text(input.Notes, 2000, false),
+            LotType = "Production",
+            Status = "Draft",
+            TargetQty = input.Wafers.Length
         };
         db.Add(lot);
         var evt = Genealogy("Create", "工单建批", Now);
@@ -102,9 +119,13 @@ public sealed partial class ProductionBackend
                 await ValidateMaterial(source);
             var wafer = new Wafer
             {
-                FabId = fabId, WorkOrderId = order.Id, WaferCode = codes[i], WaferSizeMm = entry.WaferSizeMm,
+                FabId = fabId,
+                WorkOrderId = order.Id,
+                WaferCode = codes[i],
+                WaferSizeMm = entry.WaferSizeMm,
                 OriginMaterialLotId = entry.OriginMaterialLotId,
-                SupplierWaferCode = Text(entry.SupplierWaferCode, 128, false), LifecycleStatus = "Registered"
+                SupplierWaferCode = Text(entry.SupplierWaferCode, 128, false),
+                LifecycleStatus = "Registered"
             };
             db.Add(wafer);
             wafers.Add(wafer);
@@ -154,9 +175,16 @@ public sealed partial class ProductionBackend
             && x.RouteVersionId == lot.RouteVersionId) ?? throw Error("InvalidBaseline", "路线步骤不匹配");
         var execution = new StepExecution
         {
-            LotId = lot.Id, RouteVersionId = lot.RouteVersionId, RouteStepId = step.Id,
-            VisitNo = 1, Status = "Waiting", Name = step.Name, Instruction = step.Instruction,
-            RequiresConfirmation = step.RequiresConfirmation, EnteredAt = time
+            LotId = lot.Id,
+            RouteVersionId = lot.RouteVersionId,
+            RouteStepId = step.Id,
+            VisitNo = (await db.Set<StepExecution>().Where(x => x.LotId == lot.Id
+                && x.RouteStepId == step.Id).MaxAsync(x => (int?)x.VisitNo) ?? 0) + 1,
+            Status = "Waiting",
+            Name = step.Name,
+            Instruction = step.Instruction,
+            RequiresConfirmation = step.RequiresConfirmation,
+            EnteredAt = time
         };
         db.Add(execution);
         var snapshot = await db.Set<WorkOrderSnapshot>().SingleAsync(x => x.WorkOrderId == lot.WorkOrderId
@@ -169,8 +197,11 @@ public sealed partial class ProductionBackend
         foreach (var document in documents)
             db.Add(new StepDocument
             {
-                StepExecutionId = execution.Id, EngineeringDocumentId = document.Id,
-                Name = document.OriginalFilename, IsMandatory = true, RequiresValidation = true
+                StepExecutionId = execution.Id,
+                EngineeringDocumentId = document.Id,
+                Name = document.OriginalFilename,
+                IsMandatory = true,
+                RequiresValidation = true
             });
         return execution;
     }
@@ -220,9 +251,14 @@ public sealed partial class ProductionBackend
             wafer.LifecycleStatus = "Active";
             db.Add(new WaferRelease
             {
-                WaferId = wafer.Id, WorkOrderId = order.Id, InitialLotId = lot.Id,
-                SnapshotVersion = lot.SnapshotVersion!.Value, RouteVersionId = lot.RouteVersionId,
-                ReleasedAt = time, ReleasedById = actor.UserId, CommandId = commandId
+                WaferId = wafer.Id,
+                WorkOrderId = order.Id,
+                InitialLotId = lot.Id,
+                SnapshotVersion = lot.SnapshotVersion!.Value,
+                RouteVersionId = lot.RouteVersionId,
+                ReleasedAt = time,
+                ReleasedById = actor.UserId,
+                CommandId = commandId
             });
         }
         Touch(order);

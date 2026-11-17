@@ -116,6 +116,13 @@ export function RemoteSelect({
 }
 
 export const permissionLabels: Record<string, string> = {
+    "quality.read": "质量 · 查询",
+    "quality.configuration": "质量 · 配置",
+    "quality.issues": "质量 · 异常与整改",
+    "quality.hold": "质量 · 冻结",
+    "quality.release": "质量 · 解除与放行",
+    "quality.inspect": "质量 · 检验录入",
+    "quality.scrap": "质量 · 逐片报废",
     "org.structure.read": "组织结构 · 查询",
     "org.structure.manage": "组织结构 · 维护",
     "org.workers.read": "员工 · 查询",

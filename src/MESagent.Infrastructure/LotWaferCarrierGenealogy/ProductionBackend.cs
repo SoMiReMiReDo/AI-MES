@@ -87,12 +87,16 @@ public sealed partial class ProductionBackend(
     private async Task<string[]> Blocks(Lot lot)
     {
         var reasons = new List<string>();
+        if (await MESagent.Infrastructure.QualityExceptionDisposition.QualityGates.PendingReleaseLots(db)
+            .AnyAsync(id => id == lot.Id))
+            reasons.Add("等待独立质量放行");
         if (await db.Set<HoldRecord>().AnyAsync(x => x.LotId == lot.Id && x.ReleasedAt == null))
             reasons.Add("有效 Hold");
         if (await db.Set<WorkOrderStop>().AnyAsync(x => x.WorkOrderId == lot.WorkOrderId
             && (x.LotId == null || x.LotId == lot.Id) && x.ResumedAt == null))
             reasons.Add("工单停工");
-        if (await (from run in db.Set<ProcessRun>() join step in db.Set<StepExecution>()
+        if (await (from run in db.Set<ProcessRun>()
+                   join step in db.Set<StepExecution>()
                    on run.StepExecutionId equals step.Id
                    where step.LotId == lot.Id && (run.Status == "Running" || run.TrackOutAt == null)
                    select run.Id).AnyAsync())
@@ -132,14 +136,23 @@ public sealed partial class ProductionBackend(
         var payload = JsonSerializer.Serialize(new { schemaVersion = 1, commandId, fabId, facts }, Json);
         db.Add(new AuditLog
         {
-            UserId = actor.UserId, EntityType = entity.GetType().Name, EntityId = id,
-            Action = action, AfterState = payload, OccurredAt = Now,
-            CorrelationId = actor.CorrelationId, SourceChannel = "Web"
+            UserId = actor.UserId,
+            EntityType = entity.GetType().Name,
+            EntityId = id,
+            Action = action,
+            AfterState = payload,
+            OccurredAt = Now,
+            CorrelationId = actor.CorrelationId,
+            SourceChannel = "Web"
         });
         db.Add(new BusinessEvent
         {
-            UserId = actor.UserId, EntityType = entity.GetType().Name, EntityId = id,
-            EventType = "Production." + action, Payload = payload, OccurredAt = Now,
+            UserId = actor.UserId,
+            EntityType = entity.GetType().Name,
+            EntityId = id,
+            EventType = "Production." + action,
+            Payload = payload,
+            OccurredAt = Now,
             CorrelationId = actor.CorrelationId
         });
     }
@@ -210,9 +223,15 @@ public sealed partial class ProductionBackend(
         await db.SaveChangesAsync();
         db.Add(new CommandReceipt
         {
-            Id = commandId, Scope = scope, IdempotencyKey = key, RequestHash = hash,
-            ActorUserId = actor.UserId, CorrelationId = actor.CorrelationId,
-            Status = "Succeeded", CompletedAt = Now, Result = JsonSerializer.Serialize(result, Json)
+            Id = commandId,
+            Scope = scope,
+            IdempotencyKey = key,
+            RequestHash = hash,
+            ActorUserId = actor.UserId,
+            CorrelationId = actor.CorrelationId,
+            Status = "Succeeded",
+            CompletedAt = Now,
+            Result = JsonSerializer.Serialize(result, Json)
         });
         return result;
     }

@@ -632,7 +632,10 @@ function ProductionTable({
                                           {
                                               key: "complete",
                                               label: "完工片数",
-                                              children: "待执行模块接通",
+                                              children:
+                                                  detail.quantities
+                                                      .completedQty ??
+                                                  "历史待核验",
                                           },
                                       ]
                                     : resource === "wafers"

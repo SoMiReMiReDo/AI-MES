@@ -34,3 +34,9 @@
 | 功能 | 文档 | 状态 |
 | --- | --- | --- |
 | F5-`DispatchAndProductionExecution` | [功能设计](dispatch-and-production-execution.md)、[API 与验收](dispatch-and-production-execution-api-and-acceptance.md)、[实现与本地验收](dispatch-and-production-execution-implementation.md) | 01～05、最小设备前置、F2 执行绑定与 F3 真实进度已实现；74 项数据库/API 测试与 Chrome 流程通过；完整 F7/F6 处置及返工登记 GAP-12～14 |
+
+## F6 本轮交付
+
+| 功能 | 文档 | 状态 |
+| --- | --- | --- |
+| F6-`QualityExceptionDisposition` | [功能设计](quality-exception-disposition.md)、[接口与验收](quality-exception-disposition-api-and-acceptance.md)、[实现与验收](quality-exception-disposition-implementation.md) | 01～04 首版、同站恢复及 F3/F4/F5 协作已实现；87 项数据库/API 测试及 Chrome 全流程通过；跨路线返工及 F6-05～08 后置 |

@@ -11,7 +11,7 @@ public sealed class AppException(int status, string code, string message) : Exce
 public sealed class OrganizationIdentityAccessControlOptions
 {
     public Guid DeploymentFabId { get; set; }
-    public int IdleMinutes { get; set; } = 30;
+    public int IdleMinutes { get; set; } = 60;
     public int AbsoluteHours { get; set; } = 12;
     public int RestrictedMinutes { get; set; } = 10;
 }
@@ -74,6 +74,13 @@ public static class PermissionCatalog
 {
     public static readonly string[] All =
     [
+        "quality.read",
+        "quality.configuration",
+        "quality.issues",
+        "quality.hold",
+        "quality.release",
+        "quality.inspect",
+        "quality.scrap",
         "execution.read",
         "execution.dispatch",
         "execution.track-in",

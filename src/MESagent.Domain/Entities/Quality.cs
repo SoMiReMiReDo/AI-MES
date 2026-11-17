@@ -32,6 +32,7 @@ public sealed class IssueType
 /// <summary>Quality / issues，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
 public sealed class Issue
 {
+    public bool IsBlocking { get; set; }
     public Guid Id { get; set; } = Guid.CreateVersion7();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -119,6 +120,10 @@ public sealed class MaterialHold
 /// <summary>Quality / lot_releases，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
 public sealed class LotRelease
 {
+    public string RecoveryAction { get; set; } = "None";
+    public Guid? StepExecutionId { get; set; }
+    public Guid? ProcessRunId { get; set; }
+    public Guid? CommandId { get; set; }
     public Guid Id { get; set; } = Guid.CreateVersion7();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -197,6 +202,9 @@ public sealed class InspectionResult
 /// <summary>Quality / quality_check_templates，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
 public sealed class QualityCheckTemplate
 {
+    public string LifecycleStatus { get; set; } = "Draft";
+    public DateTime? ReleasedAt { get; set; }
+    public Guid? ReleasedById { get; set; }
     public Guid Id { get; set; } = Guid.CreateVersion7();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -213,6 +221,8 @@ public sealed class QualityCheckTemplate
 /// <summary>Quality / specification_versions，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
 public sealed class SpecificationVersion
 {
+    public bool? ExpectedBoolean { get; set; }
+    public string? ExpectedText { get; set; }
     public Guid Id { get; set; } = Guid.CreateVersion7();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -231,6 +241,7 @@ public sealed class SpecificationVersion
 /// <summary>Quality / quality_checks，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
 public sealed class QualityCheck
 {
+    public Guid? IssueId { get; set; }
     public Guid Id { get; set; } = Guid.CreateVersion7();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

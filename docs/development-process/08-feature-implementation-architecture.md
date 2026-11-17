@@ -1,6 +1,6 @@
-# MESagent 功能实现架构 v0.4
+# MESagent 功能实现架构 v0.5
 
-更新：2026-11-13｜状态：F1～F4 基础及 F5-01～05 已落地，F3 真实进度/F2 执行绑定已回补；完整 F6/F7 待后续｜需求入口：[Fab 功能清单](07-fab-function-catalog.md)
+更新：2026-11-17｜状态：F1～F5 首版已落地；F6-01～04 及质量恢复已实现，Chrome 全流程已通过；完整 F7 待后续｜需求入口：[Fab 功能清单](07-fab-function-catalog.md)
 
 当前实现进度见 [F1 实现说明](../feature-development/organization-identity-access-control-implementation.md)及 [F2/F3 实现记录](../feature-development/f2-f3-implementation.md)。本文延续既有分层，并在第 11 节补充 F4 与生产模块的协作设计；F4 的当前实现与边界见[本地验收](../feature-development/lot-wafer-carrier-genealogy-implementation.md)。Docker 打包继续后置。
 
@@ -13,7 +13,7 @@
 | 已实现 | Domain/Infrastructure/Database、Application/API/WebUI；F1 01～04、F2 01～05、F3 工单与真实片进度、F4 基础/真实终点、F5 01～05 和最小设备前置；119 张业务/支撑表、7 张 Identity 表、2 个视图 |
 | 用户已确认 | 单企业单厂、同源 Cookie、本地账号、角色及厂区授权；F1 01～04 完整设计、05/06 扩展；F4 01～06 文档范围、工单建批及受限拆合批，具体见第 11 节 |
 | 本文设计方案 | 项目职责、模块协作、授权位置、事务与交付顺序；用于后续实现，不表示已通过运行验证 |
-| 待实现/验证 | 完整 F6 质量/报废/异常恢复、完整 F7 资源、F5 按需能力、实时通知及 Docker；部分报废后的跨模块联调与复杂存量专项仍待，容量与恢复目标另定 |
+| 待实现/验证 | F6-05～08 及跨路线返工、完整 F7 资源、F5 按需能力、实时通知及 Docker；首版部分/全报废已完成 API 联调，复杂存量专项仍待，容量与恢复目标另定 |
 
 历史依据为 [系统规划](02-system-plan.md)、[技术选型](03-tech-stack.md)、[数据架构](../MESagent-development-guide.md) 和现有代码。旧文档中的“未建库”是当时状态，当前事实以代码、数据库实施记录和 MEMORY 为准。Agent 本轮仅保留未来调用 Application 的扩展位置，F13-`AgentWorkbench` 暂不展开，也不作为本轮功能设计的前置条件。
 
@@ -217,3 +217,11 @@ F3 指标回补直接读取稳定逐片事实，ProducedQty 仅为可重算缓�
 详细规则与验收见 [F5 功能设计](../feature-development/dispatch-and-production-execution.md)及[接口与验收](../feature-development/dispatch-and-production-execution-api-and-acceptance.md)。本文新增部分为已确认范围与实现方案，测试证据完成后更新实现记录。
 
 实施结果：上述独立执行模块、共享 F4 步骤/终点、F3 实际进度及 F2 执行绑定已实现；第 7 条迁移与最小运行角色增量授权已应用。普通只读请求使用一致性快照，写请求保持全局锁内重验。API、迁移与 Chrome 验证见 [F5 实现记录](../feature-development/dispatch-and-production-execution-implementation.md)，未将 F6/F7 预留表结构标为业务完成。
+
+## 13. F6 质量模块与执行恢复
+
+2026-11-17 用户确认 F6-01～04 完整首版及两类恢复：全 Passed 的等待处置经审核推进；Failed/中止只允许同站新到访重试。检验失败原子建立异常与 Lot Hold。详细规则见 [F6 功能设计](../feature-development/quality-exception-disposition.md)。
+
+`QualityBackend` 通过既有认证应用入口分派，拥有质量事实；`ExecutionBackend` 提供有质量授权及持久放行凭据的恢复协作；`ProductionBackend` 校验真实参与片/报废事实并完成终点或报废收尾。单事务包含业务、归属/装载、质量凭据、审计、事件与回执；普通查询保持一致性快照。质量角色不借用执行权限，协作方法自行校验 quality.release/quality.scrap。
+
+模板和规格独立版本化并发布冻结，检验结果保存规格快照。LotRelease 持久记录恢复动作、原步骤/Run、执行人及命令；不得只修改 Lot.Status。F3/F4 查询改为真实完成/报废片事实，质量首版之外的规则继续通过门禁明确拒绝。跨路线返工、自动触发任务、来料及 SPC 等后置，不因预留表存在而开放。

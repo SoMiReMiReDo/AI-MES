@@ -1,16 +1,16 @@
 # MESagent 数据架构开发文档
 
-更新：2026-11-13｜适用阶段：数据库、F1～F4 基础及 F5-01～05 已实现；完整质量处置、设备资源和 Docker 待后续。
+更新：2026-11-17｜适用阶段：数据库、F1～F5 及 F6-01～04 首版已实现；按需质量能力、完整设备资源和 Docker 待后续。
 
 本文说明当前工程如何组织、核心对象如何关联、数据库保护哪些规则，以及开发者如何扩展模型。字段全集见 [数据库字段字典](development-process/05-database-catalog.md)，实施与验证记录见 [数据库实施说明](development-process/06-database-implementation.md)。
 
 ## 1. 当前交付与边界
 
-已完成 C# 数据实体、EF Core 映射、PostgreSQL 数据库、版本化迁移、命令行管理工具和真实数据库测试。数据库包含 119 张业务/支撑表、7 张 Identity 表、2 个派生视图，另有迁移历史表；已应用 7 条迁移。
+已完成 C# 数据实体、EF Core 映射、PostgreSQL 数据库、版本化迁移、命令行管理工具和真实数据库测试。数据库包含 119 张业务/支撑表、7 张 Identity 表、2 个派生视图，另有迁移历史表；已应用 8 条迁移。
 
 当前已实现 组织结构、人员与场所、账号会话及角色权限 的 API、登录与管理 WebUI，详见 [F1-`OrganizationIdentityAccessControl` 实现说明](feature-development/organization-identity-access-control-implementation.md)。Agent、设备驱动及后台 Outbox 消费程序尚未实现。共炉、光罩、Q-time、返工、资格管理等对象已有结构，不能据此认为这些业务已经可用。
 
-F2 工艺、F3 工单、F4 批次/载具/血缘及 [F5 执行](feature-development/dispatch-and-production-execution-implementation.md)已接通首版。实际 Run 驱动终点完成与工单进度，最小设备台账/人工状态/占用已实现；完整 F6 处置和 F7 资源规则仍待开发。
+F2 工艺、F3 工单、F4 批次/载具/血缘及 [F5 执行](feature-development/dispatch-and-production-execution-implementation.md)已接通首版。实际 Run 驱动终点完成与工单进度，最小设备台账/人工状态/占用已实现；[F6 首版](feature-development/quality-exception-disposition-implementation.md)已接通异常/Hold、检验、报废和同站恢复；按需质量能力和完整 F7 资源规则仍待开发。
 
 技术基线：.NET SDK 10.0.401；EF Core / Identity 10.0.12；Npgsql EF Provider 10.0.3；PostgreSQL 18.6。版本集中管理于 [Directory.Packages.props](../Directory.Packages.props)，NuGet 锁文件随项目保存。
 

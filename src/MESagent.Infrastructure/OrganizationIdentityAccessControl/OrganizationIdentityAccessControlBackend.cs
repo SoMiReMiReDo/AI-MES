@@ -289,7 +289,10 @@ public sealed partial class OrganizationIdentityAccessControlBackend(
             Fail(403, "PasswordChangeRequired", "请先修改初始密码");
         await LoadAccess();
         OrganizationIdentityAccessControlResult result;
-        if (r.Path.StartsWith("execution/") || r.Path.StartsWith("equipment/"))
+        if (r.Path.StartsWith("quality/"))
+            result = await new MESagent.Infrastructure.QualityExceptionDisposition.QualityBackend(
+                db, options.DeploymentFabId, actor, Require, p => hasScope && permissions.Contains(p), clock).Execute(r);
+        else if (r.Path.StartsWith("execution/") || r.Path.StartsWith("equipment/"))
             result = await new MESagent.Infrastructure.DispatchAndProductionExecution.ExecutionBackend(
                 db, options.DeploymentFabId, actor, Require, p => hasScope && permissions.Contains(p), clock).Execute(r);
         else if (r.Path.StartsWith("production/"))

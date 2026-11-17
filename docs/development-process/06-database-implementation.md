@@ -1,5 +1,7 @@
 # Fab 数据库实施说明
 
+2026-11-17 已应用第 8 条迁移 `QualityExceptionDisposition`，补齐质量首版的版本、快照与恢复凭据；表数保持126。迁移前已备份，账号/批次/晶圆/加工等事实数量核对一致。运行账号通过 `provision-quality` 增量授权，未改密码或增加 DDL/DELETE；详见 [F6 实现记录](../feature-development/quality-exception-disposition-implementation.md)。
+
 更新：2026-11-13（Asia/Shanghai）。本文记录数据库结构与迁移；F1～F4 基础及 F5 首版已实现，完整质量处置、设备资源、Agent 和 Docker 仍待后续。
 
 2026-11-13 已应用第 7 条迁移 `DispatchAndProductionExecution`，新增步骤设备/配方指派、Run 适用关系与执行历史保护，表数保持 119 业务/支撑 + 7 Identity。迁移前本地生产相关表为空且已备份；运行角色以 `provision-execution` 精确增量授权，未改密码、未增加 DDL/DELETE。字段字典与 DDL 已同步，验收见 [F5 实现记录](../feature-development/dispatch-and-production-execution-implementation.md)。下文保留各阶段历史记录。

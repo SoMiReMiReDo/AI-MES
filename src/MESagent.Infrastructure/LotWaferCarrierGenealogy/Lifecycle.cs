@@ -7,23 +7,31 @@ namespace MESagent.Infrastructure.LotWaferCarrierGenealogy;
 
 public sealed partial class ProductionBackend
 {
-    public async Task<Guid> EnterWaitingStep(Guid lotId, Guid routeStepId, DateTime time, Guid callerCommandId)
+    public async Task<Guid> EnterWaitingStep(Guid lotId, Guid routeStepId, DateTime time, Guid callerCommandId,
+        Guid? qualityReleaseId = null)
     {
-        require("execution.track-out");
+        require(qualityReleaseId == null ? "execution.track-out" : "quality.release");
         RequireTransaction(callerCommandId);
+        if (qualityReleaseId != null)
+            await VerifyQualityRelease(qualityReleaseId.Value, lotId, callerCommandId);
         return (await EnterStep(await Lot(lotId), routeStepId, time)).Id;
     }
 
     // Internal collaboration capabilities. No HTTP route exposes these methods. The future F5/F6 caller
     // must use the authenticated transaction and its own permission; facts are independently revalidated here.
-    public async Task CompleteAtRouteEnd(Guid runId, Guid callerCommandId)
+    public async Task CompleteAtRouteEnd(Guid runId, Guid callerCommandId, Guid? qualityReleaseId = null)
     {
-        require("execution.track-out");
+        require(qualityReleaseId == null ? "execution.track-out" : "quality.release");
         RequireTransaction(callerCommandId);
         var run = await db.Set<ProcessRun>().SingleOrDefaultAsync(x => x.Id == runId)
             ?? throw Error("ResourceNotFound", "加工记录不存在", 404);
         var step = await db.Set<StepExecution>().SingleAsync(x => x.Id == run.StepExecutionId);
         var lot = await Lot(step.LotId);
+        var release = qualityReleaseId == null ? null
+            : await VerifyQualityRelease(qualityReleaseId.Value, lot.Id, callerCommandId);
+        if (release != null && (release.ProcessRunId != run.Id || release.StepExecutionId != step.Id
+            || release.RecoveryAction != "Continue"))
+            throw Error("InvalidQualityRelease", "质量凭据与终点加工不一致", 409);
         var order = await Order(lot.WorkOrderId!.Value);
         await SupportedGates(lot);
         var existing = await db.Set<WaferCompletion>().Where(x => x.ProcessRunId == runId).ToListAsync();
@@ -35,7 +43,7 @@ public sealed partial class ProductionBackend
         }
         var final = await db.Set<RouteStep>().Where(x => x.RouteVersionId == lot.RouteVersionId)
             .OrderByDescending(x => x.SequenceNo).FirstAsync();
-        if (run.Status != "Completed" || run.TrackOutAt == null || run.TrackOutById != actor.UserId
+        if (run.Status != "Completed" || run.TrackOutAt == null || release == null && run.TrackOutById != actor.UserId
             || step.Status != "Completed" || step.ExitedAt == null || step.RouteStepId != final.Id
             || step.RouteVersionId != lot.RouteVersionId || lot.CurrentRouteStepId != final.Id
             || lot.Status is not ("Running" or "Ready"))
@@ -57,12 +65,21 @@ public sealed partial class ProductionBackend
         var wafers = await MemberWafers(lot);
         var ids = wafers.Select(x => x.Id).ToArray();
         var participants = await db.Set<ProcessRunWafer>().Where(x => x.ProcessRunId == runId).ToListAsync();
+        var activeParticipants = participants.Where(x => ids.Contains(x.WaferId)).ToList();
+        var removedIds = participants.Where(x => !ids.Contains(x.WaferId)).Select(x => x.WaferId).ToArray();
+        var removedAreScrapped = release != null && await db.Set<WaferDisposition>().CountAsync(x =>
+            removedIds.Contains(x.WaferId) && x.DispositionType == "Scrap" && x.LotIdAtEvent == lot.Id
+                && x.ProcessRunId == runId) == removedIds.Length
+            && await db.Set<Wafer>().CountAsync(x => removedIds.Contains(x.Id)
+                && x.LifecycleStatus == "Scrapped") == removedIds.Length;
         if (wafers.Any(x => x.LifecycleStatus != "Active")
-            || !participants.Select(x => x.WaferId).ToHashSet().SetEquals(ids)
-            || participants.Any(x => x.Result != "Passed" || x.ProcessedAt == null)
+            || !activeParticipants.Select(x => x.WaferId).ToHashSet().SetEquals(ids)
+            || removedIds.Length > 0 && !removedAreScrapped
+            || activeParticipants.Any(x => x.Result != "Passed" || x.ProcessedAt == null)
             || await db.Set<WaferRelease>().CountAsync(x => ids.Contains(x.WaferId)
                 && x.WorkOrderId == order.Id) != ids.Length)
             throw Error("InvalidWaferSet", "终点参与片、逐片结果或投放事实不完整");
+        var completionTime = release?.ReleasedAt ?? run.TrackOutAt.Value;
         var requiredSteps = await db.Set<RouteStep>().Where(x => x.RouteVersionId == lot.RouteVersionId)
             .Select(x => x.Id).ToListAsync();
         foreach (var wafer in wafers)
@@ -78,15 +95,21 @@ public sealed partial class ProductionBackend
                 throw Error("InvalidBaseline", "晶圆缺少绑定路线的必要加工记录");
             db.Add(new WaferCompletion
             {
-                WaferId = wafer.Id, WorkOrderId = order.Id, LotIdAtCompletion = lot.Id, ProcessRunId = runId,
-                RouteVersionId = lot.RouteVersionId, RouteStepId = final.Id, CompletedAt = run.TrackOutAt.Value,
-                CompletedById = actor.UserId, CommandId = commandId
+                WaferId = wafer.Id,
+                WorkOrderId = order.Id,
+                LotIdAtCompletion = lot.Id,
+                ProcessRunId = runId,
+                RouteVersionId = lot.RouteVersionId,
+                RouteStepId = final.Id,
+                CompletedAt = completionTime,
+                CompletedById = actor.UserId,
+                CommandId = commandId
             });
             wafer.LifecycleStatus = "Completed";
-            wafer.ProducedAt = run.TrackOutAt;
+            wafer.ProducedAt = completionTime;
         }
         lot.Status = "Completed";
-        lot.CompletedAt = run.TrackOutAt;
+        lot.CompletedAt = completionTime;
         lot.CurrentRouteStepId = null;
         lot.ProducedQty = wafers.Count;
         await TouchCarriers(ids);
@@ -94,7 +117,7 @@ public sealed partial class ProductionBackend
         await db.SaveChangesAsync();
         order.ProducedQty = await db.Set<WaferCompletion>().CountAsync(x => x.WorkOrderId == order.Id);
         if (order.ProducedQty == order.PlannedQty)
-            order.CompletedAt = run.TrackOutAt;
+            order.CompletedAt = completionTime;
         await db.SaveChangesAsync();
     }
 
@@ -116,8 +139,10 @@ public sealed partial class ProductionBackend
         if (await db.Set<WaferCompletion>().AnyAsync(x => x.WaferId == wafer.Id)
             || wafer.LifecycleStatus is "Completed" or "Cancelled")
             throw Error("LotStateConflict", "终结晶圆不能通过普通报废重写", 409);
-        if (await (from run in db.Set<ProcessRun>() join step in db.Set<StepExecution>()
-                   on run.StepExecutionId equals step.Id where step.LotId == lot.Id && run.Status == "Running"
+        if (await (from run in db.Set<ProcessRun>()
+                   join step in db.Set<StepExecution>()
+                   on run.StepExecutionId equals step.Id
+                   where step.LotId == lot.Id && run.Status == "Running"
                    select run.Id).AnyAsync())
             throw Error("ResourceInUse", "先由执行模块收尾当前加工", 409);
         var member = await db.Set<LotMembership>()
@@ -152,6 +177,12 @@ public sealed partial class ProductionBackend
         Touch(await Order(lot.WorkOrderId!.Value, false));
         await db.SaveChangesAsync();
     }
+
+    private async Task<LotRelease> VerifyQualityRelease(Guid id, Guid lotId, Guid callerCommandId) =>
+        await db.Set<LotRelease>().SingleOrDefaultAsync(x => x.Id == id && x.LotId == lotId
+            && x.ReleaseType == "Quality" && x.CommandId == callerCommandId && x.ReleasedById == actor.UserId
+            && (x.RecoveryAction == "Continue" || x.RecoveryAction == "Retry"))
+        ?? throw Error("InvalidQualityRelease", "缺少本次授权质量恢复凭据", 409);
 
     private void RequireTransaction(Guid id)
     {

@@ -379,7 +379,27 @@ api.MapPut("/equipment/tools/{id:guid}", Dispatch).Accepts<UpdateExecutionEquipm
 api.MapPost("/equipment/tools/{id:guid}/state", Dispatch).Accepts<ChangeExecutionEquipmentState>("application/json");
 api.MapGet("/planning/work-orders/{id:guid}/progress", Dispatch).Produces<ProductionProgressView>();
 api.MapPost("/planning/work-orders/{id:guid}/recalculate", Dispatch).Accepts<ReasonRequest>("application/json");
-foreach (var module in new[] { "engineering", "planning", "production", "execution", "equipment" })
+api.MapPost("/quality/reason-codes", Dispatch).Accepts<SaveQualityReason>("application/json");
+api.MapPut("/quality/reason-codes/{id:guid}", Dispatch).Accepts<SaveQualityReason>("application/json");
+api.MapPost("/quality/issue-types", Dispatch).Accepts<SaveQualityIssueType>("application/json");
+api.MapPut("/quality/issue-types/{id:guid}", Dispatch).Accepts<SaveQualityIssueType>("application/json");
+api.MapPost("/quality/issues", Dispatch).Accepts<ReportQualityIssue>("application/json");
+api.MapPost("/quality/issues/{id:guid}/assign", Dispatch).Accepts<AssignQualityIssue>("application/json");
+api.MapPost("/quality/issues/{id:guid}/resolve", Dispatch).Accepts<ResolveQualityIssue>("application/json");
+api.MapPost("/quality/issues/{id:guid}/actions", Dispatch).Accepts<CreateQualityAction>("application/json");
+api.MapPost("/quality/lots/{id:guid}/holds", Dispatch).Accepts<HoldQualityLot>("application/json");
+api.MapPost("/quality/lots/{id:guid}/release", Dispatch).Accepts<ReleaseQualityLot>("application/json");
+api.MapPost("/quality/lots/{id:guid}/scrap", Dispatch).Accepts<ScrapQualityWafers>("application/json");
+api.MapPost("/quality/checks", Dispatch).Accepts<RecordQualityCheck>("application/json");
+api.MapPost("/quality/specifications", Dispatch).Accepts<SaveQualitySpecification>("application/json");
+api.MapPut("/quality/specifications/{id:guid}", Dispatch).Accepts<SaveQualitySpecification>("application/json");
+api.MapPost("/quality/templates", Dispatch).Accepts<SaveQualityTemplate>("application/json");
+api.MapPut("/quality/templates/{id:guid}", Dispatch).Accepts<SaveQualityTemplate>("application/json");
+foreach (var path in new[] { "issues/{id:guid}/acknowledge", "issues/{id:guid}/close",
+    "actions/{id:guid}/complete", "actions/{id:guid}/verify", "holds/{id:guid}/release",
+    "specifications/{id:guid}/release", "templates/{id:guid}/release" })
+    api.MapPost("/quality/" + path, Dispatch).Accepts<ReasonRequest>("application/json");
+foreach (var module in new[] { "engineering", "planning", "production", "execution", "equipment", "quality" })
     api.MapMethods("/" + module + "/{**resource}", ["GET", "POST", "PUT"], Dispatch);
 
 app.Run();

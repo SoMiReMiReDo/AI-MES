@@ -46,9 +46,11 @@ public sealed partial class ManufacturingBackend
                         throw Error("计划数量、优先级或时间无效");
                     if ((await Get<ProductRevision>(x.ProductRevisionId)).ProductId != x.ProductId)
                         throw Error("产品修订不匹配");
-                }, x => { x.Status = "Draft";
- x.FabId = fabId;
- });
+                }, x =>
+                {
+                    x.Status = "Draft";
+                    x.FabId = fabId;
+                });
         if (!Guid.TryParse(p[2], out var id))
             throw Error("无效工单", 404);
         var order = await db.Set<WorkOrder>().SingleOrDefaultAsync(x => x.Id == id && x.FabId == fabId)
@@ -98,19 +100,34 @@ public sealed partial class ManufacturingBackend
             var stepIds = steps.Select(x => x.Id).ToArray();
             order.ProcessSnapshot = JsonSerializer.Serialize(new
             {
-                schemaVersion = 1, plan = new { order.OrderNo, order.PlannedQty, order.Priority, order.DueDate },
-                revision, route, steps,
+                schemaVersion = 1,
+                plan = new { order.OrderNo, order.PlannedQty, order.Priority, order.DueDate },
+                revision,
+                route,
+                steps,
                 checklist = await db.Set<ChecklistItem>().Where(x => stepIds.Contains(x.RouteStepId)).ToListAsync(),
                 outputs = await db.Set<OutputDefinition>().Where(x => stepIds.Contains(x.RouteStepId)).ToListAsync(),
                 documents = await db.Set<EngineeringDocument>().Where(x => x.EntityType == "RouteStep"
-                    && stepIds.Contains(x.EntityId)).Select(x => new { x.Id, x.EntityId, x.Revision,
-                        x.Checksum }).ToListAsync(),
+                    && stepIds.Contains(x.EntityId)).Select(x => new
+                    {
+                        x.Id,
+                        x.EntityId,
+                        x.Revision,
+                        x.Checksum
+                    }).ToListAsync(),
                 recipeApplicabilities = await db.Set<RecipeApplicability>().Where(x => stepIds.Contains(x.RouteStepId)).ToListAsync(),
-                generatedAt = Now, actor.UserId
+                generatedAt = Now,
+                actor.UserId
             }, Json);
             order.SnapshotVersion = 1;
-            db.Add(new WorkOrderSnapshot { WorkOrderId = id, Version = 1, Snapshot = order.ProcessSnapshot,
-                EffectiveFrom = Now, CreatedById = actor.UserId });
+            db.Add(new WorkOrderSnapshot
+            {
+                WorkOrderId = id,
+                Version = 1,
+                Snapshot = order.ProcessSnapshot,
+                EffectiveFrom = Now,
+                CreatedById = actor.UserId
+            });
             order.Status = "Released";
         }
         else if (p[3] is "cancel" or "close")
@@ -120,7 +137,8 @@ public sealed partial class ManufacturingBackend
             if (order.Status != "Released" && !(p[3] == "cancel" && order.Status == "Draft"))
                 throw Error("工单状态不允许该动作", 409);
             var lots = db.Set<Lot>().Where(x => x.WorkOrderId == id);
-            if (await lots.AnyAsync(x => x.Status != "Completed" && x.Status != "Merged"
+            if (await db.Set<Issue>().AnyAsync(x => x.WorkOrderId == id && x.IsBlocking && x.Status != "Closed")
+                || await lots.AnyAsync(x => x.Status != "Completed" && x.Status != "Merged"
                     && x.Status != "Closed" && x.Status != "Cancelled")
                 || await db.Set<Wafer>().AnyAsync(x => x.WorkOrderId == id
                     && (x.LifecycleStatus == "Registered" || x.LifecycleStatus == "Active"))

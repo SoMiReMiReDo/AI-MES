@@ -44,6 +44,7 @@ import { Manufacturing } from "./manufacturing";
 import { Users } from "./users";
 import { Production } from "./production";
 import { Execution, EquipmentRegister } from "./execution";
+import { Quality } from "./quality";
 
 function Application() {
     const location = useLocation();
@@ -116,6 +117,12 @@ function Application() {
     setDisplayTimezone(me.fab?.timezone || "Asia/Shanghai");
     const can = (p: string) => me.permissions?.includes(p) ?? false;
     const nav = [
+        [
+            "/quality",
+            "质量管理",
+            <SafetyCertificateOutlined />,
+            can("quality.read"),
+        ],
         ["/execution", "生产执行", <AppstoreOutlined />, can("execution.read")],
         ["/equipment", "设备台账", <DesktopOutlined />, can("equipment.read")],
         [
@@ -195,7 +202,12 @@ function Application() {
                     {nav
                         .filter((x) => x[3])
                         .map(([path, name, icon]) => (
-                            <NavLink key={path} to={path} end={path === "/"}>
+                            <NavLink
+                                key={path}
+                                to={path}
+                                end={path === "/"}
+                                aria-label={name}
+                            >
                                 {icon}
                                 <span>{name}</span>
                             </NavLink>
@@ -229,6 +241,16 @@ function Application() {
                 </header>
                 <main>
                     <Routes>
+                        <Route
+                            path="/quality"
+                            element={
+                                can("quality.read") ? (
+                                    <Quality me={me} />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
                         <Route
                             path="/execution"
                             element={

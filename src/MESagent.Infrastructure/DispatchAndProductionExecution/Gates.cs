@@ -41,6 +41,9 @@ public sealed partial class ExecutionBackend
     private async Task<List<string>> Blocks(Lot lot, bool starting)
     {
         var result = new List<string>();
+        if (await MESagent.Infrastructure.QualityExceptionDisposition.QualityGates.PendingReleaseLots(db)
+            .AnyAsync(id => id == lot.Id))
+            result.Add("等待独立质量放行");
         if (await db.Set<HoldRecord>().AnyAsync(x => x.LotId == lot.Id && x.ReleasedAt == null))
             result.Add("存在有效 Hold");
         if (await db.Set<WorkOrderStop>().AnyAsync(x => x.WorkOrderId == lot.WorkOrderId

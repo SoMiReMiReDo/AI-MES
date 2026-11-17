@@ -2601,6 +2601,10 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("equipment_id");
 
+                    b.Property<bool>("IsBlocking")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_blocking");
+
                     b.Property<Guid>("IssueTypeId")
                         .HasColumnType("uuid")
                         .HasColumnName("issue_type_id");
@@ -3256,6 +3260,10 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("uuidv7()");
 
+                    b.Property<Guid?>("CommandId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("command_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -3270,10 +3278,22 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("lot_id");
 
+                    b.Property<Guid?>("ProcessRunId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("process_run_id");
+
                     b.Property<string>("Reason")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("reason");
+
+                    b.Property<string>("RecoveryAction")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("None")
+                        .HasColumnName("recovery_action");
 
                     b.Property<string>("ReleaseType")
                         .IsRequired()
@@ -3295,6 +3315,10 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
 
+                    b.Property<Guid?>("StepExecutionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("step_execution_id");
+
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -3303,11 +3327,19 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CommandId")
+                        .IsUnique()
+                        .HasFilter("command_id IS NOT NULL");
+
                     b.HasIndex("IssueId");
 
                     b.HasIndex("LotId");
 
+                    b.HasIndex("ProcessRunId");
+
                     b.HasIndex("ReleasedById");
+
+                    b.HasIndex("StepExecutionId");
 
                     b.ToTable("lot_releases", "quality", t =>
                         {
@@ -5782,6 +5814,10 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<Guid?>("IssueId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("issue_id");
+
                     b.Property<Guid>("LotId")
                         .HasColumnType("uuid")
                         .HasColumnName("lot_id");
@@ -5818,6 +5854,8 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CheckedById");
 
+                    b.HasIndex("IssueId");
+
                     b.HasIndex("LotId");
 
                     b.HasIndex("ProcessRunId");
@@ -5844,6 +5882,14 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<string>("LifecycleStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("Draft")
+                        .HasColumnName("lifecycle_status");
+
                     b.Property<int>("MinChecksPerBatch")
                         .HasColumnType("integer")
                         .HasColumnName("min_checks_per_batch");
@@ -5857,6 +5903,14 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                     b.Property<string>("Parameters")
                         .HasColumnType("jsonb")
                         .HasColumnName("parameters");
+
+                    b.Property<DateTime?>("ReleasedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("released_at");
+
+                    b.Property<Guid?>("ReleasedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("released_by_id");
 
                     b.Property<Guid?>("RouteStepId")
                         .HasColumnType("uuid")
@@ -5887,6 +5941,8 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnName("version");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ReleasedById");
 
                     b.HasIndex("RouteStepId");
 
@@ -7024,6 +7080,14 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<bool?>("ExpectedBoolean")
+                        .HasColumnType("boolean")
+                        .HasColumnName("expected_boolean");
+
+                    b.Property<string>("ExpectedText")
+                        .HasColumnType("text")
+                        .HasColumnName("expected_text");
 
                     b.Property<string>("LifecycleStatus")
                         .IsRequired()
@@ -10011,11 +10075,21 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("MESagent.Domain.Entities.ProcessRun", null)
+                        .WithMany()
+                        .HasForeignKey("ProcessRunId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MESagent.Infrastructure.Identity.MesUser", null)
                         .WithMany()
                         .HasForeignKey("ReleasedById")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.StepExecution", null)
+                        .WithMany()
+                        .HasForeignKey("StepExecutionId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("MESagent.Domain.Entities.MachineConnection", b =>
@@ -10544,6 +10618,11 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("MESagent.Domain.Entities.Issue", null)
+                        .WithMany()
+                        .HasForeignKey("IssueId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MESagent.Domain.Entities.Lot", null)
                         .WithMany()
                         .HasForeignKey("LotId")
@@ -10564,6 +10643,11 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("MESagent.Domain.Entities.QualityCheckTemplate", b =>
                 {
+                    b.HasOne("MESagent.Infrastructure.Identity.MesUser", null)
+                        .WithMany()
+                        .HasForeignKey("ReleasedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MESagent.Domain.Entities.RouteStep", null)
                         .WithMany()
                         .HasForeignKey("RouteStepId")

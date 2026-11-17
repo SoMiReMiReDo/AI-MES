@@ -93,12 +93,14 @@ public sealed partial class ExecutionBackend
                               select run).Take(20).ToListAsync();
             return new
             {
-                lot = View(lot), step = step == null ? null : View(step),
-                wafers = (await Members(lot)).Select(View), runs = runs.Select(View),
+                lot = View(lot),
+                step = step == null ? null : View(step),
+                wafers = (await Members(lot)).Select(View),
+                runs = runs.Select(View),
                 work = step == null ? null : await Work(step),
                 candidates = step is { Status: "Waiting" } ? await Candidates(lot, step) : [],
                 blocks = await Blocks(lot, step is { Status: "Waiting" }),
-                missingDependencies = new[] { "F6 质量处置/返工", "完整 F7 资格与维护" }
+                missingDependencies = new[] { "跨路线返工 / 自动质检任务", "完整 F7 资格与维护" }
             };
         }
         if (p.Length == 6 && p[1] == "lots" && p[3] == "documents" && p[5] == "content")
@@ -130,13 +132,24 @@ public sealed partial class ExecutionBackend
                                       join wafer in db.Set<Wafer>() on member.WaferId equals wafer.Id
                                       where member.ProcessRunId == run.Id
                                       orderby wafer.WaferCode
-                                      select new { wafer.Id, wafer.WaferCode, member.Result, member.Notes,
-                                          member.ProcessedAt }).ToListAsync();
+                                      select new
+                                      {
+                                          wafer.Id,
+                                          wafer.WaferCode,
+                                          member.Result,
+                                          member.Notes,
+                                          member.ProcessedAt
+                                      }).ToListAsync();
             return new
             {
-                run = View(run), step = View(step), lot = View(lot), equipment = View(equipment),
-                recipe = new { recipe.Id, recipeName, recipe.Version }, wafers = participants,
-                work = await Work(step), blocks = await Blocks(lot, false),
+                run = View(run),
+                step = View(step),
+                lot = View(lot),
+                equipment = View(equipment),
+                recipe = new { recipe.Id, recipeName, recipe.Version },
+                wafers = participants,
+                work = await Work(step),
+                blocks = await Blocks(lot, false),
                 tracks = await db.Set<TrackEvent>().Where(x => x.ProcessRunId == run.Id)
                     .OrderBy(x => x.OccurredAt).ThenBy(x => x.Id).ToListAsync()
             };
@@ -161,9 +174,9 @@ public sealed partial class ExecutionBackend
         {
             var id = Id(groupText);
             query = query.Where(x => (from app in db.Set<RecipeApplicability>()
-                                     join tool in db.Set<Equipment>() on app.EquipmentId equals tool.Id
-                                     where app.RouteStepId == x.step.RouteStepId && tool.EquipmentGroupId == id
-                                     select app.Id).Any());
+                                      join tool in db.Set<Equipment>() on app.EquipmentId equals tool.Id
+                                      where app.RouteStepId == x.step.RouteStepId && tool.EquipmentGroupId == id
+                                      select app.Id).Any());
         }
         if (r.Query.TryGetValue("lotNumber", out var code) && code != "")
             query = query.Where(x => x.lot.LotNumber.Contains(code));
@@ -185,9 +198,12 @@ public sealed partial class ExecutionBackend
                 blocks.Add("暂无符合绑定基线的可用设备/配方");
             items.Add(new
             {
-                lot = View(row.lot), step = View(row.step),
+                lot = View(row.lot),
+                step = View(row.step),
                 waitingMinutes = Math.Max(0, (Now - row.step.EnteredAt).TotalMinutes),
-                executable = blocks.Count == 0, blocks, candidateCount = candidates.Count
+                executable = blocks.Count == 0,
+                blocks,
+                candidateCount = candidates.Count
             });
         }
         return new { items, total, page, pageSize = size };

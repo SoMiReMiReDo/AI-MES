@@ -1,13 +1,21 @@
 # MESagent 项目记忆
 
-更新：2026-11-13（Asia/Shanghai）｜阶段：F5 首版及 F3 真实进度/F2 执行绑定完成，完整 F6/F7 待后续｜版本：v1.0
+更新：2026-11-17（Asia/Shanghai）｜阶段：F1～F6 首版完成，完整 F7/按需质量能力待后续｜版本：v1.1
+
+## 2026-11-17 F6 首版完成
+
+- 用户确认 F6-01～04 完整首版：功能文档、后端、WebUI、测试；不合格检验自动建异常并冻结 Lot。
+- 已 Passed 但被 Hold 阻塞的加工经质量审核继续；Failed/中止授权创建当前站新到访重试，跨路线返工后置。
+- 沿用单 Context/事务与全局写锁，新增独立质量模块；与 F3 进度、F4 报废/终点、F5 恢复协作。设计见 [F6 功能设计](docs/feature-development/quality-exception-disposition.md)及接口验收文档；实现与证据见 [F6 实现记录](docs/feature-development/quality-exception-disposition-implementation.md)。
+- 第8条迁移已应用，表数126；迁移前已备份，账号/生产事实数量核对一致，运行角色仅增量 F6 写权限，未改密码。87项数据库/API测试及 Chrome 全流程通过，DDL 空库重复执行验证通过；本地 API 与原 PostgreSQL 服务已恢复，字段字典/DDL/OpenAPI已同步。
+- F4 完工显示占位已回补；保留任务开始前用户对会话 IdleMinutes=60 的改动。Docker、完整 F7、自动质检任务和来料检验继续后置。
 
 ## 2026-11-13 F1～F5 本地演示数据
 
 - 用户授权在当前本地环境建立演示数据，并明确要求命令批量写入；已复用现有业务服务与有效管理员会话，保留既有管理员/凭据。统一 `DEMO-` 标识，演示账号使用 `demo.*`。
 - 已建立组织/人员/终端、4 角色与4账号、2 产品/三站路线/Recipe 与版本/点检/PDF、5 台设备、8 工单、11 批次、34 片、3 载具及13次真实 Run；含拆2+4合回、待投放/待加工/加工中/完工/失败/中止/取消状态。
 - 逐片核对：首次投放28、完工14、在制14（含等待处置4）、报废0。Chrome 已验证显示；当前浏览器停在生产管理。展示入口、对照及限制见 [演示说明](docs/development-process/09-f1-f5-demo-data.md)。临时工具/记录/凭据在 Git 忽略的 `.local/demo-seed/`，密钥不入文档。
-- 待修正：F4 批次详情查询/UI 仍保留完工量 null/“待执行模块接通”占位；真实完工可在 F3 执行概况/F5查看，本轮只建立数据未修改应用代码。下一步按授权修复此显示遗漏，并继续 F6/F7。
+- 历史遗漏：F4 完工显示占位已于2026-11-17随 F6 修复，现按真实完成事实显示。
 
 ## 2026-11-13 F5 实现阶段
 
@@ -74,10 +82,10 @@
 ## 当前事实
 
 - 保留原控制台；已有 Domain/Infrastructure/Database，并新增 Application、ASP.NET Core API、React WebUI 和 API 测试；SDK 仍为 `10.0.401`。
-- 已建立 PostgreSQL 18.6 数据库：119 张业务/支撑表、7 张 Identity 表、2 个派生视图及 EF 迁移历史表；7 条迁移已应用，字段字典与 SQL 已同步导出。
+- 已建立 PostgreSQL 18.6 数据库：119 张业务/支撑表、7 张 Identity 表、2 个派生视图及 EF 迁移历史表；8 条迁移已应用，字段字典与 SQL 已同步导出。
 - 本地 Docker 服务 `mesagent-postgres-1`，数据库 `mesagent`，仅绑定 `127.0.0.1:55432`，使用独立卷；密码在 Git 忽略的 `.env`，不记入记忆或仓库。未修改 OpenMES 参考服务。
 - 已验证外键、数量/时间、归属/槽位互斥、幂等键、xmin 并发、历史与发布版本保护、事务及迁移回滚；具体操作与验证见数据库实施说明。
-- 已实现组织/身份/权限、F2 工艺、F3 工单与真实片进度、F4 建批/投放/拆合批/载具、F5 首版派工过站及真实终点；F1 扩展、完整质量报废/处置、完整设备资源、Agent 尚待后续，见阶段记录。
+- 已实现组织/身份/权限、F2 工艺、F3 工单与真实片进度、F4 建批/投放/拆合批/载具、F5 首版派工过站及真实终点；F1 扩展、F6 首版异常/Hold/检验/报废及同站恢复已接通；按需质量、完整设备资源、Agent 尚待后续，见阶段记录。
 - `docs/` 既有内容是 OpenMES 的学习和开发参考资料，其 Laravel/React 实现不属于 MESagent。
 - 已只读核查本地 OpenMES v0.25.0 后台并验证工单到成品批次的下钻；[沿用建议](docs/development-process/01-current-state.md#4-本地-openmes-后台核查与沿用建议) 优先参考看板、追溯、异常和审计界面，晶圆执行规则由 C# 业务层设计，待确认。
 - 已初始化 Git 并推送公开仓库 [SoMiReMiReDo/AI-MES](https://github.com/SoMiReMiReDo/AI-MES)：`main` 为默认分支，`dev/mes-backend` 为后端开发分支。
@@ -117,7 +125,7 @@
 - [功能实现架构](docs/development-process/08-feature-implementation-architecture.md)：模块职责、共享应用层、事务/授权、WebUI 与交付顺序。
 - [F1-`OrganizationIdentityAccessControl` 功能设计](docs/feature-development/organization-identity-access-control.md) · [接口与验收](docs/feature-development/organization-identity-access-control-api-and-acceptance.md)：设计规则与 32 项验收场景；执行证据见 [F1-`OrganizationIdentityAccessControl` 实现与启动](docs/feature-development/organization-identity-access-control-implementation.md)。
 
-下一步：按后续授权推进 F6 真实质量处置/报废/恢复及 GAP-12 完整 F7；F3 实际进度、F2 执行绑定和 F4 终点已随 F5 接通，质量口径/部分报废联调与复杂存量专项仍保留。Docker 继续后置；新任务开始前先沟通计划。
+下一步：按后续授权推进 GAP-12 完整 F7；跨路线返工、自动质检/来料、复杂存量与关闭竞争专项保留。F6 首版与 F3/F4/F5 已接通，Docker 继续后置；新任务开始前先沟通范围。
 
 ## 决策记录
 

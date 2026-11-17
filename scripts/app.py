@@ -113,6 +113,31 @@ def main():
             env=env,
             check=True
         )
+    elif cmd == 'provision-quality':
+        # Add only F6 writes; preserve credentials, existing grants and deployment data.
+        sql = """DO $$ BEGIN
+IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='mesagent_app' AND NOT rolsuper) THEN
+    RAISE EXCEPTION 'Existing non-superuser mesagent_app role is required';
+END IF;
+END $$;
+GRANT INSERT,UPDATE ON quality.reason_codes,quality.issue_types,quality.issues,
+    quality.issue_actions,quality.hold_records,quality.specification_versions,
+    quality.quality_check_templates TO mesagent_app;
+GRANT INSERT ON quality.quality_checks,quality.measurements,quality.lot_releases,
+    quality.scrap_entries,quality.wafer_dispositions TO mesagent_app;
+"""
+        subprocess.run(
+            [
+                'docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-v',
+                'ON_ERROR_STOP=1', '-U', 'mesagent_owner', '-d', 'mesagent'
+            ],
+            input=sql,
+            text=True,
+            cwd=ROOT,
+            check=True,
+            stdout=subprocess.DEVNULL
+        )
+        print('已增量授予 F6 写权限；保留账号密码，无新增 DDL/DELETE 权限。')
     elif cmd == 'provision-execution':
         # Incremental F5 upgrade: keep the existing login, password and all unrelated grants unchanged.
         sql = """DO $$ BEGIN
@@ -167,6 +192,11 @@ GRANT INSERT,UPDATE ON production.process_runs,production.process_run_wafers,pro
 GRANT INSERT ON production.track_events,production.checklist_completions,production.output_values,
     production.process_confirmations,equipment.equipment_types,equipment.equipment_groups,
     equipment.equipment_events TO mesagent_app;
+GRANT INSERT,UPDATE ON quality.reason_codes,quality.issue_types,quality.issues,
+    quality.issue_actions,quality.hold_records,quality.specification_versions,
+    quality.quality_check_templates TO mesagent_app;
+GRANT INSERT ON quality.quality_checks,quality.measurements,quality.lot_releases,
+    quality.scrap_entries,quality.wafer_dispositions TO mesagent_app;
 GRANT USAGE ON SCHEMA engineering,production,equipment,quality,materials,integration TO mesagent_app;
 GRANT SELECT ON ALL TABLES IN SCHEMA engineering,production,equipment,quality,materials,integration TO mesagent_app;
 """
@@ -182,9 +212,9 @@ GRANT SELECT ON ALL TABLES IN SCHEMA engineering,production,equipment,quality,ma
             stdout=subprocess.DEVNULL
         )
 
-        print('已配置应用运行角色；无 DDL 权限，仅开放 F1～F5 及最小设备能力所需写权限。')
+        print('已配置应用运行角色；无 DDL 权限，仅开放 F1～F6 及最小设备能力所需写权限。')
     else:
-        raise SystemExit('用法: python3 scripts/app.py configure|serve|bootstrap|bootstrap-generated|recover-admin|test|provision|provision-execution')
+        raise SystemExit('用法: python3 scripts/app.py configure|serve|bootstrap|bootstrap-generated|recover-admin|test|provision|provision-execution|provision-quality')
 
 
 if __name__ == '__main__':

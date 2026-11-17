@@ -252,7 +252,8 @@ export async function executionFlow(page: Page, suffix: string) {
         fullPage: true,
         animations: "disabled",
     });
-    await drawer().getByRole("button", { name: "关闭", exact: true }).click();
+    await page.keyboard.press("Escape");
+    await expect(drawer()).toHaveCount(0);
     await page.getByRole("link", { name: "工单管理" }).click();
     await page
         .getByRole("row")
@@ -265,7 +266,8 @@ export async function executionFlow(page: Page, suffix: string) {
         fullPage: true,
         animations: "disabled",
     });
-    await drawer().getByRole("button", { name: "关闭", exact: true }).click();
+    await page.keyboard.press("Escape");
+    await expect(drawer()).toHaveCount(0);
     const progress = await get(`planning/work-orders/${order.id}/progress`);
     expect(progress.completedQty).toBe(5);
     expect(progress.inProcessQty).toBe(0);

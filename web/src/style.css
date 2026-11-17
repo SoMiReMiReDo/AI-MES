@@ -647,3 +647,7 @@ footer {
         white-space: nowrap;
     }
 }
+.ant-message .ant-message-notice,
+.ant-message .ant-message-notice * {
+    pointer-events: none;
+}
