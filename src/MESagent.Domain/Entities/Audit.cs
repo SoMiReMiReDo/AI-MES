@@ -8,6 +8,8 @@ public sealed class AuditLog
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public uint RowVersion { get; set; }
     public Guid? UserId { get; set; }
+    public Guid? FabId { get; set; }
+    public string? Module { get; set; }
     public string EntityType { get; set; } = null!;
     public Guid EntityId { get; set; }
     public string Action { get; set; } = null!;
@@ -78,12 +80,14 @@ public sealed class OutboxMessage
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public uint RowVersion { get; set; }
+    public Guid? BusinessEventId { get; set; }
     public string EventType { get; set; } = null!;
     public string AggregateType { get; set; } = null!;
     public Guid AggregateId { get; set; }
     public string Payload { get; set; } = null!;
     public DateTime OccurredAt { get; set; }
     public DateTime? PublishedAt { get; set; }
+    public DateTime? DeadLetteredAt { get; set; }
     public int Attempts { get; set; }
     public DateTime? NextAttemptAt { get; set; }
     public string? LastError { get; set; }

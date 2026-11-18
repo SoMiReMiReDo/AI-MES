@@ -1,5 +1,33 @@
 import { expect, type Page } from "@playwright/test";
 
+function workInstruction() {
+    const instructions =
+        "BT /F1 14 Tf 48 750 Td (MES demo: verify wafer IDs and carrier.) Tj ET";
+    const objects = [
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] " +
+            "/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        `<< /Length ${instructions.length} >>\nstream\n${instructions}\nendstream`,
+    ];
+    // Cross the proxy's default request limit while keeping an ordinary PDF.
+    let pdf = "%PDF-1.4\n" + "% sample\n".repeat(8192);
+    const offsets = objects.map((object, index) => {
+        const offset = pdf.length;
+        pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+        return offset;
+    });
+    const xref = pdf.length;
+    pdf +=
+        "xref\n0 6\n0000000000 65535 f \n" +
+        offsets
+            .map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`)
+            .join("") +
+        `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+    return Buffer.from(pdf, "ascii");
+}
+
 export async function executionFlow(page: Page, suffix: string) {
     const code = `EXEC-${suffix}`;
     const groupName = `执行设备组 ${suffix}`;
@@ -150,13 +178,27 @@ export async function executionFlow(page: Page, suffix: string) {
                 unit: "C",
                 isRequired: true,
             });
-            const doc = await create("engineering/documents", {
-                entityType: "RouteStep",
-                entityId: step.id,
-                revision: "A",
-                filename: "instruction.pdf",
-                content: Buffer.from("%PDF-1.7\n%%EOF").toString("base64"),
-            });
+            const response = await page.request.post(
+                "/api/v1/engineering/documents",
+                {
+                    headers: {
+                        "X-CSRF-TOKEN": csrf,
+                        "Idempotency-Key": crypto.randomUUID(),
+                    },
+                    multipart: {
+                        entityType: "RouteStep",
+                        entityId: step.id,
+                        revision: "A",
+                        file: {
+                            name: "instruction.pdf",
+                            mimeType: "application/pdf",
+                            buffer: workInstruction(),
+                        },
+                    },
+                },
+            );
+            expect(response.ok(), await response.text()).toBeTruthy();
+            const doc = await response.json();
             await create(
                 `engineering/documents/${doc.id}/release`,
                 {},
@@ -271,4 +313,9 @@ export async function executionFlow(page: Page, suffix: string) {
     const progress = await get(`planning/work-orders/${order.id}/progress`);
     expect(progress.completedQty).toBe(5);
     expect(progress.inProcessQty).toBe(0);
+    return {
+        productId: product.id,
+        revisionId: revision.id,
+        equipmentId: tool.id,
+    };
 }

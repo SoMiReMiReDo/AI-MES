@@ -7,6 +7,7 @@ using MESagent.Domain.Entities;
 using MESagent.Infrastructure.Identity;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -17,7 +18,15 @@ namespace MESagent.Api.Tests;
 
 public sealed class OrganizationIdentityAccessControlFixture : IAsyncLifetime
 {
+    public sealed class TestClock : TimeProvider
+    {
+        public TimeSpan Offset { get; set; }
+
+        public override DateTimeOffset GetUtcNow() => DateTimeOffset.UtcNow + Offset;
+    }
+
     public DatabaseFixture Database { get; } = new();
+    public TestClock Clock { get; } = new();
     public Guid Fab { get; } = Guid.NewGuid();
     public string Password { get; } = Guid.NewGuid() + "Aa!";
     public string FinalPassword { get; } = Guid.NewGuid() + "Bb!";
@@ -31,7 +40,9 @@ public sealed class OrganizationIdentityAccessControlFixture : IAsyncLifetime
         Host = new WebApplicationFactory<Program>().WithWebHostBuilder(b =>
         {
             b.UseEnvironment("Testing");
+            b.ConfigureTestServices(services => services.AddSingleton<TimeProvider>(Clock));
             b.UseSetting("Security:LoginPermitLimit", "1000");
+            b.UseSetting("Reliability:OutboxEnabled", "false");
             b.UseSetting("ConnectionStrings:Mes", Database.ConnectionString);
             b.UseSetting("Mes:DeploymentFabId", Fab.ToString());
         });

@@ -126,17 +126,21 @@ F1-`OrganizationIdentityAccessControl` 最新实现与验证见 [实现记录](.
 
 ## F10-`WorkbenchDashboardsAlertsScheduling` WebUI、看板、告警与排程
 
+F10-01～07 已按 2026-11-18 确认范围通过本地验收。OEE 按登记班次与实际 Run 计算，自动排程产出计划，告警采用站内通知。见 [F10 功能设计与验收](../feature-development/workbench-dashboards-alerts-scheduling.md)。
+
 | ID | 功能与验收要点 | 主要对象 | 阶段 |
 | --- | --- | --- | --- |
 | F10-01 | 角色工作台与菜单搜索；管理、工艺、计划、操作员、质量、设备、追溯和审计入口，复用列表分页、筛选、排序、状态与错误反馈。 | F1-`OrganizationIdentityAccessControl`–F9-`TraceabilityImpactAnalysis` 查询与权限 | 首版 |
 | F10-02 | 生产总览显示 WIP、待加工、运行、Hold、设备及完工统计；按厂区、区域、工序、设备组过滤并下钻。 | `Lot`、`StepExecution`、`HoldRecord`、`ProcessRun`、`EquipmentState` | 首版 |
 | F10-03 | 待办和告警视图显示当前阻塞、异常、设备停机等来源记录。授权实时刷新，断线重连后重取快照。 | `Issue`、`HoldRecord`、`Downtime`、`BusinessEvent`、`OutboxMessage` | 首版 |
 | F10-04 | 按产品、步骤、日期和设备查历史产出、等待时间、周期、报废及不合格趋势，启用班次后增加班次维度。区分过站通过片次与终点完工片数。 | `WorkOrder`、`StepExecution`、`ProcessRun`、`ScrapEntry`、`Shift` | 首版 |
-| F10-05 | 班次监控、OEE、瓶颈及损失分析；确认计划时长、理想产速、合格量与缺失值口径后上线。 | `Shift`、`EquipmentState`、`Downtime`、`ProcessRunWafer`；指标读模型待设计 | 按需 |
-| F10-06 | 拖拽排产、维护冲突校验、日历容量、优先级规则和自动派工；保留排程变更及人工干预。 | `WorkOrder`、`Lot`、`MaintenanceEvent`；计划块、日历、规则及快照待补 | 扩展 |
-| F10-07 | 个人告警订阅、确认、静默、升级和通知渠道；只读来源待办可先运行。 | `BusinessEvent`、`OutboxMessage`；订阅与告警生命周期待补 | 扩展 |
+| F10-05 | 班次监控、OEE、瓶颈及损失分析；确认计划时长、理想产速、合格量与缺失值口径后上线。 | `Shift`、`ProcessRun`、`Downtime`、`ProcessRunWafer`、`EquipmentIdealRate` | 按需 |
+| F10-06 | 拖拽排产、维护冲突校验、日历容量、优先级规则和自动派工；保留排程变更及人工干预。 | `Lot`、`StepExecution`、`MaintenanceEvent`、`ProductionScheduleBlock`、`AuditLog` | 扩展 |
+| F10-07 | 个人告警订阅、确认、静默、升级和通知渠道；只读来源待办可先运行。 | `WorkbenchSubscription`、`WorkbenchAlertReceipt` 与来源事实 | 扩展 |
 
 ## F11-`DataImportEquipmentIntegration` 数据导入、设备及外部系统集成
+
+F11-01 和 F11-03 的 CSV 工单草稿流程已按确认范围通过本地验收。见 [F11 功能设计与验收](../feature-development/data-import-equipment-integration.md)。
 
 | ID | 功能与验收要点 | 主要对象 | 阶段 |
 | --- | --- | --- | --- |
@@ -150,6 +154,8 @@ F1-`OrganizationIdentityAccessControl` 最新实现与验证见 [实现记录](.
 | F11-08 | 设备端 Recipe 校验/下发、AMHS/MCS 搬运及授权设备命令，按工艺启用确认、握手、超时、互锁和人工恢复。 | `RecipeVersion`、`CarrierMovement`；配方文件、搬运与命令状态待补 | 扩展 |
 
 ## F12-`ApplicationAuditReliability` 应用服务、审计与可靠性
+
+F12-01～04 与 F12-06 首版已实现。F12-05 沿用工艺 PDF，通用附件按需推进。见 [F12 功能设计](../feature-development/application-audit-reliability.md)。
 
 | ID | 功能与验收要点 | 主要对象 | 阶段 |
 | --- | --- | --- | --- |
@@ -173,11 +179,13 @@ F1-`OrganizationIdentityAccessControl` 最新实现与验证见 [实现记录](.
 
 ## F14-`DockerDeliveryAcceptance` Docker 交付与验收
 
+用户确认先交付现有 F1～F12，Agent 工具在 F13 完成后补验。部署结构、范围和验收记录见 [F14 功能文档](../feature-development/docker-delivery-acceptance.md)。
+
 | ID | 功能与验收要点 | 主要对象或组件 | 阶段 |
 | --- | --- | --- | --- |
-| F14-01 | Docker 交付 Web/API/Worker/PostgreSQL，同源访问、独立迁移任务、运行账号、持久卷、密钥配置和健康检查。 | 现有数据库迁移与 Compose；应用镜像及运行配置待建 | 首版 |
+| F14-01 | Docker 交付 Web/API/Worker/PostgreSQL，同源访问、独立迁移任务、运行账号、持久卷、密钥配置和健康检查。 | 交付 Compose、镜像、独立迁移和运行授权、三个持久卷 | 首版 |
 | F14-02 | 演示数据和初始化流程，账号、设备、工艺、Lot 与追溯数据可重复部署；在隔离环境执行端到端验收。 | 组织、工艺、执行、设备、质量与审计对象 | 首版 |
-| F14-03 | 覆盖数据库事务与并发、API 权限、UI 过站和 Agent 工具测试；演练重启、备份及业务数据恢复，覆盖附件和密钥。 | 现有数据库测试；应用、UI 与恢复演练待补 | 首版 |
+| F14-03 | 覆盖数据库事务与并发、API 权限、UI 过站和 Agent 工具测试；演练重启、备份及业务数据恢复，覆盖附件和密钥。 | 隔离数据库/API 测试、Chrome、停写备份和恢复脚本 | 首版 |
 | F14-04 | 按部署目标确认性能、留存期限、可用性及 RPO/RTO；执行压测、归档和多节点恢复，覆盖启用的外部接口。 | 运行环境、指标与备份体系 | 按需 |
 
 ## 开工顺序与闭环验收

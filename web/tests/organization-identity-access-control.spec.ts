@@ -4,6 +4,8 @@ import { executionFlow } from "./execution-flow";
 import { qualityFlow } from "./quality-flow";
 import { equipmentFlow } from "./equipment-flow";
 import { traceabilityFlow } from "./traceability-flow";
+import { workbenchFlow } from "./workbench-flow";
+import { integrationFlow } from "./integration-flow";
 
 test("真实浏览器：首登改密、组织维护、账号分权、退出与撤权", async ({
     page,
@@ -40,7 +42,7 @@ test("真实浏览器：首登改密、组织维护、账号分权、退出与�
         path: "test-results/workspace.png",
         fullPage: true,
     });
-    await page.getByRole("link", { name: "组织结构" }).click();
+    await page.getByRole("link", { name: "组织结构", exact: true }).click();
     await page.getByRole("tab", { name: "区域", exact: true }).click();
     await page.getByRole("button", { name: /新增区域/ }).click();
     await page.getByLabel("编码", { exact: true }).fill("E2E" + suffix);
@@ -97,6 +99,9 @@ test("真实浏览器：首登改密、组织维护、账号分权、退出与�
         viewer.getByRole("heading", { name: "你好，只读验收员" }),
     ).toBeVisible();
     await expect(viewer.getByRole("link", { name: "账号与访问" })).toHaveCount(
+        0,
+    );
+    await expect(viewer.getByRole("link", { name: "审计与安全" })).toHaveCount(
         0,
     );
     expect((await viewer.request.get("/api/v1/security/users")).status()).toBe(
@@ -212,11 +217,63 @@ test("真实浏览器：首登改密、组织维护、账号分权、退出与�
     });
     await page.getByRole("button", { name: "关闭", exact: true }).click();
     await productionFlow(page, "WO" + suffix, suffix);
-    await executionFlow(page, suffix);
+    const execution = await executionFlow(page, suffix);
     await qualityFlow(page, suffix);
     await equipmentFlow(page, suffix, final);
     await traceabilityFlow(page, suffix);
+    await workbenchFlow(page, suffix, execution);
+    await integrationFlow(page, suffix);
+
+    const auditSample = await page.request.post(
+        "/api/v1/engineering/products",
+        {
+            headers: { "X-CSRF-TOKEN": csrf.requestToken },
+            data: {
+                code: "AUD" + suffix,
+                name: "审计验收产品",
+                unitOfMeasure: "wafer",
+            },
+        },
+    );
+    expect(auditSample.status(), await auditSample.text()).toBe(201);
+    const auditTrace = auditSample.headers()["x-trace-id"];
+    await page.getByRole("link", { name: "审计与安全", exact: true }).click();
+    await page.getByRole("tab", { name: "业务审计", exact: true }).click();
+    const auditFilter = page.getByRole("searchbox", { name: "审计筛选值" });
+    await auditFilter.fill(auditTrace);
+    await auditFilter.press("Enter");
+    const auditRow = page.getByRole("row").filter({ hasText: "Product" });
+    await auditRow.getByRole("button", { name: "查看", exact: true }).click();
+    const auditDetail = page.getByRole("dialog", { name: "业务审计详情" });
+    await expect(
+        auditDetail.getByText("审计验收产品", { exact: false }),
+    ).toBeVisible();
+    await expect(
+        auditDetail.getByText(auditTrace, { exact: true }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.getByRole("tab", { name: "事件投递", exact: true }).click();
+    const outboxFilter = page.getByRole("searchbox", { name: "事件追踪 ID" });
+    const deadLetterTrace = "f1200000-0000-4000-8000-000000000001";
+    await outboxFilter.fill(deadLetterTrace);
+    await outboxFilter.press("Enter");
+    const deadLetter = page
+        .getByRole("row")
+        .filter({ hasText: deadLetterTrace });
+    await deadLetter.getByRole("button", { name: "重放", exact: true }).click();
+    const replay = page.getByRole("dialog", { name: "重放待发事件" });
+    await replay.getByLabel("重放原因").fill("本地浏览器验证");
+    await replay.getByRole("button", { name: /^重\s*放$/ }).click();
+    await expect(replay).toBeHidden();
+    await expect(deadLetter.getByText("已投递", { exact: true })).toBeVisible({
+        timeout: 12000,
+    });
+
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({
+        path: "test-results/reliability-mobile.png",
+        fullPage: true,
+    });
     await page.goto("/");
     await page.screenshot({ path: "test-results/mobile.png", fullPage: true });
     await page.getByRole("button", { name: /退\s*出/, exact: true }).click();

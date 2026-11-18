@@ -73,13 +73,15 @@ public sealed partial class EquipmentBackend(
         db.Add(new AuditLog
         {
             UserId = actor.UserId,
+            FabId = fabId,
+            Module = "equipment",
             EntityType = entity.GetType().Name,
             EntityId = id,
             Action = action,
             AfterState = payload,
             OccurredAt = Now,
             CorrelationId = actor.CorrelationId,
-            SourceChannel = "Web"
+            SourceChannel = entity is EquipmentEvent { IsSimulated: true } ? "Simulator" : "Web"
         });
         db.Add(new BusinessEvent
         {

@@ -48,8 +48,8 @@ internal static partial class FabModel
         b.Entity<AuditLog>().HasIndex(x => x.CorrelationId);
         b.Entity<BusinessEvent>().HasIndex(x => x.CorrelationId);
         b.Entity<OutboxMessage>()
-            .HasIndex(x => new { x.NextAttemptAt, x.OccurredAt })
-            .HasFilter("published_at IS NULL");
+            .HasIndex(x => new { x.AggregateId, x.NextAttemptAt, x.OccurredAt, x.Id })
+            .HasFilter("published_at IS NULL AND dead_lettered_at IS NULL");
         b.Entity<MachineMessage>()
             .HasIndex(x => new { x.MachineConnectionId, x.SourceMessageId })
             .IsUnique()

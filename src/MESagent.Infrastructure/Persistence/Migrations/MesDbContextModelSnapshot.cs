@@ -346,10 +346,19 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("entity_type");
 
+                    b.Property<Guid?>("FabId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fab_id");
+
                     b.Property<string>("IpAddress")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("ip_address");
+
+                    b.Property<string>("Module")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("module");
 
                     b.Property<DateTime>("OccurredAt")
                         .HasColumnType("timestamp with time zone")
@@ -392,6 +401,8 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                     b.HasIndex("ReasonCodeId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("FabId", "OccurredAt");
 
                     b.HasIndex("EntityType", "EntityId", "OccurredAt");
 
@@ -1562,13 +1573,15 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MachineConnectionId");
-
                     b.HasIndex("EquipmentId", "EventTimestamp");
 
                     b.HasIndex("EquipmentId", "Source", "SourceEventId")
                         .IsUnique()
-                        .HasFilter("source_event_id IS NOT NULL");
+                        .HasFilter("source_event_id IS NOT NULL AND machine_connection_id IS NULL");
+
+                    b.HasIndex("MachineConnectionId", "Source", "SourceEventId")
+                        .IsUnique()
+                        .HasFilter("source_event_id IS NOT NULL AND machine_connection_id IS NOT NULL");
 
                     b.ToTable("equipment_events", "equipment");
                 });
@@ -1631,6 +1644,43 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("equipment_groups", "equipment");
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.EquipmentIdealRate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("EffectiveOn")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_on");
+
+                    b.Property<Guid>("EquipmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("equipment_id");
+
+                    b.Property<Guid>("FabId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fab_id");
+
+                    b.Property<decimal>("IdealSeconds")
+                        .HasPrecision(12, 3)
+                        .HasColumnType("numeric(12,3)")
+                        .HasColumnName("ideal_seconds");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EquipmentId");
+
+                    b.HasIndex("FabId", "EquipmentId", "EffectiveOn")
+                        .IsUnique();
+
+                    b.ToTable("equipment_ideal_rates", "workbench", t =>
+                        {
+                            t.HasCheckConstraint("ck_equipment_ideal_rate", "ideal_seconds > 0 AND ideal_seconds <= 86400");
+                        });
                 });
 
             modelBuilder.Entity("MESagent.Domain.Entities.EquipmentMaterialRequirement", b =>
@@ -2228,14 +2278,21 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("error_log");
 
+                    b.Property<Guid?>("FabId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fab_id");
+
                     b.Property<int>("FailedRows")
                         .HasColumnType("integer")
                         .HasColumnName("failed_rows");
 
                     b.Property<string>("FilePath")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("file_path");
+
+                    b.Property<string>("InputData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("input_data");
 
                     b.Property<Guid?>("MappingId")
                         .HasColumnType("uuid")
@@ -2246,6 +2303,10 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("original_filename");
+
+                    b.Property<string>("ResultData")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("result_data");
 
                     b.Property<uint>("RowVersion")
                         .IsConcurrencyToken()
@@ -2286,6 +2347,8 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                     b.HasIndex("MappingId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("FabId", "UserId", "CreatedAt", "Id");
 
                     b.ToTable("import_jobs", "integration", t =>
                         {
@@ -3561,7 +3624,9 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EquipmentId");
+                    b.HasIndex("EquipmentId", "Name")
+                        .IsUnique()
+                        .HasFilter("protocol = 'Simulator'");
 
                     b.ToTable("machine_connections", "integration");
                 });
@@ -3579,6 +3644,10 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<Guid?>("EquipmentEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("equipment_event_id");
 
                     b.Property<Guid>("MachineConnectionId")
                         .HasColumnType("uuid")
@@ -3631,9 +3700,14 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EquipmentEventId")
+                        .IsUnique();
+
                     b.HasIndex("MachineConnectionId", "SourceMessageId")
                         .IsUnique()
                         .HasFilter("source_message_id IS NOT NULL");
+
+                    b.HasIndex("MachineConnectionId", "ReceivedAt", "Id");
 
                     b.ToTable("machine_messages", "integration");
                 });
@@ -5090,6 +5164,10 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("attempts");
 
+                    b.Property<Guid?>("BusinessEventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_event_id");
+
                     b.Property<Guid>("CorrelationId")
                         .HasColumnType("uuid")
                         .HasColumnName("correlation_id");
@@ -5099,6 +5177,10 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<DateTime?>("DeadLetteredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dead_lettered_at");
 
                     b.Property<string>("EventType")
                         .IsRequired()
@@ -5141,11 +5223,16 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("NextAttemptAt", "OccurredAt")
-                        .HasFilter("published_at IS NULL");
+                    b.HasIndex("BusinessEventId")
+                        .IsUnique();
+
+                    b.HasIndex("AggregateId", "NextAttemptAt", "OccurredAt", "Id")
+                        .HasFilter("published_at IS NULL AND dead_lettered_at IS NULL");
 
                     b.ToTable("outbox_messages", "audit", t =>
                         {
+                            t.HasCheckConstraint("ck_outbox_delivery_state", "dead_lettered_at IS NULL OR (published_at IS NULL AND next_attempt_at IS NULL)");
+
                             t.HasCheckConstraint("ck_outbox_messages_1", "attempts >= 0");
                         });
                 });
@@ -5871,6 +5958,61 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                     b.ToTable("product_revisions", "engineering", t =>
                         {
                             t.HasCheckConstraint("ck_product_revisions_1", "effective_to IS NULL OR effective_from IS NULL OR effective_to > effective_from");
+                        });
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.ProductionScheduleBlock", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
+
+                    b.Property<DateTime>("EndsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ends_at");
+
+                    b.Property<Guid>("EquipmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("equipment_id");
+
+                    b.Property<Guid>("FabId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fab_id");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateTime>("StartsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("starts_at");
+
+                    b.Property<Guid>("StepExecutionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("step_execution_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EquipmentId");
+
+                    b.HasIndex("StepExecutionId");
+
+                    b.HasIndex("FabId", "StepExecutionId")
+                        .IsUnique()
+                        .HasFilter("cancelled_at IS NULL");
+
+                    b.HasIndex("FabId", "EquipmentId", "StartsAt");
+
+                    b.ToTable("production_schedule_blocks", "workbench", t =>
+                        {
+                            t.HasCheckConstraint("ck_schedule_block_range", "starts_at < ends_at");
                         });
                 });
 
@@ -9160,6 +9302,103 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MESagent.Domain.Entities.WorkbenchAlertReceipt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AcknowledgedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("acknowledged_at");
+
+                    b.Property<Guid>("FabId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fab_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
+                        .HasColumnName("kind");
+
+                    b.Property<DateTime?>("SilencedUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("silenced_until");
+
+                    b.Property<Guid>("SourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("FabId", "UserId", "Kind", "SourceId")
+                        .IsUnique();
+
+                    b.ToTable("alert_receipts", "workbench");
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.WorkbenchSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("enabled");
+
+                    b.Property<DateTime>("EnabledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("enabled_at");
+
+                    b.Property<Guid?>("EscalateToId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("escalate_to_id");
+
+                    b.Property<int?>("EscalationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("escalation_minutes");
+
+                    b.Property<Guid>("FabId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fab_id");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EscalateToId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("FabId", "EscalateToId", "Kind");
+
+                    b.HasIndex("FabId", "UserId", "Kind")
+                        .IsUnique();
+
+                    b.ToTable("subscriptions", "workbench", t =>
+                        {
+                            t.HasCheckConstraint("ck_subscription_escalation", "(escalation_minutes IS NULL AND escalate_to_id IS NULL) OR (escalation_minutes IS NOT NULL AND escalation_minutes BETWEEN 1 AND 10080 AND escalate_to_id IS NOT NULL AND escalate_to_id <> user_id)");
+                        });
+                });
+
             modelBuilder.Entity("MESagent.Domain.Entities.Worker", b =>
                 {
                     b.Property<Guid>("Id")
@@ -9795,6 +10034,11 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("MESagent.Domain.Entities.AuditLog", b =>
                 {
+                    b.HasOne("MESagent.Domain.Entities.Fab", null)
+                        .WithMany()
+                        .HasForeignKey("FabId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MESagent.Domain.Entities.ReasonCode", null)
                         .WithMany()
                         .HasForeignKey("ReasonCodeId")
@@ -10048,6 +10292,21 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("MESagent.Domain.Entities.EquipmentIdealRate", b =>
+                {
+                    b.HasOne("MESagent.Domain.Entities.Equipment", null)
+                        .WithMany()
+                        .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.Fab", null)
+                        .WithMany()
+                        .HasForeignKey("FabId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("MESagent.Domain.Entities.EquipmentMaterialRequirement", b =>
                 {
                     b.HasOne("MESagent.Domain.Entities.Material", null)
@@ -10175,6 +10434,11 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("MESagent.Domain.Entities.ImportJob", b =>
                 {
+                    b.HasOne("MESagent.Domain.Entities.Fab", null)
+                        .WithMany()
+                        .HasForeignKey("FabId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MESagent.Domain.Entities.ImportMapping", null)
                         .WithMany()
                         .HasForeignKey("MappingId")
@@ -10447,6 +10711,11 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("MESagent.Domain.Entities.MachineMessage", b =>
                 {
+                    b.HasOne("MESagent.Domain.Entities.EquipmentEvent", null)
+                        .WithMany()
+                        .HasForeignKey("EquipmentEventId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MESagent.Domain.Entities.MachineConnection", null)
                         .WithMany()
                         .HasForeignKey("MachineConnectionId")
@@ -10786,6 +11055,14 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("MESagent.Domain.Entities.OutboxMessage", b =>
+                {
+                    b.HasOne("MESagent.Domain.Entities.BusinessEvent", null)
+                        .WithMany()
+                        .HasForeignKey("BusinessEventId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("MESagent.Domain.Entities.OutputDefinition", b =>
                 {
                     b.HasOne("MESagent.Domain.Entities.RouteStep", null)
@@ -10951,6 +11228,27 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("RouteVersionId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.ProductionScheduleBlock", b =>
+                {
+                    b.HasOne("MESagent.Domain.Entities.Equipment", null)
+                        .WithMany()
+                        .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.Fab", null)
+                        .WithMany()
+                        .HasForeignKey("FabId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Domain.Entities.StepExecution", null)
+                        .WithMany()
+                        .HasForeignKey("StepExecutionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("MESagent.Domain.Entities.QTimeRule", b =>
@@ -11879,6 +12177,41 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                     b.HasOne("MESagent.Domain.Entities.WorkOrder", null)
                         .WithMany()
                         .HasForeignKey("WorkOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.WorkbenchAlertReceipt", b =>
+                {
+                    b.HasOne("MESagent.Domain.Entities.Fab", null)
+                        .WithMany()
+                        .HasForeignKey("FabId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Infrastructure.Identity.MesUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.WorkbenchSubscription", b =>
+                {
+                    b.HasOne("MESagent.Infrastructure.Identity.MesUser", null)
+                        .WithMany()
+                        .HasForeignKey("EscalateToId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("MESagent.Domain.Entities.Fab", null)
+                        .WithMany()
+                        .HasForeignKey("FabId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MESagent.Infrastructure.Identity.MesUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

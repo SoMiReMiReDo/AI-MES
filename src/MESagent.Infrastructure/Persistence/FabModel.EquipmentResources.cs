@@ -19,7 +19,9 @@ internal static partial class FabModel
                 .HasDefaultValue("Applied");
             e.Property(x => x.RejectionReason).HasColumnName("rejection_reason").HasMaxLength(500);
             e.HasIndex(x => new { x.EquipmentId, x.Source, x.SourceEventId }).IsUnique()
-                .HasFilter("source_event_id IS NOT NULL");
+                .HasFilter("source_event_id IS NOT NULL AND machine_connection_id IS NULL");
+            e.HasIndex(x => new { x.MachineConnectionId, x.Source, x.SourceEventId }).IsUnique()
+                .HasFilter("source_event_id IS NOT NULL AND machine_connection_id IS NOT NULL");
         });
         b.Entity<Downtime>(e =>
         {

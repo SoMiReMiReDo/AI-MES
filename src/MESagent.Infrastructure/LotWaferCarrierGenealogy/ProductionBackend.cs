@@ -133,11 +133,14 @@ public sealed partial class ProductionBackend(
     private void Record(object entity, string action, object facts)
     {
         var id = (Guid)entity.GetType().GetProperty("Id")!.GetValue(entity)!;
+        var type = entity.GetType().Name;
         var payload = JsonSerializer.Serialize(new { schemaVersion = 1, commandId, fabId, facts }, Json);
         db.Add(new AuditLog
         {
             UserId = actor.UserId,
-            EntityType = entity.GetType().Name,
+            FabId = fabId,
+            Module = type is nameof(Carrier) or nameof(Wafer) ? "carriers" : "lots",
+            EntityType = type,
             EntityId = id,
             Action = action,
             AfterState = payload,
@@ -148,7 +151,7 @@ public sealed partial class ProductionBackend(
         db.Add(new BusinessEvent
         {
             UserId = actor.UserId,
-            EntityType = entity.GetType().Name,
+            EntityType = type,
             EntityId = id,
             EventType = "Production." + action,
             Payload = payload,

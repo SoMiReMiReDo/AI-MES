@@ -116,6 +116,8 @@ export function RemoteSelect({
 }
 
 export const permissionLabels: Record<string, string> = {
+    "integration.simulator.read": "设备集成 · 模拟连接与报文查询",
+    "integration.work-orders.import": "数据导入 · 工单草稿",
     "quality.read": "质量 · 查询",
     "quality.configuration": "质量 · 配置",
     "quality.issues": "质量 · 异常与整改",

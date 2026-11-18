@@ -83,7 +83,7 @@ export async function equipmentFlow(
         page.getByRole("heading", { name: "你好，系统管理员" }),
     ).toBeVisible();
     csrf = (await get("auth/csrf")).requestToken;
-    await page.getByRole("link", { name: "设备与资源" }).click();
+    await page.getByRole("link", { name: "设备与资源", exact: true }).click();
     const options = await get("equipment/options");
     const equipment = options.equipment.find(
         (x: any) => x.code === executionCode,

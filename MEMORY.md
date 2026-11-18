@@ -1,6 +1,30 @@
 # MESagent 项目记忆
 
-更新：2026-11-18（Asia/Shanghai）｜阶段：F09-01～02 本地验收完成｜版本：v1.4
+更新：2026-11-18（Asia/Shanghai）｜阶段：F14 单机 Docker 交付｜版本：v1.8
+
+## 2026-11-18 F14
+
+- 用户确认本轮交付现有 F1～F12，Agent 专项在 F13 完成后补验。方案见 [F14 功能设计](docs/feature-development/docker-delivery-acceptance.md)，架构更新至 v0.12。
+- 已实现独立交付 Compose、非 root API 及同进程 Worker、迁移与运行授权、三个持久卷，以及演示、备份恢复和验收脚本。按单机部署，试点容量和恢复目标待确认。
+- Docker 标准构建、17 项数据库与 105 项 API 测试、Chrome F1～F12、HTTPS Cookie、断库重建及独立恢复通过。恢复后原会话、产量、追溯与 PDF 摘要一致。演示实例 qa-7fa5da3a 保留在 127.0.0.1:5088，原开发库继续运行。
+
+## 2026-11-18 F12
+
+- 用户确认 API 内托管 Worker，复用 F10 SignalR；附件沿用工艺 PDF，通用附件后置。设计见 [F12 功能文档](docs/feature-development/application-audit-reliability.md)，架构更新至 v0.11。
+- 已接入来源授权的业务审计、事务 Outbox、重试和死信重放、请求关联和就绪检查。未能核验来源的旧审计继续保存在数据库。F13 与 Docker 仍按后续授权推进。
+- 第 13 条迁移已备份后应用，既有业务和审计计数一致，本地 API 以最小权限恢复。17 项数据库与 105 项 API 测试、空库重复 DDL、Chrome F1～F12 主流程和 390 像素投递页通过。
+
+## 2026-11-18 F11
+
+- 用户确认 F11-01 模拟连接与报文履历、F11-03 CSV 工单草稿列映射、预检和整批确认。设计复用 F7 状态规则、F3 草稿用例及共享事务。见 [F11 功能设计](docs/feature-development/data-import-equipment-integration.md)，架构更新至 v0.10。
+- 已实现模拟报文去重、拒绝留痕与事件下钻，完成 CSV 草稿任务履历、逐行预检和整批确认。第 12 条迁移已备份并应用，核对既有业务计数，增量授权后恢复本地 API；字段字典、DDL 和 OpenAPI 已同步。
+- 17 项数据库与 101 项 API 测试、空库重复 DDL、Chrome F1～F11 全流程与 F11 最小运行权限专项均通过，含 390 像素浅深主题。F11 其余能力按需，Docker 后置。
+
+## 2026-11-18 F10
+
+- 用户确认 F10-01～07、SignalR、班次/实际 Run/设备理想秒每片 OEE、Lot 当前站排程并由 F5 开工及站内通知。见 [F10 功能设计与验收](docs/feature-development/workbench-dashboards-alerts-scheduling.md)，架构更新至 v0.9。
+- 已实现角色入口与筛选下钻、站内告警、趋势、班次 OEE 和有限产能排程。计划复用 F5 工艺绑定并在实际开工后失效；SignalR 只发刷新提示，重连重查。
+- 第 11 条迁移已备份并应用，表数 134，既有账号及生产事实数量复核一致。17 项数据库测试、97 项 API 测试、Chrome F1～F10 全流程、390 像素浅深主题及空库重复 DDL 通过。OpenAPI、数据库字典和本地 API 已更新。
 
 ## 2026-11-18 生产追溯首页
 
@@ -123,7 +147,7 @@
 ## 当前事实
 
 - 保留原控制台；已有 Domain/Infrastructure/Database，并新增 Application、ASP.NET Core API、React WebUI 和 API 测试；SDK 仍为 `10.0.401`。
-- 已建立 PostgreSQL 18.6 数据库：123 张业务/支撑表、7 张 Identity 表、2 个派生视图及 EF 迁移历史表；10 条迁移已应用，字段字典与 SQL 已同步导出。
+- 已建立 PostgreSQL 18.6 数据库：127 张业务/支撑表、7 张 Identity 表、2 个派生视图及 EF 迁移历史表；13 条迁移已应用，字段字典与 SQL 已同步导出。
 - 本地 Docker 服务 `mesagent-postgres-1`，数据库 `mesagent`，仅绑定 `127.0.0.1:55432`，使用独立卷；密码在 Git 忽略的 `.env`，不记入记忆或仓库。未修改 OpenMES 参考服务。
 - 已验证外键、数量/时间、归属/槽位互斥、幂等键、xmin 并发、历史与发布版本保护、事务及迁移回滚；具体操作与验证见数据库实施说明。
 - 已实现组织/身份/权限、F2 工艺、F3 工单与真实片进度、F4 建批/投放/拆合批/载具、F5 首版派工过站及真实终点；F1 扩展、F6 首版异常/Hold/检验/报废及同站恢复已接通；F7 设备/维护/资格/光罩/耗材已接通；按需质量、实机、库存与 Agent 待后续，见阶段记录。
@@ -138,10 +162,10 @@
 ## 技术选择与建议
 
 - 数据库已采用 EF Core / Identity 10.0.12 + Npgsql EF Provider 10.0.3，集中锁版本；ASP.NET Core 10 Web API 与模块化单体已开始落地。
-- 前端：React 19 + TypeScript + Vite + Ant Design 6；React Router、TanStack Query；SignalR 留待生产页面阶段。
+- 前端：React 19 + TypeScript + Vite + Ant Design 6；React Router、TanStack Query；F10 已接入 SignalR。
 - Agent：历史建议为优先评估 Microsoft Agent Framework（.NET）；本轮功能设计仅保留扩展位置，暂不展开。
 - 数据：PostgreSQL 18.6 已运行，Docker 镜像固定摘要；pgvector、独立向量库或消息中间件尚未引入。
-- 交付：Docker 多阶段构建 + Compose 为后续方案；应用部署文件暂为草案。现阶段使用本地 API/Vite 与既有 PostgreSQL。
+- 交付：Docker 多阶段构建与单机 Compose。开发继续支持本地 API/Vite 与独立 PostgreSQL。
 - 业务起点：Lot/Wafer、Route/Recipe 版本、Track-in/Track-out、Hold/Release、受限拆批合批、设备履历与追溯。
 
 ## 待明确
@@ -162,11 +186,11 @@
 - [Fab 数据字段沿用与保留](docs/development-process/04-fab-data-field-retention.md)
 - [数据库实际字段字典](docs/development-process/05-database-catalog.md)
 - [数据库实施与操作](docs/development-process/06-database-implementation.md)
-- [Fab 全功能清单](docs/development-process/07-fab-function-catalog.md)：14 个模块、87 项功能；现已验收 F1～F6 首版、F7-01～07、F08-01 和 F09-01～02。
+- [Fab 全功能清单](docs/development-process/07-fab-function-catalog.md)：14 个模块、87 项功能；已实现 F1～F6 首版、F7-01～07、F08-01、F09-01～02、F10-01～07、F11 模拟与工单草稿，以及 F12 审计与可靠性首版。
 - [功能实现架构](docs/development-process/08-feature-implementation-architecture.md)：模块职责、共享应用层、事务/授权、WebUI 与交付顺序。
 - [F1-`OrganizationIdentityAccessControl` 功能设计](docs/feature-development/organization-identity-access-control.md) · [接口与验收](docs/feature-development/organization-identity-access-control-api-and-acceptance.md)：设计规则与 32 项验收场景；执行证据见 [F1-`OrganizationIdentityAccessControl` 实现与启动](docs/feature-development/organization-identity-access-control-implementation.md)。
 
-下一步：等待后续功能授权；F09-03/04、跨路线返工、自动质检/来料、库存账本、复杂存量与关闭竞争专项保留。Docker 继续后置。
+下一步：按后续授权推进 F13 Agent，完成后补跑 F14 Agent 专项。F14-04 等试点容量、可用性及 RPO/RTO 明确后验收。
 
 ## 决策记录
 

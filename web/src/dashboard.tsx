@@ -1,74 +1,224 @@
-import { ApartmentOutlined } from "@ant-design/icons";
-import { Tag } from "antd";
+import {
+    ArrowRightOutlined,
+    ReloadOutlined,
+    SearchOutlined,
+} from "@ant-design/icons";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+    Badge,
+    Button,
+    Card,
+    Empty,
+    Input,
+    Space,
+    Tabs,
+    Typography,
+} from "antd";
+import { useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { type Me } from "./api";
-import { Heading, roleLabels } from "./shared";
+import { roleLabels } from "./shared";
+import { WorkbenchAlerts } from "./workbenchAlerts";
+import { useWorkbenchLive } from "./workbenchLive";
+import { WorkbenchOverview } from "./workbenchOverview";
+import { WorkbenchReports, WorkbenchShifts } from "./workbenchReports";
+import { WorkbenchSchedule } from "./workbenchSchedule";
+import {
+    has,
+    useWorkbench,
+    workbenchPermissions as permission,
+    type WorkbenchSchemas,
+} from "./workbenchShared";
+import "./workbench.css";
 
-export function Dashboard({ me }: { me: Me }) {
+export type WorkbenchMenuItem = {
+    path: string;
+    label: string;
+    group?: string;
+    icon: ReactNode;
+};
+
+const roleEntries: Record<string, string[]> = {
+    SystemAdmin: [
+        "/planning",
+        "/production",
+        "/execution",
+        "/quality",
+        "/equipment",
+        "/settings/security-events",
+    ],
+    Planner: ["/planning", "/production", "/execution", "/traceability"],
+    Operator: ["/execution", "/production", "/quality", "/traceability"],
+    ProcessEngineer: [
+        "/engineering",
+        "/execution",
+        "/traceability",
+        "/planning",
+    ],
+    QualityEngineer: ["/quality", "/traceability", "/production", "/execution"],
+    EquipmentEngineer: ["/equipment", "/execution", "/traceability"],
+    Viewer: ["/traceability", "/planning", "/production"],
+};
+
+export function Dashboard({ me, menu }: { me: Me; menu: WorkbenchMenuItem[] }) {
+    const [search, setSearch] = useState("");
+    const [tab, setTab] = useState("overview");
+    const client = useQueryClient();
+    const sources = [
+        permission.lots,
+        permission.execution,
+        permission.quality,
+        permission.equipment,
+    ];
+    const canView = !!me.fab && sources.some((p) => has(me, p));
+    const canMonitor =
+        has(me, permission.execution) && has(me, permission.equipment);
+    const canNotify = [
+        permission.execution,
+        permission.quality,
+        permission.equipment,
+    ].some((p) => has(me, p));
+    const live = useWorkbenchLive(canView);
+    const unread = useWorkbench<WorkbenchSchemas["WorkbenchAlerts"]>(
+        "alerts",
+        { mode: "notifications", pageSize: "1" },
+        canView && canNotify,
+    );
+    const normalized = search.trim().toLocaleLowerCase();
+    const preferred = new Set(
+        (me.roles ?? []).flatMap((role) => roleEntries[role] ?? []),
+    );
+    const visible = normalized
+        ? menu.filter((entry) =>
+              `${entry.label} ${entry.group ?? ""} ${entry.path}`
+                  .toLocaleLowerCase()
+                  .includes(normalized),
+          )
+        : [
+              ...Array.from(preferred).flatMap((path) =>
+                  menu.filter((entry) => entry.path === path),
+              ),
+              ...menu.filter((entry) => !preferred.has(entry.path)),
+          ].slice(0, 6);
+    const tabs = [
+        {
+            key: "overview",
+            label: "生产总览",
+            children: <WorkbenchOverview me={me} />,
+        },
+        {
+            key: "alerts",
+            label: (
+                <Badge
+                    count={unread.data?.unread}
+                    size="small"
+                    offset={[10, 2]}
+                >
+                    待办与告警
+                </Badge>
+            ),
+            children: <WorkbenchAlerts me={me} />,
+        },
+        {
+            key: "history",
+            label: "历史趋势",
+            children: <WorkbenchReports me={me} />,
+        },
+        {
+            key: "shifts",
+            label: "班次与 OEE",
+            children: <WorkbenchShifts me={me} />,
+        },
+        {
+            key: "schedule",
+            label: "排程日历",
+            children: <WorkbenchSchedule me={me} />,
+        },
+    ].filter(
+        (item) =>
+            ((item.key !== "shifts" && item.key !== "schedule") ||
+                canMonitor) &&
+            (item.key !== "alerts" || canNotify) &&
+            (item.key !== "history" ||
+                sources.slice(0, 3).some((p) => has(me, p))),
+    );
+
     return (
-        <>
-            <Heading
-                eyebrow="WORKSPACE / OVERVIEW"
-                title={`你好，${me.displayName}`}
-                description="从这里维护制造基础信息，管理人员身份与访问范围。"
-            />
-            <div className="overview-banner">
+        <div className="workbench">
+            <div className="workbench-header">
                 <div>
-                    <Tag>当前工作空间</Tag>
-                    <h2>{me.fab?.name || "等待配置厂区范围"}</h2>
+                    <h1>你好，{me.displayName}</h1>
                     <p>
                         {me.fab
-                            ? `${me.fab.code} · ${me.fab.timezone} · ${me.fab.isActive ? "已启用" : "已停用（可查询历史）"}`
-                            : "请联系管理员分配厂区范围，之后即可进入对应业务工作台。"}
+                            ? `${me.fab.name} · ${me.fab.timezone}${me.fab.isActive ? "" : " · 厂区已停用"}`
+                            : "尚未分配厂区范围"}
+                        {!!me.roles?.length &&
+                            ` · ${me.roles.map((role) => roleLabels[role] || role).join(" / ")}`}
                     </p>
                 </div>
-                <ApartmentOutlined />
+                {canView && (
+                    <Space wrap>
+                        <Badge
+                            status={
+                                live === "实时更新" ? "success" : "processing"
+                            }
+                            text={live}
+                        />
+                        <Button
+                            icon={<ReloadOutlined />}
+                            onClick={() =>
+                                void client.invalidateQueries({
+                                    queryKey: ["workbench"],
+                                })
+                            }
+                        >
+                            刷新
+                        </Button>
+                    </Space>
+                )}
             </div>
-            <div className="cards">
-                <div className="stat">
-                    <span>我的角色</span>
-                    <strong>
-                        {me.roles?.map((x) => roleLabels[x] || x).join(" / ") ||
-                            "尚未分配"}
-                    </strong>
-                    <p>职责通过角色授予</p>
+            <Card size="small" className="workbench-launch">
+                <div className="workbench-launch-heading">
+                    <Typography.Title level={2}>快捷入口</Typography.Title>
+                    <Input
+                        aria-label="搜索菜单"
+                        placeholder="搜索菜单"
+                        prefix={<SearchOutlined />}
+                        value={search}
+                        allowClear
+                        onChange={(event) => setSearch(event.target.value)}
+                    />
                 </div>
-                <div className="stat">
-                    <span>有效权限</span>
-                    <strong>
-                        {me.permissions?.length || 0}
-                        <em> 项</em>
-                    </strong>
-                    <p>每次请求由服务端重新校验</p>
-                </div>
-                <div className="stat">
-                    <span>厂区范围</span>
-                    <strong>
-                        {me.fab ? "1" : "0"}
-                        <em> 个</em>
-                    </strong>
-                    <p>仅显示当前授权的部署厂区</p>
-                </div>
-            </div>
-            <section className="panel">
-                <h3>基础管理指南</h3>
-                <div className="steps">
-                    <div>
-                        <b>01</b>
-                        <h4>组织与场所</h4>
-                        <p>维护区域、产线与位置，明确工位和终端归属。</p>
+                {visible.length === 0 ? (
+                    <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description="没有匹配的菜单"
+                    />
+                ) : (
+                    <div className="workbench-links">
+                        {visible.map(({ path, label, icon }) => (
+                            <Link
+                                to={path}
+                                key={path}
+                                aria-label={`快捷入口 ${label}`}
+                            >
+                                {icon}
+                                <span>{label}</span>
+                                <ArrowRightOutlined className="workbench-link-arrow" />
+                            </Link>
+                        ))}
                     </div>
-                    <div>
-                        <b>02</b>
-                        <h4>员工与账号</h4>
-                        <p>区分员工身份和登录账号，建立可追溯的人员关联。</p>
-                    </div>
-                    <div>
-                        <b>03</b>
-                        <h4>角色与范围</h4>
-                        <p>按职责配置权限，变更后重新登录使授权生效。</p>
-                    </div>
-                </div>
-            </section>
-        </>
+                )}
+            </Card>
+            {canView && (
+                <Tabs
+                    activeKey={tab}
+                    onChange={setTab}
+                    items={tabs}
+                    destroyOnHidden
+                    className="workbench-tabs"
+                />
+            )}
+        </div>
     );
 }

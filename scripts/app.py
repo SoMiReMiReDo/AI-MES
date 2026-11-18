@@ -113,6 +113,15 @@ def main():
             env=env,
             check=True
         )
+    elif cmd in ('provision-workbench', 'provision-integration', 'provision-reliability'):
+        module = cmd.removeprefix('provision-')
+        sql = (ROOT / f'database/{module}-runtime-grants.sql').read_text()
+        subprocess.run(
+            ['docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-v',
+             'ON_ERROR_STOP=1', '-U', 'mesagent_owner', '-d', 'mesagent'],
+            input=sql, text=True, cwd=ROOT, check=True, stdout=subprocess.DEVNULL
+        )
+        print(f'已增量授予 {module} 运行权限。')
     elif cmd == 'provision-materials':
         sql = """DO $$ BEGIN
 IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='mesagent_app' AND NOT rolsuper) THEN
@@ -201,33 +210,7 @@ GRANT INSERT ON production.track_events,production.checklist_completions,product
 
         sql = f"""DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='mesagent_app') THEN CREATE ROLE mesagent_app LOGIN; END IF; END $$;
 ALTER ROLE mesagent_app PASSWORD '{pwd}';
-GRANT CONNECT ON DATABASE mesagent TO mesagent_app;
-GRANT USAGE ON SCHEMA organization,security,audit TO mesagent_app;
-GRANT SELECT ON ALL TABLES IN SCHEMA organization,security,audit TO mesagent_app;
-GRANT INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA organization,security TO mesagent_app;
-REVOKE UPDATE,DELETE ON security.security_events FROM mesagent_app;
-GRANT INSERT ON audit.audit_logs, audit.command_receipts TO mesagent_app;
-GRANT INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA engineering TO mesagent_app;
-GRANT INSERT,UPDATE ON production.work_orders TO mesagent_app;
-GRANT INSERT ON production.work_order_snapshots TO mesagent_app;
-GRANT INSERT,UPDATE ON production.lots,production.wafers,production.carriers,production.carrier_loads,
-    production.lot_memberships,production.step_executions TO mesagent_app;
-GRANT INSERT ON production.carrier_slots,production.carrier_movements,production.genealogy_events,
-    production.genealogy_details,production.wafer_releases,production.wafer_completions,
-    production.step_execution_inheritances,production.step_documents,audit.business_events TO mesagent_app;
-GRANT INSERT,UPDATE ON production.process_runs,production.process_run_wafers,production.step_documents,
-    equipment.equipment,equipment.equipment_states TO mesagent_app;
-GRANT INSERT ON production.track_events,production.checklist_completions,production.output_values,
-    production.process_confirmations,equipment.equipment_types,equipment.equipment_groups,
-    equipment.equipment_events TO mesagent_app;
-GRANT INSERT,UPDATE ON quality.reason_codes,quality.issue_types,quality.issues,
-    quality.issue_actions,quality.hold_records,quality.specification_versions,
-    quality.quality_check_templates TO mesagent_app;
-GRANT INSERT ON quality.quality_checks,quality.measurements,quality.lot_releases,
-    quality.scrap_entries,quality.wafer_dispositions TO mesagent_app;
-GRANT USAGE ON SCHEMA engineering,production,equipment,quality,materials,integration TO mesagent_app;
-GRANT SELECT ON ALL TABLES IN SCHEMA engineering,production,equipment,quality,materials,integration TO mesagent_app;
-"""
+""" + (ROOT / "database/runtime-grants.sql").read_text()
         subprocess.run(
             [
                 'docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-v',
@@ -243,12 +226,19 @@ GRANT SELECT ON ALL TABLES IN SCHEMA engineering,production,equipment,quality,ma
         subprocess.run(
             ['docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-v',
              'ON_ERROR_STOP=1', '-U', 'mesagent_owner', '-d', 'mesagent'],
-            input=(ROOT / 'database/equipment-runtime-grants.sql').read_text(),
+            input=(ROOT / 'database/equipment-runtime-grants.sql').read_text()
+            + (ROOT / 'database/workbench-runtime-grants.sql').read_text()
+            + (ROOT / 'database/integration-runtime-grants.sql').read_text()
+            + (ROOT / 'database/reliability-runtime-grants.sql').read_text(),
             text=True, cwd=ROOT, check=True, stdout=subprocess.DEVNULL
         )
-        print('已配置应用运行角色；无 DDL 权限，开放 F1～F7 所需写权限。')
+        print('已配置应用运行角色；无 DDL 权限，已授予当前模块所需权限。')
     else:
-        raise SystemExit('用法: python3 scripts/app.py configure|serve|bootstrap|bootstrap-generated|recover-admin|test|provision|provision-execution|provision-quality|provision-equipment|provision-materials')
+        raise SystemExit(
+            '用法: python3 scripts/app.py configure|serve|bootstrap|bootstrap-generated|recover-admin|'
+            'test|provision|provision-execution|provision-quality|provision-equipment|provision-materials|'
+            'provision-workbench|provision-integration|provision-reliability'
+        )
 
 
 if __name__ == '__main__':

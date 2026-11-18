@@ -76,12 +76,13 @@ try:
         stdout=subprocess.DEVNULL
     )
 
-    sql(
-        (ROOT / 'web/tests/fixtures/legacy-equipment.sql').read_text().replace(
-            '{{FAB_ID}}', env['Mes__DeploymentFabId']
-        ),
-        database=name
-    )
+    for fixture in ('legacy-equipment.sql', 'reliability.sql'):
+        sql(
+            (ROOT / 'web/tests/fixtures' / fixture).read_text().replace(
+                '{{FAB_ID}}', env['Mes__DeploymentFabId']
+            ),
+            database=name
+        )
 
     logdir = ROOT / '.local';
     logdir.mkdir(exist_ok=True)

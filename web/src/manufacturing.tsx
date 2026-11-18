@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
     Alert,
     App,
@@ -216,11 +217,14 @@ function ResourceTable({
     me: Me;
     planning: boolean;
 }) {
+    const [params] = useSearchParams();
     const { message, modal } = App.useApp();
     const [rows, setRows] = useState<any[]>([]);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
-    const [search, setSearch] = useState("");
+    const [search, setSearch] = useState(
+        planning ? (params.get("orderNo") ?? "") : "",
+    );
     const [status, setStatus] = useState<string | undefined>();
     const [editing, setEditing] = useState<any>(null);
     const [choices, setChoices] = useState<Record<string, any[]>>({});
@@ -336,6 +340,7 @@ function ResourceTable({
                         <Input.Search
                             placeholder="按工单号搜索"
                             allowClear
+                            defaultValue={search}
                             onSearch={(value) => {
                                 setSearch(value);
                                 setPage(1);

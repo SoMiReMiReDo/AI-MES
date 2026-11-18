@@ -89,6 +89,8 @@ internal sealed partial class MaterialBackend(
         var payload = JsonSerializer.Serialize(new { schemaVersion = 1, commandId, fabId, facts = data }, Json);
         db.Add(new AuditLog
         {
+            FabId = fabId,
+            Module = "materials",
             UserId = actor.UserId,
             EntityType = entity,
             EntityId = id,

@@ -11,11 +11,13 @@ export async function traceabilityFlow(page: Page, suffix: string) {
     await expect(viewed).toBeVisible();
     await expect(searched).toBeVisible();
     const choose = async (label: string, value: string) => {
-        await page.getByRole("combobox", { name: label, exact: true }).click();
-        await page
-            .locator(".ant-select-dropdown:visible")
-            .getByText(value, { exact: true })
-            .click();
+        const input = page.getByRole("combobox", { name: label, exact: true });
+        const dropdowns = page.locator(".ant-select-dropdown:visible");
+        await input.click();
+        await expect(dropdowns).toHaveCount(1);
+        await dropdowns.getByText(value, { exact: true }).click();
+        await expect(input).toHaveAttribute("aria-expanded", "false");
+        await expect(dropdowns).toHaveCount(0);
     };
     const find = async (kind: string, code: string) => {
         await choose("追溯对象类型", kind);

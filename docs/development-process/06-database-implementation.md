@@ -1,6 +1,24 @@
 # Fab 数据库实施说明
 
-更新：2026-11-18（Asia/Shanghai）。F08-01 硅片来料来源已迁移至本地开发库。下面保留各阶段实施记录，当前结构以字段字典和最新迁移为准。
+更新：2026-11-18（Asia/Shanghai）。当前结构以字段字典和最新迁移为准。
+
+## 2026-11-18 F12 增量更新
+
+第 13 条迁移 `20261118133408_ApplicationAuditReliability` 为审计记录增加厂区和来源模块，为 Outbox 增加业务事件关联、待发索引与死信状态。应用表数保持 134。先执行 `python3 scripts/database.py migrate`，再通过 `python3 scripts/app.py provision-reliability` 给本地运行角色增加队列读取、写入及投递状态字段的更新权限。见 [F12 功能设计](../feature-development/application-audit-reliability.md)。
+
+本地开发库已备份后升级，迁移前后的账号、生产、质量、集成和审计事实数量一致。运行角色增量授权后 API 恢复就绪。全量幂等 DDL 已在隔离空库连续执行两次，模型与迁移快照一致。
+
+## 2026-11-18 F11 增量更新
+
+第 12 条迁移 `20261118111241_DataImportEquipmentIntegration` 为模拟报文增加设备事件关联和保护，为工单导入任务补充厂区、快照及结果。应用表数保持 134。运行角色通过 `python3 scripts/app.py provision-integration` 获取报文追加、连接通信字段及导入任务所需权限。见 [F11 功能设计](../feature-development/data-import-equipment-integration.md)。
+
+本地库已备份后升级，既有账号、工单、批次、Run、设备和导入记录的数量核对一致。空库连续执行两次全量幂等 DDL 通过，迁移快照与模型一致。
+
+## 2026-11-18 F10 增量更新
+
+第 11 条迁移 `20261118072845_WorkbenchDashboardsAlertsScheduling` 新增 `workbench` 的设备产速、计划块、个人订阅和告警回执四张表，并为系统管理员配置排程与产速权限。存在工作台业务记录时会阻止降级。
+
+本地升级前已备份，升级后账号、生产、设备、质量和物料事实数量核对一致。通过 `python3 scripts/app.py provision-workbench` 为现有运行角色增量授权，未修改凭据。全量幂等 SQL 在独立空库连续执行两次通过。见 [F10 功能设计](../feature-development/workbench-dashboards-alerts-scheduling.md)。
 
 ## 2026-11-18 F08-01 增量更新
 
@@ -24,7 +42,7 @@
 
 技术组合：.NET SDK **10.0.401**、EF Core / Identity **10.0.12**、Npgsql EF Provider **10.0.3**、PostgreSQL **18.6**。NuGet 精确版本在根目录 `Directory.Packages.props` 管理，各项目提交 `packages.lock.json`；本地 `dotnet-ef` 固定为 10.0.12。数据库镜像在 `compose.yaml` 固定版本及 SHA256 摘要。
 
-共 **130 张应用表**：123 张业务/支撑表 + 7 张 Identity 表；另有 EF 迁移历史表和 2 个派生视图。
+共 **134 张应用表**：127 张业务/支撑表 + 7 张 Identity 表；另有 EF 迁移历史表和 2 个派生视图。
 
 | schema | 表数 | 主要对象 |
 | --- | ---: | --- |
@@ -37,6 +55,7 @@
 | materials | 15 | 公司、物料分类/主数据/来源/批次/分装、BOM、分配/拣选/消耗、仓库/库存/流水/单据 |
 | integration | 9 | 外部系统、设备连接/消息/测点、API Key、导入映射/任务、标签、自定义字段定义 |
 | audit | 5 | 审计、业务事件、附件、幂等请求回执、Outbox |
+| workbench | 4 | 理想产速、生产计划块、订阅与回执 |
 
 完整字段、类型、可空性与外键目标见 [数据库字段字典](05-database-catalog.md)。筛选依据仍是 [Fab 字段保留清单](04-fab-data-field-retention.md)，不是把 OpenMES 的 132 张表全部照搬。
 

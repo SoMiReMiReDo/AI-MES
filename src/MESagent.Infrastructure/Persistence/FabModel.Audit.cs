@@ -20,6 +20,10 @@ internal static partial class FabModel
             b.Property(x => x.RowVersion).HasColumnName("xmin").IsRowVersion();
             b.Property(x => x.UserId).HasColumnName("user_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+            b.Property(x => x.FabId).HasColumnName("fab_id");
+            b.HasOne<Fab>().WithMany().HasForeignKey(x => x.FabId).OnDelete(DeleteBehavior.Restrict);
+            b.Property(x => x.Module).HasColumnName("module").HasMaxLength(32);
+            b.HasIndex(x => new { x.FabId, x.OccurredAt });
             b.Property(x => x.EntityType).HasColumnName("entity_type").HasMaxLength(64);
             b.Property(x => x.EntityId).HasColumnName("entity_id");
             b.Property(x => x.Action).HasColumnName("action").HasMaxLength(64);
@@ -103,18 +107,25 @@ internal static partial class FabModel
             b.ToTable("outbox_messages", "audit", t =>
             {
                 t.HasCheckConstraint("ck_outbox_messages_1", "attempts >= 0");
+                t.HasCheckConstraint("ck_outbox_delivery_state", """
+                    dead_lettered_at IS NULL OR (published_at IS NULL AND next_attempt_at IS NULL)
+                    """);
             });
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("uuidv7()");
             b.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             b.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             b.Property(x => x.RowVersion).HasColumnName("xmin").IsRowVersion();
+            b.Property(x => x.BusinessEventId).HasColumnName("business_event_id");
+            b.HasOne<BusinessEvent>().WithMany().HasForeignKey(x => x.BusinessEventId).OnDelete(DeleteBehavior.Restrict);
+            b.HasIndex(x => x.BusinessEventId).IsUnique();
             b.Property(x => x.EventType).HasColumnName("event_type").HasMaxLength(128);
             b.Property(x => x.AggregateType).HasColumnName("aggregate_type").HasMaxLength(64);
             b.Property(x => x.AggregateId).HasColumnName("aggregate_id");
             b.Property(x => x.Payload).HasColumnName("payload").HasColumnType("jsonb");
             b.Property(x => x.OccurredAt).HasColumnName("occurred_at");
             b.Property(x => x.PublishedAt).HasColumnName("published_at");
+            b.Property(x => x.DeadLetteredAt).HasColumnName("dead_lettered_at");
             b.Property(x => x.Attempts).HasColumnName("attempts");
             b.Property(x => x.NextAttemptAt).HasColumnName("next_attempt_at");
             b.Property(x => x.LastError).HasColumnName("last_error");

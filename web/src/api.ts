@@ -5,6 +5,7 @@ export class ApiError extends Error {
         public status: number,
         public code: string,
         message: string,
+        public traceId?: string,
     ) {
         super(message);
     }
@@ -16,6 +17,7 @@ export async function refreshCsrf() {
     const r = await fetch("/api/v1/auth/csrf", { credentials: "same-origin" });
     if (!r.ok) throw new Error("无法获取安全令牌");
     csrf = (await r.json()).requestToken;
+    return csrf;
 }
 
 export async function api<T = any>(
@@ -43,7 +45,12 @@ export async function api<T = any>(
         const e = await r.json().catch(() => ({}));
         if (r.status === 401 && path !== "auth/login" && path !== "auth/me")
             window.dispatchEvent(new Event("session-invalid"));
-        throw new ApiError(r.status, e.code, e.title || "请求失败");
+        throw new ApiError(
+            r.status,
+            e.code,
+            e.title || "请求失败",
+            e.traceId || r.headers.get("X-Trace-Id"),
+        );
     }
     return r.status === 204 ? (undefined as T) : await r.json();
 }

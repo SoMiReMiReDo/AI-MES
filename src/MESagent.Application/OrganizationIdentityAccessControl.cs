@@ -74,6 +74,13 @@ public static class PermissionCatalog
 {
     public static readonly string[] All =
     [
+        ReliabilityAccess.Audit,
+        ReliabilityAccess.OutboxRead,
+        ReliabilityAccess.OutboxReplay,
+        IntegrationAccess.Simulator,
+        IntegrationAccess.WorkOrderImport,
+        WorkbenchAccess.Schedule,
+        WorkbenchAccess.ConfigureRate,
         "quality.read",
         "quality.configuration",
         "quality.issues",

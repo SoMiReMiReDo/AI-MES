@@ -85,7 +85,13 @@ public sealed partial class ExecutionBackend
         return result;
     }
 
-    private async Task<List<Candidate>> Candidates(Lot lot, StepExecution step)
+    internal Task<List<string>> PlanningBlocks(Lot lot) => Blocks(lot, true);
+
+    internal async Task<Guid[]> PlanningEquipment(Lot lot, StepExecution step, DateTime from, DateTime to) =>
+        (await Candidates(lot, step, from, to)).Select(x => x.EquipmentId).Distinct().ToArray();
+
+    private async Task<List<Candidate>> Candidates(
+        Lot lot, StepExecution step, DateTime? plannedFrom = null, DateTime? plannedTo = null)
     {
         var snapshot = await db.Set<WorkOrderSnapshot>().SingleAsync(x => x.WorkOrderId == lot.WorkOrderId
             && x.Version == lot.SnapshotVersion);
@@ -102,7 +108,8 @@ public sealed partial class ExecutionBackend
         var routeStep = await db.Set<RouteStep>().SingleAsync(x => x.Id == step.RouteStepId);
         var operation = await db.Set<Operation>().SingleAsync(x => x.Id == routeStep.OperationId);
         var typeId = routeStep.EquipmentTypeId ?? operation.EquipmentTypeId;
-        var now = Now;
+        var now = plannedFrom ?? Now;
+        var until = plannedTo ?? now;
         var rows = await (from app in db.Set<RecipeApplicability>()
                           join recipeVersion in db.Set<RecipeVersion>() on app.RecipeVersionId equals recipeVersion.Id
                           join recipe in db.Set<Recipe>() on recipeVersion.RecipeId equals recipe.Id
@@ -112,20 +119,22 @@ public sealed partial class ExecutionBackend
                               on equipment.EquipmentGroupId equals equipmentGroup.Id
                           join type in db.Set<EquipmentType>() on equipment.EquipmentTypeId equals type.Id
                           where ids.Contains(app.Id) && app.RouteStepId == step.RouteStepId
-                              && app.EffectiveFrom <= now && (app.EffectiveTo == null || app.EffectiveTo > now)
+                              && app.EffectiveFrom <= now && (app.EffectiveTo == null
+                                  || (plannedFrom == null ? app.EffectiveTo > now : app.EffectiveTo >= until))
                               && recipeVersion.LifecycleStatus == "Released" && recipe.IsActive
                               && area.FabId == fabId && equipmentGroup.FabId == fabId && area.IsActive
                               && equipmentGroup.IsActive && type.IsActive && equipment.IsActive
                               && (typeId == null || equipment.EquipmentTypeId == typeId)
-                              && equipment.OperationalState == "Idle"
+                              && (plannedFrom != null || equipment.OperationalState == "Idle")
                               && (equipment.LineId == null || db.Set<Line>().Any(x => x.Id == equipment.LineId
                                   && x.AreaId == area.Id && x.IsActive))
-                              && !db.Set<ProcessRun>().Any(x => x.EquipmentId == equipment.Id && x.Status == "Running")
+                              && (plannedFrom != null || !db.Set<ProcessRun>().Any(x =>
+                                  x.EquipmentId == equipment.Id && x.Status == "Running"))
                           orderby equipment.Code, recipe.Code, recipeVersion.Version, app.Id
                           select new { app, equipment, recipe, recipeVersion }).ToListAsync();
         var available = new List<Guid>();
         foreach (var row in rows)
-            if ((await EquipmentResources.Blocks(db, fabId, actor.UserId, row.equipment.Id,
+            if (plannedFrom != null || (await EquipmentResources.Blocks(db, fabId, actor.UserId, row.equipment.Id,
                 operation.Id, row.recipeVersion.Id, now)).Count == 0)
                 available.Add(row.app.Id);
         return rows.Where(x => available.Contains(x.app.Id) && applications.Any(a => a.Id == x.app.Id

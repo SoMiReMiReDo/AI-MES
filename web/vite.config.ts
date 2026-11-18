@@ -6,7 +6,10 @@ export default defineConfig({
     server: {
         port: 5173,
         proxy: {
-            "/api": process.env.MES_API_TARGET || "http://127.0.0.1:5080",
+            "/api": {
+                target: process.env.MES_API_TARGET || "http://127.0.0.1:5080",
+                ws: true,
+            },
             "/openapi": process.env.MES_API_TARGET || "http://127.0.0.1:5080",
         },
     },

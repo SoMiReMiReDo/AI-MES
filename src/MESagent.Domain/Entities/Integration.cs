@@ -40,6 +40,7 @@ public sealed class MachineMessage
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public uint RowVersion { get; set; }
     public Guid MachineConnectionId { get; set; }
+    public Guid? EquipmentEventId { get; set; }
     public string? Topic { get; set; }
     public string RawPayload { get; set; } = null!;
     public string? ParsedData { get; set; }
@@ -105,15 +106,18 @@ public sealed class ImportJob
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public uint RowVersion { get; set; }
     public Guid UserId { get; set; }
+    public Guid? FabId { get; set; }
     public string Entity { get; set; } = null!;
     public Guid? MappingId { get; set; }
     public string OriginalFilename { get; set; } = null!;
-    public string FilePath { get; set; } = null!;
+    public string? FilePath { get; set; }
     public string Status { get; set; } = null!;
     public int TotalRows { get; set; }
     public int SuccessfulRows { get; set; }
     public int FailedRows { get; set; }
     public string? ErrorLog { get; set; }
+    public string? InputData { get; set; }
+    public string? ResultData { get; set; }
     public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
     public bool DryRun { get; set; }

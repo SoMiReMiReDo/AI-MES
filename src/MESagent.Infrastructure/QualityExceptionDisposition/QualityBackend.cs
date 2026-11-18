@@ -73,6 +73,8 @@ public sealed partial class QualityBackend(
         db.Add(new AuditLog
         {
             UserId = actor.UserId,
+            FabId = fabId,
+            Module = "quality",
             EntityType = entity.GetType().Name,
             EntityId = id,
             Action = action,
@@ -174,7 +176,9 @@ public sealed partial class QualityBackend(
         && x.FabId == fabId && x.WorkOrderId != null && x.SnapshotVersion != null)
         ?? throw Error("ResourceNotFound", "批次不存在", 404);
 
-    private IQueryable<Issue> VisibleIssues() => db.Set<Issue>().Where(x =>
+    private IQueryable<Issue> VisibleIssues() => VisibleIssues(db, fabId);
+
+    internal static IQueryable<Issue> VisibleIssues(MesDbContext db, Guid fabId) => db.Set<Issue>().Where(x =>
         (x.LotId != null || x.WorkOrderId != null || x.WaferId != null || x.EquipmentId != null)
         && (x.LotId == null || db.Set<Lot>().Any(l => l.Id == x.LotId && l.FabId == fabId))
         && (x.WorkOrderId == null || db.Set<WorkOrder>().Any(o => o.Id == x.WorkOrderId && o.FabId == fabId))

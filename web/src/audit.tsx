@@ -11,12 +11,53 @@ import {
     Tabs,
 } from "antd";
 import { useState } from "react";
-import { api, type Page, type Row } from "./api";
+import { api, type Me, type Page, type Row } from "./api";
+import { OperationAudit, Outbox } from "./reliability";
 import { Heading, fmt } from "./shared";
 
-export function Logs() {
-    const [tab, setTab] = useState("audit-logs"),
-        [page, setPage] = useState(1);
+export function Logs({ me }: { me: Me }) {
+    const can = (p: string) => me.permissions?.includes(p);
+    const tabs = [];
+    if (can("security.audit.read"))
+        tabs.push(
+            {
+                key: "audit-logs",
+                label: "操作审计",
+                children: <SecurityLogs tab="audit-logs" />,
+            },
+            {
+                key: "events",
+                label: "安全事件",
+                children: <SecurityLogs tab="events" />,
+            },
+        );
+    if (can("audit.operations.read"))
+        tabs.push({
+            key: "business",
+            label: "业务审计",
+            children: <OperationAudit />,
+        });
+    if (can("security.outbox.read"))
+        tabs.push({
+            key: "outbox",
+            label: "事件投递",
+            children: <Outbox canReplay={!!can("security.outbox.replay")} />,
+        });
+
+    return (
+        <>
+            <Heading
+                eyebrow="GOVERNANCE / AUDIT"
+                title="审计与安全事件"
+                description="审计默认显示最近 7 天的记录。"
+            />
+            <Tabs items={tabs} destroyOnHidden />
+        </>
+    );
+}
+
+function SecurityLogs({ tab }: { tab: "audit-logs" | "events" }) {
+    const [page, setPage] = useState(1);
     const [detail, setDetail] = useState<Row>();
     const [range, setRange] = useState<string[]>([]);
     const [filter, setFilter] = useState("");
@@ -30,22 +71,6 @@ export function Logs() {
 
     return (
         <>
-            <Heading
-                eyebrow="GOVERNANCE / AUDIT"
-                title="审计与安全事件"
-                description="查看最近 7 天的管理变更与登录事件。凭据不会进入审计内容。"
-            />
-            <Tabs
-                activeKey={tab}
-                onChange={(v) => {
-                    setTab(v);
-                    setPage(1);
-                }}
-                items={[
-                    { key: "audit-logs", label: "操作审计" },
-                    { key: "events", label: "安全事件" },
-                ]}
-            />
             <section className="panel">
                 <div className="toolbar">
                     <Space wrap>
@@ -87,6 +112,7 @@ export function Logs() {
                     rowKey="id"
                     dataSource={query.data?.items}
                     loading={query.isLoading}
+                    scroll={{ x: 650 }}
                     pagination={{
                         current: page,
                         pageSize: 20,

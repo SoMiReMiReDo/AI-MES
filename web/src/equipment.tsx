@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -448,8 +449,22 @@ const columns: Record<string, string[]> = {
 };
 
 export function Equipment({ me }: { me: Me }) {
-    const [group, setGroup] = useState("registry");
-    const [resource, setResource] = useState("tools");
+    const [routeParams] = useSearchParams();
+    const isDowntime = routeParams.get("view") === "downtimes";
+    const isEvent = routeParams.get("view") === "events";
+    const initialGroup = isDowntime
+        ? "downtime"
+        : isEvent
+          ? "events"
+          : "registry";
+    const initialResource = isDowntime
+        ? "downtimes"
+        : isEvent
+          ? "events"
+          : "tools";
+    const record = routeParams.get("record");
+    const [group, setGroup] = useState(initialGroup);
+    const [resource, setResource] = useState(initialResource);
     const [page, setPage] = useState(1);
     const [q, setQ] = useState("");
     const [equipmentId, setEquipmentId] = useState("");
@@ -457,12 +472,31 @@ export function Equipment({ me }: { me: Me }) {
     const [from, setFrom] = useState("");
     const [until, setUntil] = useState("");
     const [dialog, setDialog] = useState<Dialog>();
-    const [detail, setDetail] = useState<{
-        path: string;
-        title: string;
-        kind: string;
-        page: number;
-    }>();
+    const [detail, setDetail] = useState<
+        | {
+              path: string;
+              title: string;
+              kind: string;
+              page: number;
+          }
+        | undefined
+    >(
+        record
+            ? {
+                  path:
+                      isDowntime || isEvent
+                          ? `equipment/${initialResource}?id=${record}`
+                          : `equipment/tools/${record}`,
+                  title: isDowntime
+                      ? "停机"
+                      : isEvent
+                        ? "设备事件"
+                        : "设备详情",
+                  kind: isDowntime || isEvent ? "record" : "equipment",
+                  page: 1,
+              }
+            : undefined,
+    );
     const [form] = Form.useForm();
     const equipmentVersion = useRef<{ signature: string; etag: string } | null>(
         null,

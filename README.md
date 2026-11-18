@@ -1,6 +1,8 @@
 # MESagent
 
-面向半导体制造的 MES + Agent + WebUI 项目，采用 C# 后端并以 Docker 交付。已建立 PostgreSQL 18 + EF Core 10，并完成身份权限、工艺/工单、批次/载具/血缘及 F5 首版派工过站的 API 与 React WebUI。完整质量处置、设备资源、Agent 和 F1 扩展功能待后续；Docker 打包按用户要求后置。
+面向半导体制造的 MES + Agent + WebUI 项目。当前 C# 后端和 React WebUI 已实现 F1～F12 的首版范围，支持 Docker 单机交付。Agent 验收随 F13 补齐。
+
+Docker 空实例、演示数据和备份恢复见 [部署操作](deploy/README.md)。
 
 ## 本地网页启动与验证
 

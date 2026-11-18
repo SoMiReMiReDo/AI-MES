@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import type { components } from "./generated/api";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -46,14 +47,24 @@ const resourceTitles: Record<string, string> = {
 };
 
 export function Quality({ me }: { me: Me }) {
-    const [tab, setTab] = useState("issues");
+    const [routeParams] = useSearchParams();
+    const view = routeParams.get("view");
+    const record = routeParams.get("record");
+    const initialTab =
+        view && ["issues", "holds", "checks", "lots"].includes(view)
+            ? view
+            : "issues";
+    const [tab, setTab] = useState(initialTab);
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
     const [status, setStatus] = useState("");
-    const [selected, setSelected] = useState<{
-        resource: string;
-        id: string;
-    }>();
+    const [selected, setSelected] = useState<
+        | {
+              resource: string;
+              id: string;
+          }
+        | undefined
+    >(record ? { resource: initialTab, id: record } : undefined);
     const [dialog, setDialog] = useState<Dialog>();
     const [inspection, setInspection] = useState<{ lotId?: string }>();
     const [form] = Form.useForm();

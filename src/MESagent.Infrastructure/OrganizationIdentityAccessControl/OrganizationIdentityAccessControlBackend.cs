@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using MESagent.Application;
 using MESagent.Domain;
 using MESagent.Domain.Entities;
+using MESagent.Infrastructure.ApplicationAuditReliability;
 using MESagent.Infrastructure.Identity;
 using MESagent.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
@@ -289,7 +290,16 @@ public sealed partial class OrganizationIdentityAccessControlBackend(
             Fail(403, "PasswordChangeRequired", "请先修改初始密码");
         await LoadAccess();
         OrganizationIdentityAccessControlResult result;
-        if (r.Path.StartsWith("traceability/"))
+        if (r.Path.StartsWith("reliability/"))
+            result = await new ReliabilityBackend(db, options.DeploymentFabId, actor, Require,
+                p => hasScope && permissions.Contains(p) && (!p.StartsWith("security.") || admin), clock).Execute(r);
+        else if (r.Path.StartsWith("integration/"))
+            result = await new MESagent.Infrastructure.DataImportEquipmentIntegration.IntegrationBackend(
+                db, options.DeploymentFabId, actor, Require, clock).Execute(r);
+        else if (r.Path.StartsWith("workbench/"))
+            result = await new MESagent.Infrastructure.WorkbenchDashboardsAlertsScheduling.WorkbenchBackend(
+                db, options.DeploymentFabId, actor, Require, p => hasScope && permissions.Contains(p), clock).Execute(r);
+        else if (r.Path.StartsWith("traceability/"))
             result = await new MESagent.Infrastructure.TraceabilityImpactAnalysis.TraceabilityBackend(
                 db, options.DeploymentFabId, Require, p => hasScope && permissions.Contains(p), clock).Execute(r);
         else if (r.Path.StartsWith("quality/"))
@@ -321,6 +331,7 @@ public sealed partial class OrganizationIdentityAccessControlBackend(
             session.LastActivityAt = Now;
             session.IdleExpiresAt = new[] { Now.AddMinutes(options.IdleMinutes), session.AbsoluteExpiresAt }.Min();
         }
+        OutboxDelivery.Enqueue(db, options.DeploymentFabId, actor, r, result, Now);
         await db.SaveChangesAsync();
         await tx.CommitAsync();
         return result;

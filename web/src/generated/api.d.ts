@@ -1862,6 +1862,570 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workbench/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchOptions"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchOverview"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PageViewOfWorkbenchRecord"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchHistoryDay"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/shifts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchShifts"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchAlerts"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchSubscriptionView"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchSchedule"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["WorkbenchPlanInput"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchPlan"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/schedule/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchPlanChange"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AddWorkbenchRate"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AddWorkbenchRate"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/schedule/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["WorkbenchPlanInput"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchPlan"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/schedule/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchPlan"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/schedule/auto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["WorkbenchAutoPlanInput"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchAutoResult"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/subscriptions/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["WorkbenchSubscriptionInput"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/alerts/{kind}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["WorkbenchAlertInput"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/traceability/search": {
         parameters: {
             query?: never;
@@ -4807,10 +5371,575 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reliability/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PageViewOfOperationAuditView"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reliability/outbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PageViewOfOutboxView"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reliability/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OutboxStatus"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reliability/outbox/{id}/replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReplayOutboxInput"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["OutboxView"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+                /** @description Precondition Failed */
+                412: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+                /** @description Precondition Required */
+                428: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integration/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PageViewOfSimulatorConnectionView"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RegisterSimulatorConnection"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SimulatorConnectionView"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integration/connections/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SimulatorConnectionView"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integration/connections/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PageViewOfSimulatorMessageSummary"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ReceiveSimulatorMessage"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SimulatorMessageView"];
+                    };
+                };
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SimulatorMessageView"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integration/connections/{id}/messages/{messageId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SimulatorMessageView"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integration/work-order-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PageViewOfWorkOrderImportSummary"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PreviewWorkOrderCsv"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkOrderImportView"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integration/work-order-imports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkOrderImportView"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integration/work-order-imports/{id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkOrderImportView"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddWorkbenchRate: {
+            /** Format: uuid */
+            equipmentId: string;
+            /** Format: date */
+            effectiveOn: string;
+            /** Format: double */
+            idealSeconds: number | string;
+        };
         AssignProductionLot: {
             /** Format: uuid */
             equipmentId: string;
@@ -5018,6 +6147,14 @@ export interface components {
             /** Format: uuid */
             issueId?: null | string;
         };
+        ImportedWorkOrder: {
+            /** Format: int32 */
+            row: number | string;
+            /** Format: uuid */
+            id: string;
+            orderNo: string;
+        };
+        JsonElement: unknown;
         LoadReticle: {
             /** Format: uuid */
             reticleId: string;
@@ -5039,6 +6176,18 @@ export interface components {
             reason: string;
             newLotNumber?: null | string;
         };
+        MesProblem: {
+            type: string;
+            title: string;
+            /** Format: int32 */
+            status: number | string;
+            code: string;
+            /** Format: uuid */
+            traceId: string;
+            errors: {
+                [key: string]: string[];
+            };
+        };
         MountConsumable: {
             /** Format: uuid */
             materialLotId: string;
@@ -5051,6 +6200,25 @@ export interface components {
             /** Format: uuid */
             toLocationId: string;
             reason: string;
+        };
+        OperationAuditView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: null | string;
+            actorName: null | string;
+            module: string;
+            entityType: string;
+            /** Format: uuid */
+            entityId: string;
+            action: string;
+            sourceChannel: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: uuid */
+            correlationId: string;
+            beforeState: null | components["schemas"]["JsonElement"];
+            afterState: null | components["schemas"]["JsonElement"];
         };
         OrganizationCreateRequest: {
             code: string;
@@ -5091,6 +6259,47 @@ export interface components {
             lastSeenAt?: null | string;
             etag?: null | string;
         };
+        OutboxStatus: {
+            /** Format: int32 */
+            pending: number | string;
+            /** Format: int32 */
+            published: number | string;
+            /** Format: int32 */
+            deadLettered: number | string;
+            /** Format: date-time */
+            oldestPendingAt: null | string;
+        };
+        OutboxView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            businessEventId: null | string;
+            eventType: string;
+            status: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: uuid */
+            correlationId: string;
+            /** Format: int32 */
+            attempts: number | string;
+            /** Format: date-time */
+            nextAttemptAt: null | string;
+            /** Format: date-time */
+            publishedAt: null | string;
+            /** Format: date-time */
+            deadLetteredAt: null | string;
+            errorCode: null | string;
+            etag: string;
+        };
+        PageViewOfOperationAuditView: {
+            items: components["schemas"]["OperationAuditView"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
         PageViewOfOrgRow: {
             items: components["schemas"]["OrgRow"][];
             /** Format: int32 */
@@ -5100,8 +6309,35 @@ export interface components {
             /** Format: int32 */
             pageSize: number | string;
         };
+        PageViewOfOutboxView: {
+            items: components["schemas"]["OutboxView"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
         PageViewOfRoleView: {
             items: components["schemas"]["RoleView"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
+        PageViewOfSimulatorConnectionView: {
+            items: components["schemas"]["SimulatorConnectionView"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
+        PageViewOfSimulatorMessageSummary: {
+            items: components["schemas"]["SimulatorMessageSummary"][];
             /** Format: int32 */
             total: number | string;
             /** Format: int32 */
@@ -5135,6 +6371,58 @@ export interface components {
             page: number | string;
             /** Format: int32 */
             pageSize: number | string;
+        };
+        PageViewOfWorkbenchAlert: {
+            items: components["schemas"]["WorkbenchAlert"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
+        PageViewOfWorkbenchQueueItem: {
+            items: components["schemas"]["WorkbenchQueueItem"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
+        PageViewOfWorkbenchRecord: {
+            items: components["schemas"]["WorkbenchRecord"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
+        PageViewOfWorkbenchShiftMetric: {
+            items: components["schemas"]["WorkbenchShiftMetric"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
+        PageViewOfWorkOrderImportSummary: {
+            items: components["schemas"]["WorkOrderImportSummary"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
+        PreviewWorkOrderCsv: {
+            filename: string;
+            csv: string;
+            mapping: {
+                [key: string]: string;
+            };
         };
         ProductionProgressView: {
             coverage: string;
@@ -5170,6 +6458,10 @@ export interface components {
         };
         ReasonRequest: {
             reason: string;
+        };
+        ReceiveSimulatorMessage: {
+            sourceMessageId: string;
+            rawPayload: string;
         };
         RecordProductionOutput: {
             /** Format: uuid */
@@ -5271,6 +6563,11 @@ export interface components {
             /** Format: date-time */
             usableUntil?: null | string;
         };
+        RegisterSimulatorConnection: {
+            /** Format: uuid */
+            equipmentId: string;
+            name: string;
+        };
         RegisterWafer: {
             waferCode: string;
             /** Format: double */
@@ -5303,6 +6600,9 @@ export interface components {
             action: string;
             /** Format: uuid */
             issueId?: null | string;
+        };
+        ReplayOutboxInput: {
+            reason: string;
         };
         ReportQualityIssue: {
             /** Format: uuid */
@@ -5414,6 +6714,40 @@ export interface components {
             /** Format: uuid */
             shiftId?: null | string;
         };
+        SimulatorConnectionView: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            equipmentId: string;
+            equipmentCode: string;
+            name: string;
+            status: string;
+            /** Format: date-time */
+            lastConnectedAt: null | string;
+        };
+        SimulatorMessageSummary: {
+            /** Format: uuid */
+            id: string;
+            sourceMessageId: string;
+            /** Format: date-time */
+            receivedAt: string;
+            status: string;
+            /** Format: uuid */
+            equipmentEventId: null | string;
+        };
+        SimulatorMessageView: {
+            /** Format: uuid */
+            id: string;
+            sourceMessageId: string;
+            /** Format: date-time */
+            receivedAt: string;
+            status: string;
+            /** Format: uuid */
+            equipmentEventId: null | string;
+            rawPayload: string;
+            parsedData: null | components["schemas"]["JsonElement"];
+            error: null | string;
+        };
         SplitProductionLot: {
             waferIds: string[];
             reason: string;
@@ -5514,6 +6848,308 @@ export interface components {
             fromSlotId: null | string;
             /** Format: uuid */
             toSlotId: null | string;
+        };
+        WorkbenchAlert: {
+            source: components["schemas"]["WorkbenchRecord"];
+            /** Format: date-time */
+            acknowledgedAt: null | string;
+            /** Format: date-time */
+            silencedUntil: null | string;
+            escalated: boolean;
+        };
+        WorkbenchAlertInput: {
+            action: string;
+            /** Format: date-time */
+            until: null | string;
+        };
+        WorkbenchAlerts: {
+            records: components["schemas"]["PageViewOfWorkbenchAlert"];
+            /** Format: int32 */
+            unread: number | string;
+        };
+        WorkbenchAutoPlanInput: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            /** Format: int32 */
+            maxLots: number | string;
+        };
+        WorkbenchAutoResult: {
+            created: components["schemas"]["WorkbenchPlan"][];
+            unplanned: components["schemas"]["WorkbenchUnplanned"][];
+        };
+        WorkbenchBottleneck: {
+            /** Format: uuid */
+            operationId: string;
+            name: string;
+            /** Format: int32 */
+            waiting: number | string;
+            /** Format: date-time */
+            oldest: string;
+        };
+        WorkbenchCapacity: {
+            /** Format: uuid */
+            equipmentId: string;
+            label: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /** Format: date-time */
+            blockedAt: null | string;
+        };
+        WorkbenchHistoryDay: {
+            /** Format: date */
+            date: string;
+            /** Format: int32 */
+            passed: null | number | string;
+            /** Format: int32 */
+            completed: null | number | string;
+            /** Format: int32 */
+            failed: null | number | string;
+            /** Format: int32 */
+            scrap: null | number | string;
+            /** Format: int32 */
+            failedChecks: null | number | string;
+            /** Format: double */
+            waitMinutes: null | number | string;
+            /** Format: double */
+            cycleMinutes: null | number | string;
+        };
+        WorkbenchOption: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+        };
+        WorkbenchOptions: {
+            areas: components["schemas"]["WorkbenchOption"][];
+            operations: components["schemas"]["WorkbenchOption"][];
+            groups: components["schemas"]["WorkbenchOption"][];
+            products: components["schemas"]["WorkbenchOption"][];
+            equipment: components["schemas"]["WorkbenchOption"][];
+            shifts: components["schemas"]["WorkbenchOption"][];
+        };
+        WorkbenchOverview: {
+            /** Format: date-time */
+            asOf: string;
+            /** Format: int32 */
+            wipLots: null | number | string;
+            /** Format: int32 */
+            wipWafers: null | number | string;
+            /** Format: int32 */
+            waiting: null | number | string;
+            /** Format: int32 */
+            running: null | number | string;
+            /** Format: int32 */
+            held: null | number | string;
+            /** Format: int32 */
+            equipment: null | number | string;
+            /** Format: int32 */
+            equipmentDown: null | number | string;
+            /** Format: int32 */
+            completedToday: null | number | string;
+        };
+        WorkbenchPlan: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            stepExecutionId: string;
+            /** Format: uuid */
+            lotId: string;
+            lotNumber: string;
+            step: string;
+            /** Format: uuid */
+            equipmentId: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            status: string;
+            etag: string;
+        };
+        WorkbenchPlanChange: {
+            /** Format: date-time */
+            occurredAt: string;
+            action: string;
+            actor: null | string;
+            before: null | components["schemas"]["WorkbenchPlan"];
+            after: null | components["schemas"]["WorkbenchPlan"];
+        };
+        WorkbenchPlanInput: {
+            /** Format: uuid */
+            stepExecutionId: string;
+            /** Format: uuid */
+            equipmentId: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+        };
+        WorkbenchQueueItem: {
+            /** Format: uuid */
+            stepExecutionId: string;
+            /** Format: uuid */
+            lotId: string;
+            lotNumber: string;
+            step: string;
+            /** Format: int32 */
+            priority: number | string;
+            /** Format: date-time */
+            enteredAt: string;
+        };
+        WorkbenchRecord: {
+            /** Format: uuid */
+            id: string;
+            kind: string;
+            label: string;
+            status: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: uuid */
+            lotId?: null | string;
+            /** Format: uuid */
+            equipmentId?: null | string;
+            /** Format: uuid */
+            runId?: null | string;
+            /** Format: double */
+            minutes?: null | number | string;
+            /** Format: int32 */
+            quantity: number | string;
+            detail?: null | string;
+        };
+        WorkbenchSchedule: {
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            equipment: components["schemas"]["WorkbenchOption"][];
+            plans: components["schemas"]["WorkbenchPlan"][];
+            capacity: components["schemas"]["WorkbenchCapacity"][];
+            queue: components["schemas"]["PageViewOfWorkbenchQueueItem"];
+        };
+        WorkbenchShiftMetric: {
+            /** Format: uuid */
+            equipmentId: string;
+            equipmentCode: string;
+            shift: null | string;
+            /** Format: date-time */
+            startsAt: null | string;
+            /** Format: date-time */
+            endsAt: null | string;
+            /** Format: double */
+            plannedMinutes: null | number | string;
+            /** Format: double */
+            runMinutes: null | number | string;
+            /** Format: double */
+            downtimeMinutes: null | number | string;
+            /** Format: double */
+            idealSeconds: null | number | string;
+            /** Format: double */
+            availability: null | number | string;
+            /** Format: double */
+            performance: null | number | string;
+            /** Format: double */
+            quality: null | number | string;
+            /** Format: double */
+            oee: null | number | string;
+            /** Format: double */
+            nonRunningMinutes: null | number | string;
+            /** Format: double */
+            performanceLossMinutes: null | number | string;
+            /** Format: double */
+            failedWafers: null | number | string;
+            missing: null | string;
+        };
+        WorkbenchShifts: {
+            metrics: components["schemas"]["PageViewOfWorkbenchShiftMetric"];
+            bottlenecks: components["schemas"]["WorkbenchBottleneck"][];
+        };
+        WorkbenchSubscriptionInput: {
+            enabled: boolean;
+            /** Format: int32 */
+            escalationMinutes: null | number | string;
+            /** Format: uuid */
+            escalateToId: null | string;
+        };
+        WorkbenchSubscriptionView: {
+            kind: string;
+            enabled: boolean;
+            /** Format: int32 */
+            escalationMinutes: null | number | string;
+            /** Format: uuid */
+            escalateToId: null | string;
+            recipients: components["schemas"]["WorkbenchOption"][];
+        };
+        WorkbenchUnplanned: {
+            /** Format: uuid */
+            lotId: string;
+            lotNumber: string;
+            reason: string;
+        };
+        WorkOrderImportIssue: {
+            /** Format: int32 */
+            row: number | string;
+            field: string;
+            message: string;
+        };
+        WorkOrderImportRow: {
+            /** Format: int32 */
+            row: number | string;
+            orderNo: string;
+            productCode: string;
+            revisionCode: string;
+            /** Format: uuid */
+            productId: string;
+            /** Format: uuid */
+            productRevisionId: string;
+            /** Format: int32 */
+            plannedQty: number | string;
+            /** Format: int32 */
+            priority: number | string;
+            /** Format: date */
+            dueDate: null | string;
+            /** Format: date-time */
+            plannedStartAt: null | string;
+            /** Format: date-time */
+            plannedEndAt: null | string;
+            description: null | string;
+        };
+        WorkOrderImportSummary: {
+            /** Format: uuid */
+            id: string;
+            filename: string;
+            status: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            totalRows: number | string;
+            /** Format: int32 */
+            successfulRows: number | string;
+            /** Format: int32 */
+            failedRows: number | string;
+        };
+        WorkOrderImportView: {
+            /** Format: uuid */
+            id: string;
+            filename: string;
+            status: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int32 */
+            totalRows: number | string;
+            /** Format: int32 */
+            successfulRows: number | string;
+            /** Format: int32 */
+            failedRows: number | string;
+            etag: string;
+            mapping: {
+                [key: string]: string;
+            };
+            rows: components["schemas"]["WorkOrderImportRow"][];
+            errors: components["schemas"]["WorkOrderImportIssue"][];
+            orders: components["schemas"]["ImportedWorkOrder"][];
         };
     };
     responses: never;

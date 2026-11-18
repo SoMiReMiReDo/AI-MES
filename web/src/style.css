@@ -681,3 +681,11 @@ footer {
 .ant-message .ant-message-notice * {
     pointer-events: none;
 }
+
+.integration-payload {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+}

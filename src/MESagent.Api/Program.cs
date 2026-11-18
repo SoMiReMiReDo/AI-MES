@@ -2,7 +2,9 @@ using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using MESagent.Api;
 using MESagent.Application;
+using MESagent.Infrastructure.ApplicationAuditReliability;
 using MESagent.Infrastructure.OrganizationIdentityAccessControl;
 using MESagent.Infrastructure.Identity;
 using MESagent.Infrastructure.Persistence;
@@ -10,12 +12,29 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
+
+if (args is ["healthcheck"])
+{
+    using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+    try
+    {
+        using var response = await client.GetAsync("http://127.0.0.1:8080/health/ready");
+        Environment.ExitCode = response.IsSuccessStatusCode ? 0 : 1;
+    }
+    catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+    {
+        Environment.ExitCode = 1;
+    }
+    return;
+}
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 65536);
+builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 var connection = builder.Configuration.GetConnectionString("Mes")
     ?? throw new InvalidOperationException("缺少 ConnectionStrings__Mes");
 var options = builder.Configuration.GetSection("Mes").Get<OrganizationIdentityAccessControlOptions>() ?? new();
@@ -82,6 +101,8 @@ builder.Services
         };
         o.Events.OnValidatePrincipal = async c =>
         {
+            if (c.HttpContext.Request.Path.StartsWithSegments("/health"))
+                return;
             if (!Guid.TryParse(c.Principal?.FindFirstValue(ClaimTypes.NameIdentifier), out var user)
                 || !Guid.TryParse(c.Principal?.FindFirstValue("sid"), out var session)
                 || !await c.HttpContext.RequestServices.GetRequiredService<OrganizationIdentityAccessControlService>()
@@ -90,6 +111,11 @@ builder.Services
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddSignalR(options => options.MaximumReceiveMessageSize = 4096);
+builder.Services.AddSingleton<WorkbenchSignals>();
+builder.Services.AddScoped<OutboxDelivery>();
+if (builder.Configuration.GetValue("Reliability:OutboxEnabled", true))
+    builder.Services.AddHostedService<OutboxWorker>();
 builder.Services.AddAntiforgery(o =>
 {
     o.HeaderName = "X-CSRF-TOKEN";
@@ -122,13 +148,12 @@ builder.Services.AddRateLimiter(o =>
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));
-    o.OnRejected = async (c, ct) =>
+    o.OnRejected = async (c, _) =>
     {
         await c.HttpContext.RequestServices.GetRequiredService<IOrganizationIdentityAccessControlBackend>()
             .RecordSecurityEvent("LoginRateLimited", "Denied", (Guid)c.HttpContext.Items["correlation"]!);
         c.HttpContext.Response.Headers.RetryAfter = "60";
-        await c.HttpContext.Response.WriteAsJsonAsync(
-            new { status = 429, code = "RateLimited", title = "请求过于频繁，请稍后重试" }, ct);
+        await ReliabilityHttp.Problem(c.HttpContext, 429, "RateLimited", "请求过于频繁，请稍后重试");
     };
 });
 
@@ -140,62 +165,59 @@ if (args.Contains("bootstrap") || args.Contains("recover-admin"))
         ?? throw new InvalidOperationException("缺少 MES_ADMIN_USER");
     var pwd = Environment.GetEnvironmentVariable("MES_ADMIN_PASSWORD")
         ?? throw new InvalidOperationException("缺少 MES_ADMIN_PASSWORD");
-    if (args.Contains("recover-admin"))
+    var backend = scope.ServiceProvider.GetRequiredService<IOrganizationIdentityAccessControlBackend>();
+    try
     {
-        await scope.ServiceProvider.GetRequiredService<IOrganizationIdentityAccessControlBackend>().RecoverAdmin(
-            name,
-            pwd,
-            Environment.GetEnvironmentVariable("MES_RECOVERY_REASON") ?? "Host administrator recovery");
-        Console.WriteLine("管理员已恢复，全部旧会话已撤销，首次登录须改密。");
-        return;
-    }
-    await scope.ServiceProvider.GetRequiredService<IOrganizationIdentityAccessControlBackend>()
-        .Bootstrap(
+        if (args.Contains("recover-admin"))
+        {
+            await backend.RecoverAdmin(
+                name,
+                pwd,
+                Environment.GetEnvironmentVariable("MES_RECOVERY_REASON") ?? "Host administrator recovery");
+            Console.WriteLine("管理员已恢复，全部旧会话已撤销，首次登录须改密。");
+            return;
+        }
+        await backend.Bootstrap(
             name,
             pwd,
             Environment.GetEnvironmentVariable("MES_FAB_CODE") ?? "FAB01",
             Environment.GetEnvironmentVariable("MES_FAB_TIMEZONE") ?? "Asia/Shanghai");
-    Console.WriteLine("初始化完成。首次登录须修改密码。");
+        Console.WriteLine("初始化完成。首次登录须修改密码。");
+    }
+    catch (AppException ex)
+    {
+        Console.Error.WriteLine(ex.Message);
+        Environment.ExitCode = 1;
+    }
     return;
 }
 
-app.Use(async (ctx, next) =>
+if (app.Configuration.GetValue<bool>("Deployment:ForwardHttps"))
 {
-    ctx.Items["correlation"] = Guid.NewGuid();
-    ctx.Response.Headers["X-Trace-Id"] = ctx.Items["correlation"]!.ToString();
-    ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
-    try
-    {
-        await next();
-    }
-    catch (Exception ex)
-    {
-        if (ctx.Response.HasStarted)
-            throw;
-        var (status, code, message) = ex switch
-        {
-            AppException a => (a.Status, a.Code, a.Message),
-            AntiforgeryValidationException => (400, "CsrfInvalid", "防伪令牌无效，请刷新页面"),
-            DbUpdateConcurrencyException => (412, "VersionConflict", "内容已发生变化，请刷新后重试"),
-            DbUpdateException { InnerException: PostgresException { SqlState: "23505" or "23P01" } } =>
-                (409, "CodeConflict", "编号或关联已存在"),
-            DbUpdateException { InnerException: PostgresException { SqlState: "23503" or "23514" } } =>
-                (409, "ValidationFailed", "关联或业务约束不满足"),
-            ArgumentException or FormatException or JsonException =>
-                (400, "ValidationFailed", "请求字段或格式无效"),
-            BadHttpRequestException { StatusCode: 413 } => (413, "RequestTooLarge", "请求超过允许大小"),
-            BadHttpRequestException => (400, "ValidationFailed", "请求格式无效"),
-            NpgsqlException => (503, "DependencyUnavailable", "数据库暂不可用"),
-            _ => (500, "InternalError", "请求处理失败，请联系管理员并提供追踪 ID")
-        };
-        if (status == 500)
-            app.Logger.LogError(ex, "OrganizationIdentityAccessControl request failed {TraceId}", ctx.Items["correlation"]);
-        ctx.Response.StatusCode = status;
-        await ctx.Response.WriteAsJsonAsync(
-            new { type = "about:blank", title = message, status, code, traceId = ctx.Items["correlation"] });
-    }
-});
+    // The API has no published port. The Compose web proxy overwrites this header.
+    var forwarded = new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedProto };
+    forwarded.KnownProxies.Clear();
+    forwarded.KnownIPNetworks.Clear();
+    app.UseForwardedHeaders(forwarded);
+}
 
+app.UseMiddleware<ReliabilityHttp>();
+app.UseStatusCodePages(c =>
+{
+    var ctx = c.HttpContext;
+    if (!ctx.Request.Path.StartsWithSegments("/api"))
+        return Task.CompletedTask;
+    var status = ctx.Response.StatusCode;
+    var (code, title) = status switch
+    {
+        401 => ("SessionInvalid", "请先登录"),
+        403 => ("PermissionDenied", "没有执行该操作的权限"),
+        404 => ("ResourceNotFound", "接口不存在"),
+        405 => ("MethodNotAllowed", "接口不支持此请求方法"),
+        _ => ("RequestFailed", "请求处理失败")
+    };
+    return ReliabilityHttp.Problem(ctx, status, code, title);
+});
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
@@ -207,6 +229,18 @@ app.Use(async (ctx, next) =>
         var limit = ctx.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>();
         if (limit is { IsReadOnly: false }) limit.MaxRequestBodySize = 15 * 1024 * 1024;
     }
+    if (ctx.Request.Path == "/api/v1/integration/work-order-imports" && ctx.Request.Method == "POST")
+    {
+        var limit = ctx.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>();
+        if (limit is { IsReadOnly: false })
+            limit.MaxRequestBodySize = 2 * 1024 * 1024;
+    }
+    if (ctx.Request.Path.StartsWithSegments("/api/v1/workbench/live")
+        && ctx.Request.Headers.TryGetValue("Origin", out var origin)
+        && (!Uri.TryCreate(origin.ToString(), UriKind.Absolute, out var site)
+            || !string.Equals(site.Authority, ctx.Request.Host.Value, StringComparison.OrdinalIgnoreCase)
+            || ctx.Request.Headers["Sec-Fetch-Site"] == "cross-site"))
+        throw new AppException(403, "OriginDenied", "工作台实时连接只允许同源调用");
     if (ctx.Request.Path.StartsWithSegments("/api")
         && ctx.Request.Method is not ("GET" or "HEAD" or "OPTIONS"))
         await ctx.RequestServices.GetRequiredService<IAntiforgery>().ValidateRequestAsync(ctx);
@@ -215,12 +249,12 @@ app.Use(async (ctx, next) =>
     await next();
 });
 app.MapGet("/health/live", () => Results.Ok(new { status = "live" }));
-app.MapGet("/health/ready", async (MesDbContext db) => await db.Database.CanConnectAsync()
-    ? Results.Ok(new { status = "ready" })
-    : Results.StatusCode(503));
+app.MapGet("/health/ready", ReliabilityHttp.Readiness);
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
     app.MapOpenApi();
 
+app.MapHub<WorkbenchLiveHub>("/api/v1/workbench/live", o => o.CloseOnAuthenticationExpiration = true)
+    .RequireAuthorization();
 var api = app.MapGroup("/api/v1");
 api.MapGet("/auth/csrf", (HttpContext ctx, IAntiforgery antiforgery) =>
     Results.Ok(new { requestToken = antiforgery.GetAndStoreTokens(ctx).RequestToken }));
@@ -321,6 +355,16 @@ async Task<IResult> Dispatch(HttpContext ctx, OrganizationIdentityAccessControlS
 }
 
 api.MapGet("/auth/me", Dispatch).Produces<CurrentUserView>();
+var reliability = api.MapGroup("/reliability");
+reliability.MapGet("/audit-logs", Dispatch).Produces<PageView<OperationAuditView>>()
+    .Produces<MesProblem>(400, "application/problem+json").Produces<MesProblem>(403, "application/problem+json");
+reliability.MapGet("/outbox", Dispatch).Produces<PageView<OutboxView>>()
+    .Produces<MesProblem>(400, "application/problem+json").Produces<MesProblem>(403, "application/problem+json");
+reliability.MapGet("/status", Dispatch).Produces<OutboxStatus>().Produces<MesProblem>(403, "application/problem+json");
+reliability.MapPost("/outbox/{id:guid}/replay", Dispatch).Accepts<ReplayOutboxInput>("application/json")
+    .Produces<OutboxView>().Produces<MesProblem>(403, "application/problem+json")
+    .Produces<MesProblem>(404, "application/problem+json").Produces<MesProblem>(409, "application/problem+json")
+    .Produces<MesProblem>(412, "application/problem+json").Produces<MesProblem>(428, "application/problem+json");
 foreach (var path in new[] { "account/sessions", "security/permissions", "security/audit-logs", "security/events" })
     api.MapGet("/" + path, Dispatch);
 foreach (var path in new[] { "auth/logout", "account/sessions/revoke-all", "account/sessions/{id:guid}/revoke" })
@@ -372,6 +416,21 @@ api.MapPost("/execution/lots/{id:guid}/track-in", Dispatch).Accepts<TrackInProdu
 api.MapPost("/execution/runs/{id:guid}/records", Dispatch).Accepts<RecordProductionWork>("application/json");
 api.MapPost("/execution/runs/{id:guid}/track-out", Dispatch).Accepts<TrackOutProductionRun>("application/json");
 api.MapPost("/execution/runs/{id:guid}/abort", Dispatch).Accepts<ReasonRequest>("application/json");
+var integration = api.MapGroup("/integration");
+integration.MapGet("/connections", Dispatch).Produces<PageView<SimulatorConnectionView>>();
+integration.MapGet("/connections/{id:guid}", Dispatch).Produces<SimulatorConnectionView>();
+integration.MapPost("/connections", Dispatch).Accepts<RegisterSimulatorConnection>("application/json")
+    .Produces<SimulatorConnectionView>(201);
+integration.MapGet("/connections/{id:guid}/messages", Dispatch).Produces<PageView<SimulatorMessageSummary>>();
+integration.MapGet("/connections/{id:guid}/messages/{messageId:guid}", Dispatch).Produces<SimulatorMessageView>();
+integration.MapPost("/connections/{id:guid}/messages", Dispatch).Accepts<ReceiveSimulatorMessage>("application/json")
+    .Produces<SimulatorMessageView>(201).Produces<SimulatorMessageView>();
+integration.MapGet("/work-order-imports", Dispatch).Produces<PageView<WorkOrderImportSummary>>();
+integration.MapGet("/work-order-imports/{id:guid}", Dispatch).Produces<WorkOrderImportView>();
+integration.MapPost("/work-order-imports", Dispatch).Accepts<PreviewWorkOrderCsv>("application/json")
+    .Produces<WorkOrderImportView>(201);
+integration.MapPost("/work-order-imports/{id:guid}/confirm", Dispatch).Produces<WorkOrderImportView>();
+
 api.MapGet("/materials/wafer-materials", Dispatch);
 api.MapPost("/materials/wafer-materials", Dispatch).Accepts<RegisterWaferMaterial>("application/json");
 api.MapGet("/materials/wafer-sources", Dispatch);
@@ -381,6 +440,29 @@ api.MapPost("/materials/wafer-lots", Dispatch).Accepts<RegisterWaferMaterialLot>
 api.MapGet("/materials/wafer-lots/{id:guid}", Dispatch);
 api.MapGet("/materials/wafer-lots/{id:guid}/wafers", Dispatch);
 api.MapGet("/materials/wafer-origin-options", Dispatch);
+
+api.MapGet("/workbench/options", Dispatch).Produces<WorkbenchOptions>();
+api.MapGet("/workbench/overview", Dispatch).Produces<WorkbenchOverview>();
+api.MapGet("/workbench/records", Dispatch).Produces<PageView<WorkbenchRecord>>();
+api.MapGet("/workbench/history", Dispatch).Produces<WorkbenchHistoryDay[]>();
+api.MapGet("/workbench/shifts", Dispatch).Produces<WorkbenchShifts>();
+api.MapGet("/workbench/alerts", Dispatch).Produces<WorkbenchAlerts>();
+api.MapGet("/workbench/subscriptions", Dispatch).Produces<WorkbenchSubscriptionView[]>();
+api.MapGet("/workbench/schedule", Dispatch).Produces<WorkbenchSchedule>();
+api.MapGet("/workbench/schedule/{id:guid}/history", Dispatch).Produces<WorkbenchPlanChange[]>();
+api.MapPost("/workbench/rates", Dispatch).Accepts<AddWorkbenchRate>("application/json")
+    .Produces<AddWorkbenchRate>(201);
+api.MapPost("/workbench/schedule", Dispatch).Accepts<WorkbenchPlanInput>("application/json")
+    .Produces<WorkbenchPlan>(201);
+api.MapPut("/workbench/schedule/{id:guid}", Dispatch).Accepts<WorkbenchPlanInput>("application/json")
+    .Produces<WorkbenchPlan>();
+api.MapPost("/workbench/schedule/{id:guid}/cancel", Dispatch).Produces<WorkbenchPlan>();
+api.MapPost("/workbench/schedule/auto", Dispatch).Accepts<WorkbenchAutoPlanInput>("application/json")
+    .Produces<WorkbenchAutoResult>();
+api.MapPut("/workbench/subscriptions/{kind}", Dispatch).Accepts<WorkbenchSubscriptionInput>("application/json")
+    .Produces(204);
+api.MapPut("/workbench/alerts/{kind}/{id:guid}", Dispatch).Accepts<WorkbenchAlertInput>("application/json")
+    .Produces(204);
 
 api.MapGet("/traceability/search", Dispatch).Produces<PageView<TraceObject>>();
 api.MapGet("/traceability/{kind}/{id:guid}", Dispatch).Produces<TraceOverview>();

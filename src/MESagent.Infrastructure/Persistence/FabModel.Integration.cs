@@ -46,6 +46,7 @@ internal static partial class FabModel
             b.Property(x => x.LastConnectedAt).HasColumnName("last_connected_at");
             b.Property(x => x.Config).HasColumnName("config").HasColumnType("jsonb");
             b.Property(x => x.SecretReference).HasColumnName("secret_reference").HasMaxLength(255);
+            b.HasIndex(x => new { x.EquipmentId, x.Name }).IsUnique().HasFilter("protocol = 'Simulator'");
         });
 
         modelBuilder.Entity<MachineMessage>(b =>
@@ -63,6 +64,11 @@ internal static partial class FabModel
                 .WithMany()
                 .HasForeignKey(x => x.MachineConnectionId)
                 .OnDelete(DeleteBehavior.Restrict);
+            b.Property(x => x.EquipmentEventId).HasColumnName("equipment_event_id");
+            b.HasOne<EquipmentEvent>().WithMany().HasForeignKey(x => x.EquipmentEventId)
+                .OnDelete(DeleteBehavior.Restrict);
+            b.HasIndex(x => x.EquipmentEventId).IsUnique();
+            b.HasIndex(x => new { x.MachineConnectionId, x.ReceivedAt, x.Id });
             b.Property(x => x.Topic).HasColumnName("topic").HasMaxLength(255);
             b.Property(x => x.RawPayload).HasColumnName("raw_payload");
             b.Property(x => x.ParsedData).HasColumnName("parsed_data").HasColumnType("jsonb");
@@ -153,6 +159,9 @@ internal static partial class FabModel
             b.Property(x => x.RowVersion).HasColumnName("xmin").IsRowVersion();
             b.Property(x => x.UserId).HasColumnName("user_id");
             b.HasOne<MesUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+            b.Property(x => x.FabId).HasColumnName("fab_id");
+            b.HasOne<Fab>().WithMany().HasForeignKey(x => x.FabId).OnDelete(DeleteBehavior.Restrict);
+            b.HasIndex(x => new { x.FabId, x.UserId, x.CreatedAt, x.Id });
             b.Property(x => x.Entity).HasColumnName("entity").HasMaxLength(64);
             b.Property(x => x.MappingId).HasColumnName("mapping_id");
             b.HasOne<ImportMapping>().WithMany().HasForeignKey(x => x.MappingId).OnDelete(DeleteBehavior.Restrict);
@@ -163,6 +172,8 @@ internal static partial class FabModel
             b.Property(x => x.SuccessfulRows).HasColumnName("successful_rows");
             b.Property(x => x.FailedRows).HasColumnName("failed_rows");
             b.Property(x => x.ErrorLog).HasColumnName("error_log").HasColumnType("jsonb");
+            b.Property(x => x.InputData).HasColumnName("input_data").HasColumnType("jsonb");
+            b.Property(x => x.ResultData).HasColumnName("result_data").HasColumnType("jsonb");
             b.Property(x => x.StartedAt).HasColumnName("started_at");
             b.Property(x => x.CompletedAt).HasColumnName("completed_at");
             b.Property(x => x.DryRun).HasColumnName("dry_run");

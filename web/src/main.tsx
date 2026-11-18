@@ -4,6 +4,7 @@ import {
     AuditOutlined,
     DashboardOutlined,
     DesktopOutlined,
+    ImportOutlined,
     InboxOutlined,
     PlayCircleOutlined,
     ScheduleOutlined,
@@ -55,6 +56,8 @@ import { Quality } from "./quality";
 import { Materials } from "./materials";
 import { Traceability, canTrace } from "./traceability";
 import { clearTraceHistory } from "./traceHistory";
+import { Integration } from "./integration";
+import { integrationAccess } from "./integrationShared";
 
 type SidebarLink = [
     path: string,
@@ -136,6 +139,12 @@ function Application() {
         );
     setDisplayTimezone(me.fab?.timezone || "Asia/Shanghai");
     const can = (p: string) => me.permissions?.includes(p) ?? false;
+    const integration = integrationAccess(me);
+    const canIntegrate = integration.simulator || integration.imports;
+    const canAudit =
+        can("security.audit.read") ||
+        can("audit.operations.read") ||
+        can("security.outbox.read");
     const nav: { label?: string; links: SidebarLink[] }[] = [
         {
             links: [["/", "工作台", <DashboardOutlined />, true]],
@@ -195,6 +204,12 @@ function Application() {
                     <InboxOutlined />,
                     can("materials.wafer-sources.read"),
                 ],
+                [
+                    "/integration",
+                    "数据导入与集成",
+                    <ImportOutlined />,
+                    canIntegrate,
+                ],
             ],
         },
         {
@@ -240,7 +255,7 @@ function Application() {
                     "/settings/security-events",
                     "审计与安全",
                     <AuditOutlined />,
-                    can("security.audit.read"),
+                    canAudit,
                 ],
                 ["/account/profile", "个人设置", <UserOutlined />, true],
             ],
@@ -367,6 +382,16 @@ function Application() {
                             }
                         />
                         <Route
+                            path="/integration"
+                            element={
+                                canIntegrate ? (
+                                    <Integration me={me} />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
+                        <Route
                             path="/production"
                             element={
                                 [
@@ -404,7 +429,29 @@ function Application() {
                                 )
                             }
                         />
-                        <Route path="/" element={<Dashboard me={me} />} />
+                        <Route
+                            path="/"
+                            element={
+                                <Dashboard
+                                    key={`${me.userId}/${me.fab?.id ?? ""}`}
+                                    me={me}
+                                    menu={nav.flatMap(
+                                        ({ label: group, links }) =>
+                                            links
+                                                .filter(
+                                                    ([path, , , visible]) =>
+                                                        path !== "/" && visible,
+                                                )
+                                                .map(([path, label, icon]) => ({
+                                                    path,
+                                                    label,
+                                                    icon,
+                                                    group,
+                                                })),
+                                    )}
+                                />
+                            }
+                        />
                         <Route
                             path="/settings/organization"
                             element={
@@ -454,13 +501,7 @@ function Application() {
                         />
                         <Route
                             path="/settings/security-events"
-                            element={
-                                can("security.audit.read") ? (
-                                    <Logs />
-                                ) : (
-                                    <Denied />
-                                )
-                            }
+                            element={canAudit ? <Logs me={me} /> : <Denied />}
                         />
                         <Route
                             path="/account/profile"

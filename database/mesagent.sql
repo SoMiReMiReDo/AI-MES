@@ -7028,3 +7028,441 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+        IF NOT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname = 'workbench') THEN
+            CREATE SCHEMA workbench;
+        END IF;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE TABLE workbench.alert_receipts (
+        id uuid NOT NULL,
+        fab_id uuid NOT NULL,
+        user_id uuid NOT NULL,
+        kind character varying(24) NOT NULL,
+        source_id uuid NOT NULL,
+        acknowledged_at timestamp with time zone,
+        silenced_until timestamp with time zone,
+        CONSTRAINT "PK_alert_receipts" PRIMARY KEY (id),
+        CONSTRAINT "FK_alert_receipts_fabs_fab_id" FOREIGN KEY (fab_id) REFERENCES organization.fabs (id) ON DELETE RESTRICT,
+        CONSTRAINT "FK_alert_receipts_users_user_id" FOREIGN KEY (user_id) REFERENCES security.users (id) ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE TABLE workbench.equipment_ideal_rates (
+        id uuid NOT NULL,
+        fab_id uuid NOT NULL,
+        equipment_id uuid NOT NULL,
+        effective_on date NOT NULL,
+        ideal_seconds numeric(12,3) NOT NULL,
+        CONSTRAINT "PK_equipment_ideal_rates" PRIMARY KEY (id),
+        CONSTRAINT ck_equipment_ideal_rate CHECK (ideal_seconds > 0 AND ideal_seconds <= 86400),
+        CONSTRAINT "FK_equipment_ideal_rates_equipment_equipment_id" FOREIGN KEY (equipment_id) REFERENCES equipment.equipment (id) ON DELETE RESTRICT,
+        CONSTRAINT "FK_equipment_ideal_rates_fabs_fab_id" FOREIGN KEY (fab_id) REFERENCES organization.fabs (id) ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE TABLE workbench.production_schedule_blocks (
+        id uuid NOT NULL,
+        fab_id uuid NOT NULL,
+        step_execution_id uuid NOT NULL,
+        equipment_id uuid NOT NULL,
+        starts_at timestamp with time zone NOT NULL,
+        ends_at timestamp with time zone NOT NULL,
+        cancelled_at timestamp with time zone,
+        CONSTRAINT "PK_production_schedule_blocks" PRIMARY KEY (id),
+        CONSTRAINT ck_schedule_block_range CHECK (starts_at < ends_at),
+        CONSTRAINT "FK_production_schedule_blocks_equipment_equipment_id" FOREIGN KEY (equipment_id) REFERENCES equipment.equipment (id) ON DELETE RESTRICT,
+        CONSTRAINT "FK_production_schedule_blocks_fabs_fab_id" FOREIGN KEY (fab_id) REFERENCES organization.fabs (id) ON DELETE RESTRICT,
+        CONSTRAINT "FK_production_schedule_blocks_step_executions_step_execution_id" FOREIGN KEY (step_execution_id) REFERENCES production.step_executions (id) ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE TABLE workbench.subscriptions (
+        id uuid NOT NULL,
+        fab_id uuid NOT NULL,
+        user_id uuid NOT NULL,
+        kind character varying(24) NOT NULL,
+        enabled boolean NOT NULL,
+        enabled_at timestamp with time zone NOT NULL,
+        escalation_minutes integer,
+        escalate_to_id uuid,
+        CONSTRAINT "PK_subscriptions" PRIMARY KEY (id),
+        CONSTRAINT ck_subscription_escalation CHECK ((escalation_minutes IS NULL AND escalate_to_id IS NULL) OR (escalation_minutes IS NOT NULL AND escalation_minutes BETWEEN 1 AND 10080 AND escalate_to_id IS NOT NULL AND escalate_to_id <> user_id)),
+        CONSTRAINT "FK_subscriptions_fabs_fab_id" FOREIGN KEY (fab_id) REFERENCES organization.fabs (id) ON DELETE RESTRICT,
+        CONSTRAINT "FK_subscriptions_users_escalate_to_id" FOREIGN KEY (escalate_to_id) REFERENCES security.users (id) ON DELETE RESTRICT,
+        CONSTRAINT "FK_subscriptions_users_user_id" FOREIGN KEY (user_id) REFERENCES security.users (id) ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE UNIQUE INDEX "IX_alert_receipts_fab_id_user_id_kind_source_id" ON workbench.alert_receipts (fab_id, user_id, kind, source_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE INDEX "IX_alert_receipts_user_id" ON workbench.alert_receipts (user_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE INDEX "IX_equipment_ideal_rates_equipment_id" ON workbench.equipment_ideal_rates (equipment_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE UNIQUE INDEX "IX_equipment_ideal_rates_fab_id_equipment_id_effective_on" ON workbench.equipment_ideal_rates (fab_id, equipment_id, effective_on);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE INDEX "IX_production_schedule_blocks_equipment_id" ON workbench.production_schedule_blocks (equipment_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE INDEX "IX_production_schedule_blocks_fab_id_equipment_id_starts_at" ON workbench.production_schedule_blocks (fab_id, equipment_id, starts_at);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE UNIQUE INDEX "IX_production_schedule_blocks_fab_id_step_execution_id" ON workbench.production_schedule_blocks (fab_id, step_execution_id) WHERE cancelled_at IS NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE INDEX "IX_production_schedule_blocks_step_execution_id" ON workbench.production_schedule_blocks (step_execution_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE INDEX "IX_subscriptions_escalate_to_id" ON workbench.subscriptions (escalate_to_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE INDEX "IX_subscriptions_fab_id_escalate_to_id_kind" ON workbench.subscriptions (fab_id, escalate_to_id, kind);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE UNIQUE INDEX "IX_subscriptions_fab_id_user_id_kind" ON workbench.subscriptions (fab_id, user_id, kind);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    CREATE INDEX "IX_subscriptions_user_id" ON workbench.subscriptions (user_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    INSERT INTO security.permissions(code,name,is_active)
+    SELECT code,code,true
+    FROM unnest(ARRAY['workbench.schedule.manage','workbench.oee.configure']) code
+    ON CONFLICT(code) DO NOTHING;
+    INSERT INTO security.role_permissions(role_id,permission_id)
+    SELECT r.id,p.id FROM security.roles r CROSS JOIN security.permissions p
+    WHERE r.name='SystemAdmin' AND r.is_system
+        AND p.code IN ('workbench.schedule.manage','workbench.oee.configure')
+    ON CONFLICT(role_id,permission_id) DO NOTHING;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118072845_WorkbenchDashboardsAlertsScheduling') THEN
+    INSERT INTO public.__ef_migrations_history ("MigrationId", "ProductVersion")
+    VALUES ('20261118072845_WorkbenchDashboardsAlertsScheduling', '10.0.12');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    DROP INDEX integration."IX_machine_connections_equipment_id";
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    DROP INDEX equipment."IX_equipment_events_equipment_id_source_source_event_id";
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    DROP INDEX equipment."IX_equipment_events_machine_connection_id";
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    ALTER TABLE integration.machine_messages ADD equipment_event_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    ALTER TABLE integration.import_jobs ALTER COLUMN file_path DROP NOT NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    ALTER TABLE integration.import_jobs ADD fab_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    ALTER TABLE integration.import_jobs ADD input_data jsonb;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    ALTER TABLE integration.import_jobs ADD result_data jsonb;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    CREATE UNIQUE INDEX "IX_machine_messages_equipment_event_id" ON integration.machine_messages (equipment_event_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    CREATE INDEX "IX_machine_messages_machine_connection_id_received_at_id" ON integration.machine_messages (machine_connection_id, received_at, id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    CREATE UNIQUE INDEX "IX_machine_connections_equipment_id_name" ON integration.machine_connections (equipment_id, name) WHERE protocol = 'Simulator';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    CREATE INDEX "IX_import_jobs_fab_id_user_id_created_at_id" ON integration.import_jobs (fab_id, user_id, created_at, id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    CREATE UNIQUE INDEX "IX_equipment_events_equipment_id_source_source_event_id" ON equipment.equipment_events (equipment_id, source, source_event_id) WHERE source_event_id IS NOT NULL AND machine_connection_id IS NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    CREATE UNIQUE INDEX "IX_equipment_events_machine_connection_id_source_source_event_~" ON equipment.equipment_events (machine_connection_id, source, source_event_id) WHERE source_event_id IS NOT NULL AND machine_connection_id IS NOT NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    ALTER TABLE integration.import_jobs ADD CONSTRAINT "FK_import_jobs_fabs_fab_id" FOREIGN KEY (fab_id) REFERENCES organization.fabs (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    ALTER TABLE integration.machine_messages ADD CONSTRAINT "FK_machine_messages_equipment_events_equipment_event_id" FOREIGN KEY (equipment_event_id) REFERENCES equipment.equipment_events (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    CREATE TRIGGER immutable_simulator_message BEFORE UPDATE OR DELETE ON integration.machine_messages
+        FOR EACH ROW WHEN (OLD.topic = 'simulator') EXECUTE FUNCTION audit.reject_history_mutation();
+
+    INSERT INTO security.permissions(code,name,is_active)
+    SELECT code,code,true FROM unnest(ARRAY['integration.simulator.read','integration.work-orders.import']) code
+    ON CONFLICT(code) DO NOTHING;
+    INSERT INTO security.role_permissions(role_id,permission_id)
+    SELECT r.id,p.id FROM security.roles r CROSS JOIN security.permissions p
+    WHERE r.name='SystemAdmin' AND r.is_system
+        AND p.code IN ('integration.simulator.read','integration.work-orders.import')
+    ON CONFLICT(role_id,permission_id) DO NOTHING;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118111241_DataImportEquipmentIntegration') THEN
+    INSERT INTO public.__ef_migrations_history ("MigrationId", "ProductVersion")
+    VALUES ('20261118111241_DataImportEquipmentIntegration', '10.0.12');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    DROP INDEX audit."IX_outbox_messages_next_attempt_at_occurred_at";
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    ALTER TABLE audit.outbox_messages ADD business_event_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    ALTER TABLE audit.outbox_messages ADD dead_lettered_at timestamp with time zone;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    ALTER TABLE audit.audit_logs ADD fab_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    ALTER TABLE audit.audit_logs ADD module character varying(32);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    CREATE INDEX "IX_outbox_messages_aggregate_id_next_attempt_at_occurred_at_id" ON audit.outbox_messages (aggregate_id, next_attempt_at, occurred_at, id) WHERE published_at IS NULL AND dead_lettered_at IS NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    CREATE UNIQUE INDEX "IX_outbox_messages_business_event_id" ON audit.outbox_messages (business_event_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    ALTER TABLE audit.outbox_messages ADD CONSTRAINT ck_outbox_delivery_state CHECK (dead_lettered_at IS NULL OR (published_at IS NULL AND next_attempt_at IS NULL));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    CREATE INDEX "IX_audit_logs_fab_id_occurred_at" ON audit.audit_logs (fab_id, occurred_at);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    ALTER TABLE audit.audit_logs ADD CONSTRAINT "FK_audit_logs_fabs_fab_id" FOREIGN KEY (fab_id) REFERENCES organization.fabs (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    ALTER TABLE audit.outbox_messages ADD CONSTRAINT "FK_outbox_messages_business_events_business_event_id" FOREIGN KEY (business_event_id) REFERENCES audit.business_events (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    INSERT INTO security.permissions(code,name,is_active)
+    SELECT code,code,true FROM unnest(ARRAY[
+        'audit.operations.read','security.outbox.read','security.outbox.replay'
+    ]) code ON CONFLICT(code) DO NOTHING;
+    INSERT INTO security.role_permissions(role_id,permission_id)
+    SELECT r.id,p.id FROM security.roles r CROSS JOIN security.permissions p
+    WHERE r.name='SystemAdmin' AND r.is_system
+        AND p.code IN ('audit.operations.read','security.outbox.read','security.outbox.replay')
+    ON CONFLICT(role_id,permission_id) DO NOTHING;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118133408_ApplicationAuditReliability') THEN
+    INSERT INTO public.__ef_migrations_history ("MigrationId", "ProductVersion")
+    VALUES ('20261118133408_ApplicationAuditReliability', '10.0.12');
+    END IF;
+END $EF$;
+COMMIT;
+

@@ -58,3 +58,27 @@
 | 功能 | 文档 | 状态 |
 | --- | --- | --- |
 | F9-`TraceabilityImpactAnalysis` | [功能设计、接口与验收](traceability-impact-analysis.md) | F09-01～02 已实现；影响分析和导出按需 |
+
+## F10 本轮交付
+
+| 功能 | 文档 | 状态 |
+| --- | --- | --- |
+| F10-`WorkbenchDashboardsAlertsScheduling` | [功能设计、接口与验收](workbench-dashboards-alerts-scheduling.md) | 01～07 已实现并通过本地验收，自动排程产出计划，通知使用站内渠道 |
+
+## F11 本轮交付
+
+| 功能 | 文档 | 状态 |
+| --- | --- | --- |
+| F11-`DataImportEquipmentIntegration` | [功能设计、接口与验收](data-import-equipment-integration.md) | 01 模拟连接与报文履历、03 CSV 工单草稿首版已通过本地验收 |
+
+## F12 本轮交付
+
+| 功能 | 文档 | 状态 |
+| --- | --- | --- |
+| F12-`ApplicationAuditReliability` | [功能设计、接口与验收](application-audit-reliability.md) | 01～04 与 06 首版已通过本地验收，05 沿用工艺 PDF |
+
+## F14 本轮交付
+
+| 功能 | 文档 | 范围 |
+| --- | --- | --- |
+| F14-`DockerDeliveryAcceptance` | [功能设计与验收](docker-delivery-acceptance.md) | F14-01～03 的现有 MES 能力已通过验收。Agent 随 F13 完成后补验，F14-04 按现场目标推进 |

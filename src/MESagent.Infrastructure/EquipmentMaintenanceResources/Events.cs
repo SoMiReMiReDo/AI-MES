@@ -42,6 +42,70 @@ public sealed partial class EquipmentBackend
             input.ReasonCodeId, input.ShiftId, reason);
     }
 
+    internal async Task<EquipmentEvent> ApplySimulatedEvent(
+        Equipment equipment,
+        SimulateEquipmentEvent input,
+        string source,
+        string sourceId,
+        string payload,
+        Guid? connectionId = null)
+    {
+        if (input.OccurredAt.Kind != DateTimeKind.Utc || input.OccurredAt > Now.AddSeconds(5))
+            throw Error("InvalidEventTime", "事件时间必须为 UTC 且不能晚于接收时间", 422);
+        // PostgreSQL timestamps have microsecond precision.
+        var occurredAt = input.OccurredAt.AddTicks(-(input.OccurredAt.Ticks % 10));
+        Text(input.Kind, 32);
+        Text(input.State, 32);
+        Text(input.Reason, 500);
+        var latest = await db.Set<EquipmentEvent>().Where(x => x.EquipmentId == equipment.Id
+            && x.ProcessingStatus == "Applied" && (x.EventType == input.Kind
+                || input.Kind == "State" && x.EventType == "ManualState"))
+            .MaxAsync(x => (DateTime?)x.EventTimestamp);
+        var from = input.Kind == "Connection" ? equipment.CommunicationState : equipment.OperationalState;
+        var invalid = input.Kind switch
+        {
+            "Connection" => input.State is not ("Online" or "Offline" or "Unknown"),
+            "State" => input.State is not ("Idle" or "Down" or "Maintenance" or "Offline"),
+            _ => true
+        };
+        var rejection = invalid ? "无效事件类型或状态"
+            : occurredAt < equipment.CreatedAt ? "事件早于设备登记时间"
+            : latest != null && occurredAt <= latest ? "乱序或重复时点，不覆盖当前状态"
+            : from == input.State ? "当前状态相同，无需转换" : null;
+        if (rejection == null)
+        {
+            await ValidateClassification(input.ReasonCodeId, input.ShiftId, equipment.LineId);
+            if (input.Kind == "Connection")
+                equipment.CommunicationState = input.State;
+            else
+            {
+                equipment.OperationalState = input.State;
+                await EquipmentResources.RefreshState(db, equipment, Now, actor.UserId, "Simulator",
+                    input.ReasonCodeId, input.ShiftId, input.Reason);
+            }
+            Touch(equipment);
+        }
+        var value = new EquipmentEvent
+        {
+            EquipmentId = equipment.Id,
+            MachineConnectionId = connectionId,
+            Source = source,
+            SourceEventId = sourceId,
+            EventType = input.Kind,
+            StateFrom = from,
+            StateTo = input.State,
+            EventTimestamp = occurredAt,
+            ReceivedAt = Now,
+            IsSimulated = true,
+            ProcessingStatus = rejection == null ? "Applied" : "Rejected",
+            RejectionReason = rejection,
+            CorrelationId = actor.CorrelationId,
+            Payload = payload
+        };
+        db.Add(value);
+        return value;
+    }
+
     private async Task<OrganizationIdentityAccessControlResult> Events(
         OrganizationIdentityAccessControlRequest r, string[] p)
     {
@@ -94,7 +158,7 @@ public sealed partial class EquipmentBackend
             Text(input.State, 32);
             var hash = Canonical(r.Body);
             var prior = await db.Set<EquipmentEvent>().SingleOrDefaultAsync(x => x.EquipmentId == equipment.Id
-                && x.Source == source && x.SourceEventId == sourceId);
+                && x.MachineConnectionId == null && x.Source == source && x.SourceEventId == sourceId);
             if (prior != null)
             {
                 if (prior.Payload == null || Canonical(JsonSerializer.Deserialize<JsonElement>(prior.Payload)) != hash)
@@ -102,54 +166,7 @@ public sealed partial class EquipmentBackend
                 return new(View(prior), Replayed: true);
             }
             Match(r.Version, equipment.RowVersion);
-            if (input.OccurredAt.Kind != DateTimeKind.Utc || input.OccurredAt > Now.AddSeconds(5))
-                throw Error("InvalidEventTime", "事件时间必须为 UTC 且不能晚于接收时间", 422);
-            Text(input.Reason, 500);
-            var latest = await db.Set<EquipmentEvent>().Where(x => x.EquipmentId == equipment.Id
-                && x.ProcessingStatus == "Applied" && (x.EventType == input.Kind
-                    || input.Kind == "State" && x.EventType == "ManualState"))
-                .MaxAsync(x => (DateTime?)x.EventTimestamp);
-            var from = input.Kind == "Connection" ? equipment.CommunicationState : equipment.OperationalState;
-            var invalid = input.Kind switch
-            {
-                "Connection" => input.State is not ("Online" or "Offline" or "Unknown"),
-                "State" => input.State is not ("Idle" or "Down" or "Maintenance" or "Offline"),
-                _ => true
-            };
-            var rejection = invalid ? "无效事件类型或状态"
-                : input.OccurredAt < equipment.CreatedAt ? "事件早于设备登记时间"
-                : latest != null && input.OccurredAt <= latest ? "乱序或重复时点，不覆盖当前状态"
-                : from == input.State ? "当前状态相同，无需转换" : null;
-            if (rejection == null)
-            {
-                await ValidateClassification(input.ReasonCodeId, input.ShiftId, equipment.LineId);
-                if (input.Kind == "Connection")
-                    equipment.CommunicationState = input.State;
-                else
-                {
-                    equipment.OperationalState = input.State;
-                    await EquipmentResources.RefreshState(db, equipment, Now, actor.UserId, "Simulator",
-                        input.ReasonCodeId, input.ShiftId, input.Reason);
-                }
-                Touch(equipment);
-            }
-            var value = new EquipmentEvent
-            {
-                EquipmentId = equipment.Id,
-                Source = source,
-                SourceEventId = sourceId,
-                EventType = input.Kind,
-                StateFrom = from,
-                StateTo = input.State,
-                EventTimestamp = input.OccurredAt,
-                ReceivedAt = Now,
-                IsSimulated = true,
-                ProcessingStatus = rejection == null ? "Applied" : "Rejected",
-                RejectionReason = rejection,
-                CorrelationId = actor.CorrelationId,
-                Payload = hash
-            };
-            db.Add(value);
+            var value = await ApplySimulatedEvent(equipment, input, source, sourceId, hash);
             return await Saved(value, "SimulatedEventReceived", input, true);
         }
         if (p.Length == 2 && p[1] == "downtimes" && r.Method == "POST")

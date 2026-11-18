@@ -73,6 +73,8 @@ public sealed partial class ExecutionBackend(
         db.Add(new AuditLog
         {
             UserId = actor.UserId,
+            FabId = fabId,
+            Module = "execution",
             EntityType = entity.GetType().Name,
             EntityId = id,
             Action = action,

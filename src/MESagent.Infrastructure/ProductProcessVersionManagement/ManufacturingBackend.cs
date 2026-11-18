@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using MESagent.Application;
 using MESagent.Domain.Entities;
+using MESagent.Infrastructure.ApplicationAuditReliability;
 using MESagent.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -46,12 +47,29 @@ public sealed partial class ManufacturingBackend(
         db.Add(new AuditLog
         {
             UserId = actor.UserId, EntityType = entity.GetType().Name,
+            FabId = fabId, Module = entity is WorkOrder || action == "AllocatedForWorkOrder" ? "planning" : "engineering",
             EntityId = (Guid)entity.GetType().GetProperty("Id")!.GetValue(entity)!,
-            Action = action, BeforeState = before is null ? null : JsonSerializer.Serialize(before, Json),
-            AfterState = JsonSerializer.Serialize(entity, Json), OccurredAt = Now,
+            Action = action,
+            BeforeState = before is null ? null : AuditState.Redact(JsonSerializer.SerializeToElement(before, Json))
+                .GetRawText(),
+            AfterState = AuditState.Redact(JsonSerializer.SerializeToElement(entity, Json)).GetRawText(),
+            OccurredAt = Now,
             CorrelationId = actor.CorrelationId, SourceChannel = "Web"
         });
     }
+
+    private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+
+    private static string Canonical(JsonElement value) => value.ValueKind switch
+    {
+        JsonValueKind.Object => "{" + string.Join(",", value.EnumerateObject()
+            .OrderBy(x => x.Name, StringComparer.Ordinal)
+            .Select(x => JsonSerializer.Serialize(x.Name) + ":" + Canonical(x.Value))) + "}",
+        JsonValueKind.Array => "[" + string.Join(",", value.EnumerateArray().Select(Canonical)) + "]",
+        JsonValueKind.String => JsonSerializer.Serialize(value.GetString()),
+        _ => value.GetRawText()
+    };
+
     public async Task<OrganizationIdentityAccessControlResult> Execute(OrganizationIdentityAccessControlRequest r)
     {
         var parts = r.Path.Split('/');
@@ -69,15 +87,23 @@ public sealed partial class ManufacturingBackend(
         {
             if (string.IsNullOrWhiteSpace(r.IdempotencyKey) || r.IdempotencyKey.Length > 128)
                 throw Error("需要有效的 Idempotency-Key");
-            var scope = actor.UserId + ":" + r.Path;
-            var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(r.Body.GetRawText())));
-            receipt = await db.Set<CommandReceipt>().SingleOrDefaultAsync(x => x.Scope == scope
-                && x.IdempotencyKey == r.IdempotencyKey);
+            if (parts[0] == "planning" && (parts.Length < 4 || !Guid.TryParse(parts[2], out var orderId)
+                || !await db.Set<WorkOrder>().AnyAsync(x => x.Id == orderId && x.FabId == fabId)))
+                throw Error("工单不存在", 404);
+            var path = string.Join('/', parts.Select(x => Guid.TryParse(x, out var id) ? id.ToString() : x));
+            var scope = "manufacturing:" + Hash($"{actor.UserId}:{fabId}:{r.Method}:{path}");
+            var legacyScope = actor.UserId + ":" + r.Path;
+            var hash = Hash(Canonical(r.Body) + "|" + r.Version);
+            var receipts = db.Set<CommandReceipt>().Where(x => x.IdempotencyKey == r.IdempotencyKey);
+            receipt = await receipts.SingleOrDefaultAsync(x => x.Scope == scope)
+                ?? await receipts.SingleOrDefaultAsync(x => x.Scope == legacyScope);
             if (receipt is not null)
             {
-                if (receipt.RequestHash != hash)
+                var expectedHash = receipt.Scope == scope ? hash : Hash(r.Body.GetRawText());
+                if (receipt.RequestHash != expectedHash)
                     throw Error("幂等键对应不同请求", 409);
-                return JsonSerializer.Deserialize<OrganizationIdentityAccessControlResult>(receipt.Result!, Json)!;
+                return JsonSerializer.Deserialize<OrganizationIdentityAccessControlResult>(receipt.Result!, Json)!
+                    with { Replayed = true };
             }
             receipt = new CommandReceipt
             {

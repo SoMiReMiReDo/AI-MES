@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -97,10 +98,13 @@ function useCommand() {
 export function Execution({ me }: { me: Me }) {
     const [filters, setFilters] = useState<Record<string, string>>({});
     const [page, setPage] = useState(1);
-    const [tab, setTab] = useState("dispatch");
+    const [routeParams] = useSearchParams();
+    const [tab, setTab] = useState(
+        routeParams.has("run") ? "runs" : "dispatch",
+    );
     const [runStatus, setRunStatus] = useState("Running");
-    const [lotId, setLotId] = useState<string | null>(null);
-    const [runId, setRunId] = useState<string | null>(null);
+    const [lotId, setLotId] = useState<string | null>(routeParams.get("lot"));
+    const [runId, setRunId] = useState<string | null>(routeParams.get("run"));
     const params = new URLSearchParams({ ...filters, page: String(page) });
     const candidates = useQuery({
         queryKey: ["execution", "options"],

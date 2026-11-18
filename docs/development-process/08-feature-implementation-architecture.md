@@ -1,8 +1,8 @@
-# MESagent 功能实现架构 v0.8
+# MESagent 功能实现架构 v0.12
 
-更新：2026-11-18｜状态：F1～F5 首版、F6-01～04 及质量恢复、F7-01～07、F08-01 和 F09-01～02 已实现并通过本地验收｜需求入口：[Fab 功能清单](07-fab-function-catalog.md)
+更新：2026-11-18｜状态：F14 单机 Docker 交付｜需求入口：[Fab 功能清单](07-fab-function-catalog.md)
 
-各模块的设计与实现进度见 [功能开发文档索引](../feature-development/README.md)。本轮在第 16 节补充 F09 多维追溯架构。Docker 打包继续后置。
+各模块的设计与实现进度见 [功能开发文档索引](../feature-development/README.md)。F10～F12 架构见第 17～19 节。F14 交付边界见第 8 节。
 
 ## 1. 本轮结论与依据
 
@@ -10,10 +10,10 @@
 
 | 类别 | 本轮基线 |
 | --- | --- |
-| 已实现 | Domain/Infrastructure/Database、Application/API/WebUI；F1 01～04、F2 01～05、F3 工单与真实片进度、F4 基础/真实终点、F5 01～05、F6 01～04 与质量恢复、F7 01～07、F08-01、F09-01～02；123 张业务/支撑表、7 张 Identity 表、2 个视图 |
+| 已实现 | Domain/Infrastructure/Database、Application/API/WebUI；F1 01～04、F2 01～05、F3 工单与真实片进度、F4 基础/真实终点、F5 01～05、F6 01～04 与质量恢复、F7 01～07、F08-01、F09-01～02、F10-01～07、F11-01 及 F11-03 CSV 工单草稿、F12-01～04 与 06 首版；127 张业务/支撑表、7 张 Identity 表、2 个视图 |
 | 用户已确认 | 单企业单厂、同源 Cookie、本地账号、角色及厂区授权；F1 01～04 完整设计、05/06 扩展；F4 01～06 文档范围、工单建批及受限拆合批；F7 全部范围、资格/资源/维护规则见第14节 |
 | 本文设计方案 | 项目职责、模块协作、授权位置、事务与交付顺序；用于后续实现，不表示已通过运行验证 |
-| 待实现/验证 | F6-05～08 及跨路线返工、F5 按需能力、实时通知及 Docker；首版部分/全报废已完成 API 联调，复杂存量专项仍待，容量与恢复目标另定 |
+| 待实现/验证 | F6-05～08 及跨路线返工、F5 按需能力、F12-05 通用附件、F13 Agent 与 F14-04 现场目标；首版部分/全报废已完成 API 联调，复杂存量专项仍待，容量与恢复目标另定 |
 
 历史依据为 [系统规划](02-system-plan.md)、[技术选型](03-tech-stack.md)、[数据架构](../MESagent-development-guide.md) 和现有代码。旧文档中的“未建库”是当时状态，当前事实以代码、数据库实施记录和 MEMORY 为准。Agent 本轮仅保留未来调用 Application 的扩展位置，F13-`AgentWorkbench` 暂不展开，也不作为本轮功能设计的前置条件。
 
@@ -34,7 +34,7 @@ flowchart LR
     Future["未来扩展入口"] -.-> App
 ```
 
-图中箭头表达运行调用。API 和 Worker 共享应用规则；Worker 到 API 的路径用于投递通知，具体内部契约在 F12-04 实现时验证。数据库事务提交成功才允许通知。F1-`OrganizationIdentityAccessControl` 可先通过 HTTP 刷新完成，不依赖实时基础设施。
+图中箭头表达运行调用。F12 首版 Worker 由 API 托管，复用应用契约和进程内 SignalR 刷新信号。数据库事务提交成功才允许通知。F1-`OrganizationIdentityAccessControl` 可独立通过 HTTP 刷新。
 
 部署保持 Web/API/Worker/PostgreSQL 四个职责，Worker 在有实际任务时启用。迁移通过独立一次性部署任务执行，API 启动不自动改库。初期不增加 Redis、消息中间件或 Kubernetes。
 
@@ -51,7 +51,7 @@ flowchart LR
 | `src/MESagent` | 已有 | 保留原控制台骨架 |
 | `web/` | 已有 | React/TypeScript/Vite/Ant Design；路由、页面、查询缓存、生成的 API 客户端 |
 | `tests/` | 部分已有 | 保留真实数据库测试，按用例补应用/API/UI 测试 |
-| `deploy/` | 已有草案，交付后置 | 应用镜像、反向代理、运行配置及交付说明；复用现有数据库 Compose 基础 |
+| `deploy/` | F14 交付 | 锁定基础镜像、同源代理、独立 Compose 实例、运行授权及恢复演练 |
 
 编译依赖为 Application → Domain；Infrastructure → Application + Domain；Api/Worker → Application，并在组合入口引用 Infrastructure 注册实现；Database → Infrastructure。Domain 不反向引用其它层，Application 不引用 Infrastructure 中的 `MesUser`、DbContext 或 EF 类型。
 
@@ -72,7 +72,7 @@ Application 的接口按实际用例定义，例如当前操作者、对象范�
 | F7-`EquipmentMaintenanceResources` | Equipment | equipment；设备、状态、停机、资格、维护；提供可加工性与占用相关能力 |
 | F8-`MaterialConsumptionInventory` | Materials | materials；F08-01 手工来料登记与晶圆来源；耗用与账本后续确认 |
 | F9-`TraceabilityImpactAnalysis` | Traceability | 跨域只读投影；从各域事实构建履历，不自建可编辑的另一份生产事实 |
-| F10-`WorkbenchDashboardsAlertsScheduling` | Workbench、Reporting | 跨域只读工作台、待办与指标；排程、订阅等扩展另立模型 |
+| F10-`WorkbenchDashboardsAlertsScheduling` | Workbench、Reporting | 继承来源读权限，独立管理计划、产速、订阅和回执 |
 | F11-`DataImportEquipmentIntegration` | Integration | integration；导入、模拟事件、外部适配；解析后调用应用用例 |
 | F12-`ApplicationAuditReliability` | SharedApplication、Audit、BackgroundJobs | audit 与公共管线；幂等、事务、审计、事件、附件、可观测性 |
 | F13-`AgentWorkbench` | 预留 | 本轮不展开设计与实现 |
@@ -110,7 +110,7 @@ API 的端点权限是第一道检查；Application 的用例授权是最终业�
 - 建批、过站、拆合批、报废等命令使用 `Idempotency-Key`。作用域绑定用户、操作、厂区；哈希覆盖规范化业务载荷。同键同参重放已授权结果，同键异参返回 409；权限撤销后不得凭旧回执绕过查询授权。
 - Identity 的登录、密码变更与重置不进入保存请求/响应的通用回执机制，避免持久化凭据；使用专门状态和版本处理，前端不自动重试。F1-`OrganizationIdentityAccessControl` 另行定义。
 - 更新与竞争以数据库事务、版本和明确锁策略为准；禁止“先查无冲突再无条件写入”。可重试的数据库瞬时失败须从整个用例重跑，不能在已回滚的事务内继续操作。
-- Outbox 与业务同事务落库；消费者按至少一次投递实现去重、退避、最大重试和人工重放。已有表尚缺租约/消费去重/死信等完整运行契约，F12-04 开发前补齐。
+- Outbox 与业务同事务落库。F12-04 使用 PostgreSQL 短事务行锁领取，提供至少一次投递、消费标记、退避、死信和人工重放。
 - F1-`OrganizationIdentityAccessControl` 写操作首先保证业务与审计原子提交；有消费者时才定义并写入业务事件，不为每次读取强行生成 Outbox。
 
 ## 6. 权限与厂区边界
@@ -136,11 +136,9 @@ API 的端点权限是第一道检查；Application 的用例授权是最终业�
 
 ## 8. Docker 与运维责任
 
-复用现有 PostgreSQL 镜像和独立数据卷；API/Worker 使用最小权限运行账号，迁移另用 DDL 账号。Web 同源代理 `/api` 与后续实时连接，HTTPS 在部署入口终止，禁止将数据库公开到公网。
+F14 交付用独立 Compose 项目隔离开发环境。Web 是唯一发布的端口，默认绑定宿主回环地址，正式使用时由宿主 HTTPS 代理提供入口。API 同进程托管 F12 Worker。迁移和授权任务先完成，API 以最小权限运行。管理员引导沿用 F1 显式命令。数据库、Cookie 密钥和工艺 PDF 使用三个命名卷。
 
-Cookie Data Protection 密钥持久化并在需要的 API 实例间共享；数据库、密钥、附件一起纳入恢复。密钥通过部署环境注入，不写文档或默认演示账号。备份恢复目标与性能数字仍待现场要求确定，本轮不承诺高可用。
-
-F1-`OrganizationIdentityAccessControl` 首次初始化由显式命令创建部署 Fab、受保护管理员角色及首个管理员；与迁移区分，已有管理员时拒绝重复引导。后续发布不能覆盖人工授权配置。
+备份在同一停写窗口导出三个数据集，恢复到空实例并校验会话、权限和生产事实。验收复用 API、数据库和真实浏览器流程。本轮交付现有 F1～F12，F13 完成后补 Agent 工具专项。容量和恢复目标留待现场确认。见 [F14 功能设计](../feature-development/docker-delivery-acceptance.md)。
 
 ## 9. 实施顺序与完成门槛
 
@@ -256,3 +254,32 @@ F3 指标回补直接读取稳定逐片事实，ProducedQty 仅为可重算缓�
 2026-11-18 用户确认编号定位和生产履历首版范围。独立 `TraceabilityImpactAnalysis` 模块通过既有 Application 入口读取单库快照。生产、质量、设备、物料各自维护原始事实，追溯模块为五类起点按原始关联投影当前摘要、分页时间线和可直达证据。先在查询中限制厂区及来源权限，再过滤、计数和分页。拆合批依晶圆流向下钻，历史加工依参与片和实际 Run，质量与载具按事实归属或明确时间区间关联。后续影响分析与导出沿用此权限及证据口径。
 
 具体范围、关系和验收见 [F09 功能设计](../feature-development/traceability-impact-analysis.md)。
+
+## 17. F10 工作台、看板、告警与排程
+
+用户确认 F10-01～07、SignalR、按班次计算 OEE、有限产能排程及站内通知。规则见 [F10 功能设计](../feature-development/workbench-dashboards-alerts-scheduling.md)。
+
+- `WorkbenchDashboardsAlertsScheduling` 使用 F1 的认证、厂区范围及来源权限，将生产、设备和质量事实投影为总览与趋势。源模块拥有自身事实。
+- 排程、理想产速、订阅与回执使用既有写事务、审计和版本机制。排程复用 F5 批次及工艺绑定规则，实际开工仍由 F5 执行。
+- SignalR 在同源 API 发送已提交的刷新提示，订阅与发送校验授权，重连取授权快照。站内升级由持续有效的来源事实及个人设置计算。
+
+## 18. F11 模拟设备事件与工单草稿导入
+
+本轮确认 F11-01 和 F11-03 的 CSV 工单草稿流程，见 [F11 功能设计与验收](../feature-development/data-import-equipment-integration.md)。
+
+| 层 | 职责 |
+| --- | --- |
+| API / WebUI | 同源认证与防伪，发布类型化的模拟连接、报文和导入任务端点。界面支持设备选择、报文检查、CSV 映射和预检确认。 |
+| Application / Infrastructure | 独立集成模块做范围授权、报文解析、来源去重、CSV 预检及确认编排。沿用现有单厂区会话、单 DbContext、事务和写锁。 |
+| 设备 / 工单 | 报文适配调用 F7 的模拟状态用例，F7 持有设备状态与停机规则。导入确认调用 F3 创建草稿，F3 持有工单校验和创建审计。 |
+| 持久化 | 复用 integration 预留表，增量补厂区、报文关联及任务快照；同事务提交消息、业务事实、审计与回执，提交后发看板刷新提示。 |
+
+模拟通信无现场驱动依赖。导入按有界小批同步处理，审核预检与确认分别提交，确认中的生产草稿全成或全败。
+
+## 19. F12 应用服务、审计与可靠性
+
+F12 在既有 Application 入口完成审计查询、投递管理与异常处理，保留各模块的授权、状态规则和事务所有权。工艺及工单高风险命令的新回执绑定厂区、方法、目标与请求版本，旧回执沿用原摘要。审计保存写入时的厂区和来源模块，查询在分页前复核当前授权。历史数据使用可核验的厂区和来源规则。
+
+工作台刷新事件和 Outbox 与业务事实同事务落库。API 托管 Worker 以 PostgreSQL 行锁领取任务，提供退避、死信和审计留痕的重放。SignalR 沿用 F10 的会话及权限检查，仅发刷新提示。重连和定期刷新均重新读取服务端快照。容量与多实例推送另行验证。
+
+运行状态分为进程存活、PostgreSQL 与队列表就绪、队列积压三类。请求日志、ProblemDetails、业务审计和投递记录通过服务端追踪 ID 关联。附件沿用现有工艺 PDF。见 [F12 功能设计与验收](../feature-development/application-audit-reliability.md)。
