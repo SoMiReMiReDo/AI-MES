@@ -17,3 +17,5 @@ web/playwright-report/
 artifacts/
 **/*.tsbuildinfo
 scripts/__pycache__/
+
+web/.vite/
