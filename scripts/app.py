@@ -113,6 +113,34 @@ def main():
             env=env,
             check=True
         )
+    elif cmd == 'provision-materials':
+        sql = """DO $$ BEGIN
+IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='mesagent_app' AND NOT rolsuper) THEN
+    RAISE EXCEPTION 'Existing non-superuser mesagent_app role is required';
+END IF;
+END $$;
+GRANT INSERT ON materials.material_types,materials.materials,materials.material_sources,
+    materials.warehouses,materials.material_lots TO mesagent_app;
+"""
+        subprocess.run(
+            ['docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-v',
+             'ON_ERROR_STOP=1', '-U', 'mesagent_owner', '-d', 'mesagent'],
+            input=sql, text=True, cwd=ROOT, check=True, stdout=subprocess.DEVNULL
+        )
+        print('已增量授予硅片来料登记权限。')
+    elif cmd == 'provision-equipment':
+        sql = """DO $$ BEGIN
+IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='mesagent_app' AND NOT rolsuper) THEN
+    RAISE EXCEPTION 'Existing non-superuser mesagent_app role is required';
+END IF;
+END $$;
+""" + (ROOT / 'database/equipment-runtime-grants.sql').read_text()
+        subprocess.run(
+            ['docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-v',
+             'ON_ERROR_STOP=1', '-U', 'mesagent_owner', '-d', 'mesagent'],
+            input=sql, text=True, cwd=ROOT, check=True, stdout=subprocess.DEVNULL
+        )
+        print('已增量授予 F7 所需权限；保留密码，无新增 DDL 或生产历史 DELETE 权限。')
     elif cmd == 'provision-quality':
         # Add only F6 writes; preserve credentials, existing grants and deployment data.
         sql = """DO $$ BEGIN
@@ -212,9 +240,15 @@ GRANT SELECT ON ALL TABLES IN SCHEMA engineering,production,equipment,quality,ma
             stdout=subprocess.DEVNULL
         )
 
-        print('已配置应用运行角色；无 DDL 权限，仅开放 F1～F6 及最小设备能力所需写权限。')
+        subprocess.run(
+            ['docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-v',
+             'ON_ERROR_STOP=1', '-U', 'mesagent_owner', '-d', 'mesagent'],
+            input=(ROOT / 'database/equipment-runtime-grants.sql').read_text(),
+            text=True, cwd=ROOT, check=True, stdout=subprocess.DEVNULL
+        )
+        print('已配置应用运行角色；无 DDL 权限，开放 F1～F7 所需写权限。')
     else:
-        raise SystemExit('用法: python3 scripts/app.py configure|serve|bootstrap|bootstrap-generated|recover-admin|test|provision|provision-execution|provision-quality')
+        raise SystemExit('用法: python3 scripts/app.py configure|serve|bootstrap|bootstrap-generated|recover-admin|test|provision|provision-execution|provision-quality|provision-equipment|provision-materials')
 
 
 if __name__ == '__main__':

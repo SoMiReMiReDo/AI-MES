@@ -26,12 +26,12 @@ export async function executionFlow(page: Page, suffix: string) {
             .click();
         await expect(modal()).toHaveCount(0);
     };
-    await page.getByRole("link", { name: "设备台账" }).click();
+    await page.getByRole("link", { name: "设备与资源" }).click();
     for (const [tab, name] of [
         ["设备类型", typeName],
         ["设备组", groupName],
     ]) {
-        await page.getByRole("tab", { name: tab, exact: true }).click();
+        await choose("资源类别", tab);
         await page
             .getByRole("button", { name: `新增${tab}`, exact: true })
             .click();
@@ -42,33 +42,33 @@ export async function executionFlow(page: Page, suffix: string) {
             page.getByRole("cell", { name, exact: true }),
         ).toBeVisible();
     }
-    await page.getByRole("tab", { name: "设备", exact: true }).click();
+    await choose("资源类别", "设备");
     await page.getByRole("button", { name: "新增设备", exact: true }).click();
     await page.getByLabel("编码", { exact: true }).fill(code);
     await page.getByLabel("名称", { exact: true }).fill("演示加工机");
     await choose(
-        "所属区域",
+        "区域",
         (
             await page.request
                 .get("/api/v1/equipment/options")
                 .then((r) => r.json())
         ).areas
-            .map((x: any) => `${x.code} ${x.name}`)
+            .map((x: any) => `${x.code} · ${x.name}`)
             .find((x: string) => x.includes("浏览器验收区域")),
     );
-    const groupLabel = `${code} ${groupName}`;
+    const groupLabel = `${code} · ${groupName}`;
     await choose("设备组", groupLabel);
-    await choose("设备类型", `${code} ${typeName}`);
+    await choose("设备类型", `${code} · ${typeName}`);
     await save();
     const toolRow = page.getByRole("row").filter({ hasText: code });
-    await toolRow.getByRole("button", { name: "变更状态" }).click();
-    await choose("人工状态", "维护");
-    await page.getByLabel("变更原因").fill("浏览器维护状态验收");
+    await toolRow.getByRole("button", { name: /状\s*态/, exact: true }).click();
+    await choose("设备运行条件", "维护");
+    await page.getByLabel("操作说明").fill("浏览器维护状态验收");
     await save();
     await expect(toolRow.getByText("维护", { exact: true })).toBeVisible();
-    await toolRow.getByRole("button", { name: "变更状态" }).click();
-    await choose("人工状态", "空闲可用");
-    await page.getByLabel("变更原因").fill("维护完成，恢复人工可用");
+    await toolRow.getByRole("button", { name: /状\s*态/, exact: true }).click();
+    await choose("设备运行条件", "空闲");
+    await page.getByLabel("操作说明").fill("维护完成，恢复人工可用");
     await save();
     const get = (path: string) =>
         page.request.get(`/api/v1/${path}`).then((r) => r.json());

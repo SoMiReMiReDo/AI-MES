@@ -115,6 +115,8 @@ F1-`OrganizationIdentityAccessControl` 最新实现与验证见 [实现记录](.
 
 ## F9-`TraceabilityImpactAnalysis` 多维追溯与影响分析
 
+2026-11-18 用户确认首版交付 F09-01～02，设计、接口和验收见 [F09 功能文档](../feature-development/traceability-impact-analysis.md)。
+
 | ID | 功能与验收要点 | 主要对象 | 阶段 |
 | --- | --- | --- | --- |
 | F9-01 | 按工单、Lot、Wafer、载具或设备编号定位并下钻。历史按当时归属查询，可查看当前状态和完整时间线。 | `WorkOrder`、`Lot`、`Wafer`、`Carrier`、`Equipment`、`LotMembership` | 首版 |

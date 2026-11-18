@@ -2,7 +2,13 @@ import {
     ApartmentOutlined,
     AppstoreOutlined,
     AuditOutlined,
+    DashboardOutlined,
     DesktopOutlined,
+    InboxOutlined,
+    PlayCircleOutlined,
+    ScheduleOutlined,
+    SearchOutlined,
+    SettingOutlined,
     LogoutOutlined,
     SafetyCertificateOutlined,
     TeamOutlined,
@@ -43,8 +49,19 @@ import "./style.css";
 import { Manufacturing } from "./manufacturing";
 import { Users } from "./users";
 import { Production } from "./production";
-import { Execution, EquipmentRegister } from "./execution";
+import { Execution } from "./execution";
+import { Equipment } from "./equipment";
 import { Quality } from "./quality";
+import { Materials } from "./materials";
+import { Traceability, canTrace } from "./traceability";
+import { clearTraceHistory } from "./traceHistory";
+
+type SidebarLink = [
+    path: string,
+    name: string,
+    icon: React.ReactNode,
+    visible: boolean,
+];
 
 function Application() {
     const location = useLocation();
@@ -58,6 +75,7 @@ function Application() {
             await refreshCsrf();
         } catch {
             setMe(null);
+            clearTraceHistory();
         } finally {
             setLoading(false);
         }
@@ -68,6 +86,7 @@ function Application() {
             setMe(null);
             setExpired(true);
             qc.clear();
+            clearTraceHistory();
             refreshCsrf().catch(() => {});
         };
         window.addEventListener("session-invalid", clear);
@@ -80,6 +99,7 @@ function Application() {
         } finally {
             setMe(null);
             qc.clear();
+            clearTraceHistory();
             await refreshCsrf();
         }
     };
@@ -116,102 +136,155 @@ function Application() {
         );
     setDisplayTimezone(me.fab?.timezone || "Asia/Shanghai");
     const can = (p: string) => me.permissions?.includes(p) ?? false;
-    const nav = [
-        [
-            "/quality",
-            "质量管理",
-            <SafetyCertificateOutlined />,
-            can("quality.read"),
-        ],
-        ["/execution", "生产执行", <AppstoreOutlined />, can("execution.read")],
-        ["/equipment", "设备台账", <DesktopOutlined />, can("equipment.read")],
-        [
-            "/production",
-            "生产管理",
-            <AppstoreOutlined />,
-            [
-                "production.lots.read",
-                "production.wafers.read",
-                "production.carriers.read",
-            ].some(can),
-        ],
-        [
-            "/engineering",
-            "工艺管理",
-            <AppstoreOutlined />,
-            can("engineering.read"),
-        ],
-        [
-            "/planning",
-            "工单管理",
-            <AppstoreOutlined />,
-            can("planning.work-orders.read"),
-        ],
-        ["/", "工作台", <AppstoreOutlined />, true],
-        [
-            "/settings/organization",
-            "组织结构",
-            <ApartmentOutlined />,
-            can("org.structure.read"),
-        ],
-        [
-            "/settings/workers",
-            "员工",
-            <TeamOutlined />,
-            can("org.workers.read"),
-        ],
-        [
-            "/settings/workstations",
-            "工位",
-            <DesktopOutlined />,
-            can("org.workstations.read"),
-        ],
-        [
-            "/settings/terminals",
-            "终端",
-            <DesktopOutlined />,
-            can("org.terminals.read"),
-        ],
-        [
-            "/settings/users",
-            "账号与访问",
-            <UserOutlined />,
-            can("security.users.read"),
-        ],
-        [
-            "/settings/roles",
-            "角色与权限",
-            <SafetyCertificateOutlined />,
-            can("security.roles.read"),
-        ],
-        [
-            "/settings/security-events",
-            "审计与安全",
-            <AuditOutlined />,
-            can("security.audit.read"),
-        ],
-        ["/account/profile", "个人设置", <UserOutlined />, true],
-    ] as const;
+    const nav: { label?: string; links: SidebarLink[] }[] = [
+        {
+            links: [["/", "工作台", <DashboardOutlined />, true]],
+        },
+        {
+            label: "生产运营",
+            links: [
+                [
+                    "/planning",
+                    "工单管理",
+                    <ScheduleOutlined />,
+                    can("planning.work-orders.read"),
+                ],
+                [
+                    "/production",
+                    "生产管理",
+                    <AppstoreOutlined />,
+                    [
+                        "production.lots.read",
+                        "production.wafers.read",
+                        "production.carriers.read",
+                    ].some(can),
+                ],
+                [
+                    "/execution",
+                    "生产执行",
+                    <PlayCircleOutlined />,
+                    can("execution.read"),
+                ],
+                [
+                    "/quality",
+                    "质量管理",
+                    <SafetyCertificateOutlined />,
+                    can("quality.read"),
+                ],
+                ["/traceability", "生产追溯", <SearchOutlined />, canTrace(me)],
+            ],
+        },
+        {
+            label: "生产准备",
+            links: [
+                [
+                    "/engineering",
+                    "工艺管理",
+                    <SettingOutlined />,
+                    can("engineering.read"),
+                ],
+                [
+                    "/equipment",
+                    "设备与资源",
+                    <DesktopOutlined />,
+                    can("equipment.read"),
+                ],
+                [
+                    "/materials",
+                    "硅片来料",
+                    <InboxOutlined />,
+                    can("materials.wafer-sources.read"),
+                ],
+            ],
+        },
+        {
+            label: "组织与系统",
+            links: [
+                [
+                    "/settings/organization",
+                    "组织结构",
+                    <ApartmentOutlined />,
+                    can("org.structure.read"),
+                ],
+                [
+                    "/settings/workers",
+                    "员工",
+                    <TeamOutlined />,
+                    can("org.workers.read"),
+                ],
+                [
+                    "/settings/workstations",
+                    "工位",
+                    <DesktopOutlined />,
+                    can("org.workstations.read"),
+                ],
+                [
+                    "/settings/terminals",
+                    "终端",
+                    <DesktopOutlined />,
+                    can("org.terminals.read"),
+                ],
+                [
+                    "/settings/users",
+                    "账号与访问",
+                    <UserOutlined />,
+                    can("security.users.read"),
+                ],
+                [
+                    "/settings/roles",
+                    "角色与权限",
+                    <SafetyCertificateOutlined />,
+                    can("security.roles.read"),
+                ],
+                [
+                    "/settings/security-events",
+                    "审计与安全",
+                    <AuditOutlined />,
+                    can("security.audit.read"),
+                ],
+                ["/account/profile", "个人设置", <UserOutlined />, true],
+            ],
+        },
+    ];
+    const activeLabel = nav
+        .flatMap((group) => group.links)
+        .find(([path]) => path === location.pathname)?.[1];
 
     return (
         <div className="shell">
             <aside>
                 <Brand />
-                <div className="side-label">制造基础平台</div>
-                <nav>
-                    {nav
-                        .filter((x) => x[3])
-                        .map(([path, name, icon]) => (
-                            <NavLink
-                                key={path}
-                                to={path}
-                                end={path === "/"}
-                                aria-label={name}
+                <nav className="sidebar-nav" aria-label="主导航">
+                    {nav.map(({ label, links }) => {
+                        const visibleLinks = links.filter(
+                            ([, , , visible]) => visible,
+                        );
+                        if (!visibleLinks.length) return null;
+                        return (
+                            <div
+                                key={label ?? "/"}
+                                className="sidebar-group"
+                                role={label ? "group" : undefined}
+                                aria-label={label}
                             >
-                                {icon}
-                                <span>{name}</span>
-                            </NavLink>
-                        ))}
+                                {label && (
+                                    <div className="side-label">{label}</div>
+                                )}
+                                {visibleLinks.map(([path, name, icon]) => (
+                                    <NavLink
+                                        key={path}
+                                        to={path}
+                                        end={path === "/"}
+                                        aria-label={name}
+                                        title={name}
+                                    >
+                                        {icon}
+                                        <span>{name}</span>
+                                    </NavLink>
+                                ))}
+                            </div>
+                        );
+                    })}
                 </nav>
                 <div className="side-bottom">
                     <span className="status-dot" /> 组织、身份与访问控制
@@ -223,12 +296,11 @@ function Application() {
                 <header>
                     <div>
                         <span className="breadcrumb">MESagent / </span>
-                        {nav.find((x) => x[0] === location.pathname)?.[1] ||
-                            "基础管理"}
+                        {activeLabel ?? "基础管理"}
                     </div>
                     <Space size="middle">
                         <ThemeToggle />
-                        <Tag color="cyan">{me.fab?.code || "未分配厂区"}</Tag>
+                        <Tag color="red">{me.fab?.code || "未分配厂区"}</Tag>
                         <span>{me.displayName}</span>
                         <Button
                             type="text"
@@ -241,6 +313,19 @@ function Application() {
                 </header>
                 <main>
                     <Routes>
+                        <Route
+                            path="/traceability"
+                            element={
+                                canTrace(me) ? (
+                                    <Traceability
+                                        key={`${me.userId}/${me.fab?.id ?? ""}`}
+                                        me={me}
+                                    />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
                         <Route
                             path="/quality"
                             element={
@@ -265,7 +350,17 @@ function Application() {
                             path="/equipment"
                             element={
                                 can("equipment.read") ? (
-                                    <EquipmentRegister me={me} />
+                                    <Equipment me={me} />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
+                        <Route
+                            path="/materials"
+                            element={
+                                can("materials.wafer-sources.read") ? (
+                                    <Materials me={me} />
                                 ) : (
                                     <Denied />
                                 )
@@ -398,18 +493,22 @@ function Root() {
             theme={{
                 algorithm: dark ? theme.darkAlgorithm : theme.defaultAlgorithm,
                 token: {
-                    colorPrimary: dark ? "#12857a" : "#17625c",
+                    colorPrimary: dark ? "#e31837" : "#c42233",
+                    colorInfo: dark ? "#a6a6ae" : "#6e6f76",
+                    colorSuccess: dark ? "#46c48b" : "#2e8b5e",
+                    colorWarning: dark ? "#f2b33d" : "#d98a12",
+                    colorError: dark ? "#ff7a45" : "#b3261e",
                     borderRadius: 7,
                     fontFamily:
                         'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif',
                     ...(dark
                         ? {
-                              colorTextBase: "#d8e4e5",
-                              colorBgLayout: "#0c1719",
-                              colorBgContainer: "#132527",
-                              colorBgElevated: "#17292c",
-                              colorBorder: "#223a3d",
-                              colorBorderSecondary: "#1d3235",
+                              colorTextBase: "#ededef",
+                              colorBgLayout: "#17181c",
+                              colorBgContainer: "#1f2026",
+                              colorBgElevated: "#23242b",
+                              colorBorder: "#33343d",
+                              colorBorderSecondary: "#2a2b33",
                           }
                         : {}),
                 },

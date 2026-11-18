@@ -10,7 +10,7 @@ using Xunit;
 
 namespace MESagent.Api.Tests;
 
-public sealed class ExecutionTests(OrganizationIdentityAccessControlFixture f)
+public sealed partial class ExecutionTests(OrganizationIdentityAccessControlFixture f)
     : IClassFixture<OrganizationIdentityAccessControlFixture>
 {
     private static Guid Id(JsonElement row) => row.GetProperty("id").GetGuid();
@@ -332,6 +332,10 @@ public sealed class ExecutionTests(OrganizationIdentityAccessControlFixture f)
         var progress = await Get($"planning/work-orders/{Id(sample.Order)}/progress");
         Assert.Equal(5, progress.GetProperty("releasedQty").GetInt32());
         Assert.Equal(5, progress.GetProperty("completedQty").GetInt32());
+        var lineage = await TraceEvents($"lot/{Id(merged.GetProperty("newLot"))}", "?group=genealogy");
+        Assert.Equal(5, lineage!.Total);
+        Assert.Equal(new[] { Id(lot), Id(child) }.Order(),
+            lineage.Items.Select(x => x.Related.Single(link => link.Relation == "来源批").Id).Distinct().Order());
     }
 
     [Fact]
@@ -588,11 +592,12 @@ public sealed class ExecutionTests(OrganizationIdentityAccessControlFixture f)
         try
         {
             await db.Database.ExecuteSqlRawAsync($"""
-                GRANT USAGE ON SCHEMA organization,security,engineering,production,equipment,quality,audit TO {role};
-                GRANT SELECT ON ALL TABLES IN SCHEMA organization,security,engineering,production,equipment,quality,audit TO {role};
+                GRANT USAGE ON SCHEMA organization,security,engineering,production,equipment,quality,audit,materials TO {role};
+                GRANT SELECT ON ALL TABLES IN SCHEMA organization,security,engineering,production,equipment,quality,audit,materials TO {role};
                 GRANT UPDATE ON production.lots,production.wafers,production.step_executions,production.work_orders,
                     production.carriers,equipment.equipment TO {role};
-                GRANT INSERT,UPDATE ON production.process_runs,production.process_run_wafers,production.step_documents TO {role};
+                GRANT INSERT,UPDATE ON production.process_runs,production.process_run_wafers,production.step_documents,
+                    equipment.equipment_states TO {role};
                 GRANT INSERT ON production.wafer_completions,production.track_events,
                     audit.audit_logs,audit.business_events,audit.command_receipts TO {role};
                 """);

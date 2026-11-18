@@ -1,8 +1,8 @@
-# MESagent 功能实现架构 v0.5
+# MESagent 功能实现架构 v0.8
 
-更新：2026-11-17｜状态：F1～F5 首版已落地；F6-01～04 及质量恢复已实现，Chrome 全流程已通过；完整 F7 待后续｜需求入口：[Fab 功能清单](07-fab-function-catalog.md)
+更新：2026-11-18｜状态：F1～F5 首版、F6-01～04 及质量恢复、F7-01～07、F08-01 和 F09-01～02 已实现并通过本地验收｜需求入口：[Fab 功能清单](07-fab-function-catalog.md)
 
-当前实现进度见 [F1 实现说明](../feature-development/organization-identity-access-control-implementation.md)及 [F2/F3 实现记录](../feature-development/f2-f3-implementation.md)。本文延续既有分层，并在第 11 节补充 F4 与生产模块的协作设计；F4 的当前实现与边界见[本地验收](../feature-development/lot-wafer-carrier-genealogy-implementation.md)。Docker 打包继续后置。
+各模块的设计与实现进度见 [功能开发文档索引](../feature-development/README.md)。本轮在第 16 节补充 F09 多维追溯架构。Docker 打包继续后置。
 
 ## 1. 本轮结论与依据
 
@@ -10,10 +10,10 @@
 
 | 类别 | 本轮基线 |
 | --- | --- |
-| 已实现 | Domain/Infrastructure/Database、Application/API/WebUI；F1 01～04、F2 01～05、F3 工单与真实片进度、F4 基础/真实终点、F5 01～05 和最小设备前置；119 张业务/支撑表、7 张 Identity 表、2 个视图 |
-| 用户已确认 | 单企业单厂、同源 Cookie、本地账号、角色及厂区授权；F1 01～04 完整设计、05/06 扩展；F4 01～06 文档范围、工单建批及受限拆合批，具体见第 11 节 |
+| 已实现 | Domain/Infrastructure/Database、Application/API/WebUI；F1 01～04、F2 01～05、F3 工单与真实片进度、F4 基础/真实终点、F5 01～05、F6 01～04 与质量恢复、F7 01～07、F08-01、F09-01～02；123 张业务/支撑表、7 张 Identity 表、2 个视图 |
+| 用户已确认 | 单企业单厂、同源 Cookie、本地账号、角色及厂区授权；F1 01～04 完整设计、05/06 扩展；F4 01～06 文档范围、工单建批及受限拆合批；F7 全部范围、资格/资源/维护规则见第14节 |
 | 本文设计方案 | 项目职责、模块协作、授权位置、事务与交付顺序；用于后续实现，不表示已通过运行验证 |
-| 待实现/验证 | F6-05～08 及跨路线返工、完整 F7 资源、F5 按需能力、实时通知及 Docker；首版部分/全报废已完成 API 联调，复杂存量专项仍待，容量与恢复目标另定 |
+| 待实现/验证 | F6-05～08 及跨路线返工、F5 按需能力、实时通知及 Docker；首版部分/全报废已完成 API 联调，复杂存量专项仍待，容量与恢复目标另定 |
 
 历史依据为 [系统规划](02-system-plan.md)、[技术选型](03-tech-stack.md)、[数据架构](../MESagent-development-guide.md) 和现有代码。旧文档中的“未建库”是当时状态，当前事实以代码、数据库实施记录和 MEMORY 为准。Agent 本轮仅保留未来调用 Application 的扩展位置，F13-`AgentWorkbench` 暂不展开，也不作为本轮功能设计的前置条件。
 
@@ -70,7 +70,7 @@ Application 的接口按实际用例定义，例如当前操作者、对象范�
 | F5-`DispatchAndProductionExecution` | Execution | production 中步骤/Run/Track；编排质量门禁、设备占用及工艺版本校验 |
 | F6-`QualityExceptionDisposition` | Quality | quality；异常、Hold、检验、报废；涉及晶圆归属/装载时在同一事务调用对应业务能力 |
 | F7-`EquipmentMaintenanceResources` | Equipment | equipment；设备、状态、停机、资格、维护；提供可加工性与占用相关能力 |
-| F8-`MaterialConsumptionInventory` | Materials | materials；来料、耗用与库存；账本权威源未定的能力不提前上线 |
+| F8-`MaterialConsumptionInventory` | Materials | materials；F08-01 手工来料登记与晶圆来源；耗用与账本后续确认 |
 | F9-`TraceabilityImpactAnalysis` | Traceability | 跨域只读投影；从各域事实构建履历，不自建可编辑的另一份生产事实 |
 | F10-`WorkbenchDashboardsAlertsScheduling` | Workbench、Reporting | 跨域只读工作台、待办与指标；排程、订阅等扩展另立模型 |
 | F11-`DataImportEquipmentIntegration` | Integration | integration；导入、模拟事件、外部适配；解析后调用应用用例 |
@@ -158,7 +158,7 @@ F1-`OrganizationIdentityAccessControl` 首次初始化由显式命令创建部�
 
 ## 10. 功能文档入口
 
-[F1-`OrganizationIdentityAccessControl` 组织、身份与访问控制](../feature-development/organization-identity-access-control.md) 是本架构的首个落点。后续已有 F2/F3 文档与实现记录，本轮进入 [F4 功能设计](../feature-development/lot-wafer-carrier-genealogy.md)及[接口与验收](../feature-development/lot-wafer-carrier-genealogy-api-and-acceptance.md)。继续以功能目录为需求索引，不复制 OpenMES 文档作为实现说明。
+功能文档统一从 [开发文档目录](../feature-development/README.md) 进入，覆盖 F1～F7 及 F08-01 的设计、接口与实现证据。本轮 F7 设备与生产资源见第14节及[实现记录](../feature-development/equipment-maintenance-resources-implementation.md)。功能目录继续作为需求索引，OpenMES 文档保持参考属性。
 
 ## 11. F4 生产功能的实现架构
 
@@ -225,3 +225,34 @@ F3 指标回补直接读取稳定逐片事实，ProducedQty 仅为可重算缓�
 `QualityBackend` 通过既有认证应用入口分派，拥有质量事实；`ExecutionBackend` 提供有质量授权及持久放行凭据的恢复协作；`ProductionBackend` 校验真实参与片/报废事实并完成终点或报废收尾。单事务包含业务、归属/装载、质量凭据、审计、事件与回执；普通查询保持一致性快照。质量角色不借用执行权限，协作方法自行校验 quality.release/quality.scrap。
 
 模板和规格独立版本化并发布冻结，检验结果保存规格快照。LotRelease 持久记录恢复动作、原步骤/Run、执行人及命令；不得只修改 Lot.Status。F3/F4 查询改为真实完成/报废片事实，质量首版之外的规则继续通过门禁明确拒绝。跨路线返工、自动触发任务、来料及 SPC 等后置，不因预留表存在而开放。
+
+## 14. F7 设备与生产资源架构
+
+2026-11-17 用户明确本轮覆盖 F7-01～07 的功能文档、后端、WebUI 与测试。已确认加工中 Down 不自动关闭 Run，继续由 F5 收尾、F6 处置。用户随后确认资格按工序同时启用设备/人员校验、光罩按启动 Run 次数计寿命、耗材按时间寿命、维护到期阻塞与独立复机；代码及本地第9条迁移已落地。
+
+已将 F5 内的最小设备能力提取为独立 `EquipmentMaintenanceResources` 模块：Application 定义类型化用例，`EquipmentBackend` 拥有台账、状态/停机、维护、资格和装卸；`EquipmentResources` 提供同进程可加工性与 Run 资源事实能力。保留既有 `/equipment/tools` 物理设备契约，实际工具另用 `/equipment/resources`。复用单 Context、认证/厂区范围、全局写锁、快照查询、幂等与审计，不新增基础设施。
+
+| 协作入口 | 事务内职责 |
+| --- | --- |
+| 设备事件 | 更新设备条件及有效状态区间，Down 建立/关闭停机；不改 Run 结果 |
+| F5 候选/指派/启动 | 同一准入规则校验维护、资格及已声明资源；启动时重验并记录实际使用 |
+| F5 Track-out/中止 | 关闭实际 Run 对应资源使用区间，更新有效设备状态；中止不回退已发生使用 |
+| 维护/复机 | 维护模块拥有工单与准入阻塞；复机不替代设备恢复 Idle 或工艺资格认证 |
+| 影响查询 | 资源使用 → 原 Run → 当时参与 Wafer，厂区过滤后分页；不以当前 Lot 成员代替历史 |
+
+模型差异包括明确资源厂区、通信状态、模拟事件来源去重及处理结果、停机与状态区间绑定、维护独立复机、工序门禁策略、光罩装卸和耗材 Run 关联。迁移须先验证存量与备份，不推断来源不明旧资源的厂区，不覆盖既有账号与生产事实。
+
+详细方案见 [F7 功能设计](../feature-development/equipment-maintenance-resources.md)及[接口与验收](../feature-development/equipment-maintenance-resources-api-and-acceptance.md)。执行结果见 [F7 实现记录](../feature-development/equipment-maintenance-resources-implementation.md)。本轮新增4张表，表数130；共用设备门禁和实际 Run 资源关联，不改写启用前缺失的历史。105项数据库/API测试、Chrome 全流程与空库重复 DDL 验证通过，GAP-12 确认范围关闭。
+
+
+## 15. F08-01 硅片来料与晶圆来源
+
+物料模块维护本厂的手工来源及登记批，生产模块通过共用规则校验来源，在建片事务中保存永久外键，并在首次投放时重新校验。查询从来源批或晶圆出发，沿同一外键投影，当前生产批沿有效成员关系解析。复用既有认证、厂区范围、事务、全局写锁、幂等回执与审计。
+
+2026-11-18 用户确认仅实现 F08-01。登记仓承担范围归属，库存账本与来料检验仍按后续功能启用。模块设计见 [硅片来料来源追溯](../feature-development/material-consumption-inventory.md)。
+
+## 16. F09-01～02 多维追溯
+
+2026-11-18 用户确认编号定位和生产履历首版范围。独立 `TraceabilityImpactAnalysis` 模块通过既有 Application 入口读取单库快照。生产、质量、设备、物料各自维护原始事实，追溯模块为五类起点按原始关联投影当前摘要、分页时间线和可直达证据。先在查询中限制厂区及来源权限，再过滤、计数和分页。拆合批依晶圆流向下钻，历史加工依参与片和实际 Run，质量与载具按事实归属或明确时间区间关联。后续影响分析与导出沿用此权限及证据口径。
+
+具体范围、关系和验收见 [F09 功能设计](../feature-development/traceability-impact-analysis.md)。

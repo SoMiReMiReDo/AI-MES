@@ -8,11 +8,11 @@ name = 'mesagent_test_browser_' + secrets.token_hex(6)
 processes = []
 
 
-def sql(command):
+def sql(command, database="postgres"):
     subprocess.run(
         [
             'docker', 'compose', 'exec', '-T', 'postgres', 'psql', '-v',
-            'ON_ERROR_STOP=1', '-U', 'mesagent_owner', '-d', 'postgres'
+            'ON_ERROR_STOP=1', '-U', 'mesagent_owner', '-d', database
         ],
         input=command,
         text=True,
@@ -33,6 +33,12 @@ def wait(url):
 
     raise RuntimeError('Service did not start: ' + url)
 
+
+subprocess.run(
+    ['dotnet', 'build', 'MESagent.sln', '--no-restore', '--disable-build-servers', '-m:1'],
+    cwd=ROOT,
+    check=True
+)
 
 try:
     sql('CREATE DATABASE ' + name + ';')
@@ -68,6 +74,13 @@ try:
         cwd=ROOT,
         check=True,
         stdout=subprocess.DEVNULL
+    )
+
+    sql(
+        (ROOT / 'web/tests/fixtures/legacy-equipment.sql').read_text().replace(
+            '{{FAB_ID}}', env['Mes__DeploymentFabId']
+        ),
+        database=name
     )
 
     logdir = ROOT / '.local';

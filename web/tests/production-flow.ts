@@ -7,6 +7,10 @@ export async function productionFlow(
 ) {
     page.setDefaultTimeout(15000);
     const lotNo = "LOT-" + suffix;
+    const materialCode = "SI-" + suffix;
+    const sourceCode = "SRC-" + suffix;
+    const incomingLot = "IN-" + suffix;
+    const supplierLot = "SUP-" + suffix;
     const splitNo = "SPLIT-" + suffix;
     const mergedNo = "MERGE-" + suffix;
     const waferCodes = [1, 2, 3, 4, 5].map((n) => `W-${suffix}-${n}`);
@@ -31,6 +35,37 @@ export async function productionFlow(
             .click();
         await expect(modal()).toHaveCount(0);
     };
+    const registration = page.locator(".ant-modal:visible");
+    const register = async () => {
+        await registration.getByRole("button", { name: /^确\s*定$/ }).click();
+        await expect(registration).toHaveCount(0);
+    };
+    await page.getByRole("link", { name: "硅片来料", exact: true }).click();
+    await page.getByRole("button", { name: "登记物料", exact: true }).click();
+    await registration.getByLabel("代码", { exact: true }).fill(materialCode);
+    await registration.getByLabel("名称", { exact: true }).fill("硅片 300 mm");
+    await register();
+    await page.getByRole("button", { name: "登记来源", exact: true }).click();
+    await choose("硅片物料", `${materialCode} · 硅片 300 mm`);
+    await registration.getByLabel("代码", { exact: true }).fill(sourceCode);
+    await registration
+        .getByLabel("名称", { exact: true })
+        .fill("浏览器演示来源");
+    await register();
+    await page.getByRole("button", { name: "登记来料批", exact: true }).click();
+    await choose("来源", `${sourceCode} · 浏览器演示来源 · ${materialCode}`);
+    await registration
+        .getByLabel("来料批号", { exact: true })
+        .fill(incomingLot);
+    await registration
+        .getByLabel("供应方批号", { exact: true })
+        .fill(supplierLot);
+    await register();
+    await expect(
+        drawer().getByText(supplierLot, { exact: true }),
+    ).toBeVisible();
+    await page.locator(".ant-drawer-close").click();
+
     await page.getByRole("link", { name: "生产管理" }).click();
     await page.getByRole("button", { name: "工单建批", exact: true }).click();
     await choose("已下达工单", orderNo);
@@ -40,6 +75,10 @@ export async function productionFlow(
     await page
         .getByLabel("晶圆编号（每行一片）", { exact: true })
         .fill(waferCodes.join("\n"));
+    await choose(
+        "硅片来料批",
+        `${incomingLot} · ${materialCode} · ${supplierLot}`,
+    );
     await save();
     await page.getByRole("button", { name: lotNo, exact: true }).click();
     await drawer()
@@ -128,8 +167,24 @@ export async function productionFlow(
     await expect(
         drawer().getByRole("cell", { name: "装载", exact: true }),
     ).toBeVisible();
+    await drawer()
+        .getByRole("link", { name: incomingLot, exact: true })
+        .click();
     await expect(
-        drawer().getByText("来源未登记", { exact: true }),
+        drawer().getByRole("heading", { name: "来源晶圆" }),
+    ).toBeVisible();
+    await expect(
+        drawer().getByRole("link", { name: mergedNo, exact: true }),
+    ).toHaveCount(5);
+    await page.screenshot({
+        path: "test-results/wafer-origin-trace.png",
+        fullPage: true,
+    });
+    await drawer()
+        .getByRole("link", { name: waferCodes[0], exact: true })
+        .click();
+    await expect(
+        drawer().getByRole("link", { name: incomingLot, exact: true }),
     ).toBeVisible();
     await page.locator(".ant-drawer-close").click();
 }

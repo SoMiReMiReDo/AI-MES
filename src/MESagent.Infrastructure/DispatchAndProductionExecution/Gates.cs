@@ -1,6 +1,7 @@
 using System.Text.Json;
 using MESagent.Domain;
 using MESagent.Domain.Entities;
+using MESagent.Infrastructure.EquipmentMaintenanceResources;
 using Microsoft.EntityFrameworkCore;
 
 namespace MESagent.Infrastructure.DispatchAndProductionExecution;
@@ -122,8 +123,13 @@ public sealed partial class ExecutionBackend
                               && !db.Set<ProcessRun>().Any(x => x.EquipmentId == equipment.Id && x.Status == "Running")
                           orderby equipment.Code, recipe.Code, recipeVersion.Version, app.Id
                           select new { app, equipment, recipe, recipeVersion }).ToListAsync();
-        return rows.Where(x => applications.Any(a => a.Id == x.app.Id && a.EquipmentId == x.equipment.Id
-                && a.RecipeVersionId == x.recipeVersion.Id))
+        var available = new List<Guid>();
+        foreach (var row in rows)
+            if ((await EquipmentResources.Blocks(db, fabId, actor.UserId, row.equipment.Id,
+                operation.Id, row.recipeVersion.Id, now)).Count == 0)
+                available.Add(row.app.Id);
+        return rows.Where(x => available.Contains(x.app.Id) && applications.Any(a => a.Id == x.app.Id
+                && a.EquipmentId == x.equipment.Id && a.RecipeVersionId == x.recipeVersion.Id))
             .Select(x => new Candidate(x.equipment.Id, x.equipment.Code, x.equipment.Name, Tag(x.equipment.RowVersion),
                 x.equipment.EquipmentGroupId, x.recipeVersion.Id, x.recipe.Code, x.recipeVersion.Version, x.app.Id,
                 x.app.EffectiveFrom, x.app.EffectiveTo, Tag(x.app.RowVersion)))
@@ -145,6 +151,11 @@ public sealed partial class ExecutionBackend
             throw Error("EquipmentUnavailable", $"设备 {equipment.Code} 当前人工状态为 {equipment.OperationalState}");
         if (await db.Set<ProcessRun>().AnyAsync(x => x.EquipmentId == equipmentId && x.Status == "Running"))
             throw Error("EquipmentOccupied", $"设备 {equipment.Code} 已被运行中的加工占用");
+        var routeStep = await db.Set<RouteStep>().SingleAsync(x => x.Id == step.RouteStepId);
+        var resourceBlocks = await EquipmentResources.Blocks(db, fabId, actor.UserId, equipmentId,
+            routeStep.OperationId, recipeVersionId, Now);
+        if (resourceBlocks.Count > 0)
+            throw Error("EquipmentResourceBlocked", string.Join("；", resourceBlocks));
         return (await Candidates(lot, step)).FirstOrDefault(x => x.EquipmentId == equipmentId
             && x.RecipeVersionId == recipeVersionId)
             ?? throw Error("EquipmentRecipeUnavailable", "设备不可用、已占用，或配方不符合绑定基线/当前适用条件");

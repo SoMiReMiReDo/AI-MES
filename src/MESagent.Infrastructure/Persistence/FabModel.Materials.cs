@@ -95,6 +95,8 @@ internal static partial class FabModel
             b.ToTable("material_sources", "materials", t =>
             {
                 t.HasCheckConstraint("ck_material_sources_1", "conversion_factor > 0");
+                t.HasCheckConstraint("ck_material_sources_mode",
+                    "(integration_config_id IS NULL) <> (manual_fab_id IS NULL)");
             });
             b.HasKey(x => x.Id);
             b.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("uuidv7()");
@@ -108,6 +110,8 @@ internal static partial class FabModel
                 .WithMany()
                 .HasForeignKey(x => x.IntegrationConfigId)
                 .OnDelete(DeleteBehavior.Restrict);
+            b.Property(x => x.ManualFabId).HasColumnName("manual_fab_id");
+            b.HasOne<Fab>().WithMany().HasForeignKey(x => x.ManualFabId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.ExternalCode).HasColumnName("external_code").HasMaxLength(128);
             b.Property(x => x.ExternalName).HasColumnName("external_name").HasMaxLength(200);
             b.Property(x => x.UnitMapping).HasColumnName("unit_mapping").HasColumnType("jsonb");
@@ -115,6 +119,8 @@ internal static partial class FabModel
             b.Property(x => x.LastSyncedAt).HasColumnName("last_synced_at");
             b.Property(x => x.SyncEnabled).HasColumnName("sync_enabled");
             b.HasIndex(x => new { x.MaterialId, x.IntegrationConfigId, x.ExternalCode }).IsUnique();
+            b.HasIndex(x => new { x.ManualFabId, x.MaterialId, x.ExternalCode }).IsUnique()
+                .HasFilter("manual_fab_id IS NOT NULL");
         });
 
         modelBuilder.Entity<MaterialLot>(b =>

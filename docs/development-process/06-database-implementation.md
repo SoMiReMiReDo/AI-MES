@@ -1,16 +1,30 @@
 # Fab 数据库实施说明
 
-2026-11-17 已应用第 8 条迁移 `QualityExceptionDisposition`，补齐质量首版的版本、快照与恢复凭据；表数保持126。迁移前已备份，账号/批次/晶圆/加工等事实数量核对一致。运行账号通过 `provision-quality` 增量授权，未改密码或增加 DDL/DELETE；详见 [F6 实现记录](../feature-development/quality-exception-disposition-implementation.md)。
+更新：2026-11-18（Asia/Shanghai）。F08-01 硅片来料来源已迁移至本地开发库。下面保留各阶段实施记录，当前结构以字段字典和最新迁移为准。
 
-更新：2026-11-13（Asia/Shanghai）。本文记录数据库结构与迁移；F1～F4 基础及 F5 首版已实现，完整质量处置、设备资源、Agent 和 Docker 仍待后续。
+## 2026-11-18 F08-01 增量更新
 
-2026-11-13 已应用第 7 条迁移 `DispatchAndProductionExecution`，新增步骤设备/配方指派、Run 适用关系与执行历史保护，表数保持 119 业务/支撑 + 7 Identity。迁移前本地生产相关表为空且已备份；运行角色以 `provision-execution` 精确增量授权，未改密码、未增加 DDL/DELETE。字段字典与 DDL 已同步，验收见 [F5 实现记录](../feature-development/dispatch-and-production-execution-implementation.md)。下文保留各阶段历史记录。
+第 10 条迁移 `20261118052836_WaferMaterialOrigins` 给 `materials.material_sources` 增加手工来源厂区、模式互斥约束及唯一索引。表和视图数量保持 130 和 2。既有集成来源保留原外键。已有手工来源时，降级会阻止迁移回退。
+
+本地先备份再升级，账号、工单、批次、晶圆、Run 和物料来源数量核对一致。通过 `python3 scripts/app.py provision-materials` 为现有运行角色增量授权登记写入。全量幂等 SQL 在空库连续运行两次，迁移数均为 10。见 [F08-01 功能设计](../feature-development/material-consumption-inventory.md)。
+
+## 2026-11-17 F7 增量更新
+
+已应用第9条迁移 `20261117095908_EquipmentMaintenanceResources`，新增设备工序策略、耗材要求、光罩装卸及耗材 Run 关联4张表；当前123业务/支撑 + 7 Identity，共130张应用表，派生视图仍2个。事件来源/去重、停机区间绑定、复机、资格与资源历史保护详见 [F7 实现记录](../feature-development/equipment-maintenance-resources-implementation.md)。
+
+本地升级前已备份到 Git 忽略目录，升级后账号及生产事实数量核对一致。`python3 scripts/app.py provision-equipment` 仅增量授权既有运行角色，无密码修改、DDL或生产/资源历史 DELETE；工序耗材要求作为可编辑配置允许删除关系。API 已恢复使用 `mesagent_app`。105项数据库/API测试与 Chrome 全流程通过；幂等 DDL 在隔离空库连续执行两次通过，模型/迁移快照一致。历史有效运行状态仅从本轮启用时点开始完整记录，不追补虚构历史。
+
+### 早期阶段记录
+
+2026-11-17 曾应用第8条迁移 `QualityExceptionDisposition`，补齐质量首版的版本、快照与恢复凭据，当时表数126；见 [F6 实现记录](../feature-development/quality-exception-disposition-implementation.md)。
+
+2026-11-13 应用第7条迁移 `DispatchAndProductionExecution`，补充设备/配方指派、Run 适用关系与执行历史保护，当时为119业务/支撑 + 7 Identity。通过 `provision-execution` 增量授权，未改密码或增加 DDL/DELETE；见 [F5 实现记录](../feature-development/dispatch-and-production-execution-implementation.md)。
 
 ## 1. 已建立的结构
 
 技术组合：.NET SDK **10.0.401**、EF Core / Identity **10.0.12**、Npgsql EF Provider **10.0.3**、PostgreSQL **18.6**。NuGet 精确版本在根目录 `Directory.Packages.props` 管理，各项目提交 `packages.lock.json`；本地 `dotnet-ef` 固定为 10.0.12。数据库镜像在 `compose.yaml` 固定版本及 SHA256 摘要。
 
-共 **126 张应用表**：119 张业务/支撑表 + 7 张 Identity 表；另有 EF 迁移历史表和 2 个派生视图。
+共 **130 张应用表**：123 张业务/支撑表 + 7 张 Identity 表；另有 EF 迁移历史表和 2 个派生视图。
 
 | schema | 表数 | 主要对象 |
 | --- | ---: | --- |
@@ -19,7 +33,7 @@
 | engineering | 14 | 产品/版本、路线/版本/步骤、工序、Recipe/版本/适用关系、编号、输出定义、点检、文档、Q-time 规则 |
 | production | 28 | 工单/快照/变更/停工、Lot、Wafer、归属、载具槽位与移动、加工/逐片参与/事件、拆合批、返工与共炉结构、首次投放/终点完成/步骤继承 |
 | quality | 18 | 原因、异常及整改、Lot/物料 Hold、独立放行、来料检验、规格版本、量测、质检触发/任务、报废及逐片处置 |
-| equipment | 15 | 设备分类/组/设备/腔体、事件/状态/停机、工具/保养、设备和人员资格、光罩/使用、材料上机 |
+| equipment | 19 | 设备分类/组/设备/腔体、事件/状态/停机、工具/保养、设备和人员资格、光罩/使用、材料上机 |
 | materials | 15 | 公司、物料分类/主数据/来源/批次/分装、BOM、分配/拣选/消耗、仓库/库存/流水/单据 |
 | integration | 9 | 外部系统、设备连接/消息/测点、API Key、导入映射/任务、标签、自定义字段定义 |
 | audit | 5 | 审计、业务事件、附件、幂等请求回执、Outbox |

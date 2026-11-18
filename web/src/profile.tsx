@@ -110,7 +110,7 @@ export function Profile({
                             title: "会话状态",
                             render: (_, r) => (
                                 <Space>
-                                    {r.current && <Tag color="cyan">当前</Tag>}
+                                    {r.current && <Tag color="red">当前</Tag>}
                                     {r.revokedAt
                                         ? "已撤销"
                                         : new Date(r.idleExpiresAt) < new Date()

@@ -289,10 +289,19 @@ public sealed partial class OrganizationIdentityAccessControlBackend(
             Fail(403, "PasswordChangeRequired", "请先修改初始密码");
         await LoadAccess();
         OrganizationIdentityAccessControlResult result;
-        if (r.Path.StartsWith("quality/"))
+        if (r.Path.StartsWith("traceability/"))
+            result = await new MESagent.Infrastructure.TraceabilityImpactAnalysis.TraceabilityBackend(
+                db, options.DeploymentFabId, Require, p => hasScope && permissions.Contains(p), clock).Execute(r);
+        else if (r.Path.StartsWith("quality/"))
             result = await new MESagent.Infrastructure.QualityExceptionDisposition.QualityBackend(
                 db, options.DeploymentFabId, actor, Require, p => hasScope && permissions.Contains(p), clock).Execute(r);
-        else if (r.Path.StartsWith("execution/") || r.Path.StartsWith("equipment/"))
+        else if (r.Path.StartsWith("materials/"))
+            result = await new MESagent.Infrastructure.MaterialConsumptionInventory.MaterialBackend(
+                db, options.DeploymentFabId, actor, Require, p => hasScope && permissions.Contains(p), clock).Execute(r);
+        else if (r.Path.StartsWith("equipment/"))
+            result = await new MESagent.Infrastructure.EquipmentMaintenanceResources.EquipmentBackend(
+                db, options.DeploymentFabId, actor, Require, clock).Execute(r);
+        else if (r.Path.StartsWith("execution/"))
             result = await new MESagent.Infrastructure.DispatchAndProductionExecution.ExecutionBackend(
                 db, options.DeploymentFabId, actor, Require, p => hasScope && permissions.Contains(p), clock).Execute(r);
         else if (r.Path.StartsWith("production/"))

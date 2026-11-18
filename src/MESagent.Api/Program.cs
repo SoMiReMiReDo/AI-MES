@@ -372,11 +372,57 @@ api.MapPost("/execution/lots/{id:guid}/track-in", Dispatch).Accepts<TrackInProdu
 api.MapPost("/execution/runs/{id:guid}/records", Dispatch).Accepts<RecordProductionWork>("application/json");
 api.MapPost("/execution/runs/{id:guid}/track-out", Dispatch).Accepts<TrackOutProductionRun>("application/json");
 api.MapPost("/execution/runs/{id:guid}/abort", Dispatch).Accepts<ReasonRequest>("application/json");
+api.MapGet("/materials/wafer-materials", Dispatch);
+api.MapPost("/materials/wafer-materials", Dispatch).Accepts<RegisterWaferMaterial>("application/json");
+api.MapGet("/materials/wafer-sources", Dispatch);
+api.MapPost("/materials/wafer-sources", Dispatch).Accepts<RegisterWaferMaterialSource>("application/json");
+api.MapGet("/materials/wafer-lots", Dispatch);
+api.MapPost("/materials/wafer-lots", Dispatch).Accepts<RegisterWaferMaterialLot>("application/json");
+api.MapGet("/materials/wafer-lots/{id:guid}", Dispatch);
+api.MapGet("/materials/wafer-lots/{id:guid}/wafers", Dispatch);
+api.MapGet("/materials/wafer-origin-options", Dispatch);
+
+api.MapGet("/traceability/search", Dispatch).Produces<PageView<TraceObject>>();
+api.MapGet("/traceability/{kind}/{id:guid}", Dispatch).Produces<TraceOverview>();
+api.MapGet("/traceability/{kind}/{id:guid}/events", Dispatch).Produces<PageView<TraceEvent>>();
+api.MapGet("/traceability/{kind}/{id:guid}/events/{type}/{source:guid}", Dispatch).Produces<TraceEvidence>();
+
 api.MapPost("/equipment/types", Dispatch).Accepts<CreateEquipmentReference>("application/json");
 api.MapPost("/equipment/groups", Dispatch).Accepts<CreateEquipmentReference>("application/json");
 api.MapPost("/equipment/tools", Dispatch).Accepts<CreateExecutionEquipment>("application/json");
-api.MapPut("/equipment/tools/{id:guid}", Dispatch).Accepts<UpdateExecutionEquipment>("application/json");
-api.MapPost("/equipment/tools/{id:guid}/state", Dispatch).Accepts<ChangeExecutionEquipmentState>("application/json");
+api.MapPut("/equipment/tools/{id:guid}", Dispatch).Accepts<EditEquipment>("application/json");
+api.MapPost("/equipment/tools/{id:guid}/state", Dispatch).Accepts<ChangeEquipmentState>("application/json");
+api.MapPut("/equipment/types/{id:guid}", Dispatch).Accepts<UpdateEquipmentReference>("application/json");
+api.MapPut("/equipment/groups/{id:guid}", Dispatch).Accepts<UpdateEquipmentReference>("application/json");
+api.MapPost("/equipment/chambers", Dispatch).Accepts<RegisterEquipmentChamber>("application/json");
+api.MapPut("/equipment/chambers/{id:guid}", Dispatch).Accepts<UpdateEquipmentReference>("application/json");
+api.MapPost("/equipment/events/{id:guid}", Dispatch).Accepts<SimulateEquipmentEvent>("application/json");
+api.MapPost("/equipment/downtimes", Dispatch).Accepts<RegisterDowntime>("application/json");
+api.MapPost("/equipment/downtimes/{id:guid}/classify", Dispatch).Accepts<ClassifyDowntime>("application/json");
+api.MapPost("/equipment/reasons", Dispatch).Accepts<CreateEquipmentReference>("application/json");
+api.MapPut("/equipment/reasons/{id:guid}", Dispatch).Accepts<UpdateEquipmentReference>("application/json");
+api.MapPost("/equipment/shifts", Dispatch).Accepts<RegisterEquipmentShift>("application/json");
+api.MapPost("/equipment/resources", Dispatch).Accepts<RegisterEquipmentTool>("application/json");
+api.MapPut("/equipment/resources/{id:guid}", Dispatch).Accepts<EditEquipmentTool>("application/json");
+api.MapPost("/equipment/maintenance-plans", Dispatch).Accepts<CreateMaintenancePlan>("application/json");
+api.MapPost("/equipment/maintenance-plans/{id:guid}/defer", Dispatch).Accepts<DeferMaintenance>("application/json");
+api.MapPost("/equipment/maintenance-plans/{id:guid}/toggle", Dispatch).Accepts<ToggleMaintenancePlan>("application/json");
+api.MapPost("/equipment/maintenance", Dispatch).Accepts<CreateMaintenanceWork>("application/json");
+api.MapPost("/equipment/maintenance/{id:guid}/defer", Dispatch).Accepts<DeferMaintenance>("application/json");
+api.MapPost("/equipment/equipment-qualifications", Dispatch).Accepts<CreateEquipmentQualification>("application/json");
+api.MapPost("/equipment/worker-qualifications", Dispatch).Accepts<CreateWorkerQualification>("application/json");
+api.MapPost("/equipment/policies", Dispatch).Accepts<SaveEquipmentOperationPolicy>("application/json");
+api.MapPut("/equipment/policies/{id:guid}", Dispatch).Accepts<SaveEquipmentOperationPolicy>("application/json");
+api.MapPost("/equipment/reticles", Dispatch).Accepts<RegisterReticle>("application/json");
+api.MapPut("/equipment/reticles/{id:guid}", Dispatch).Accepts<EditReticle>("application/json");
+api.MapPost("/equipment/reticle-mounts/{id:guid}", Dispatch).Accepts<LoadReticle>("application/json");
+api.MapPost("/equipment/consumables", Dispatch).Accepts<RegisterConsumable>("application/json");
+api.MapPost("/equipment/consumable-lots", Dispatch).Accepts<RegisterConsumableLot>("application/json");
+api.MapPost("/equipment/material-mounts/{id:guid}", Dispatch).Accepts<MountConsumable>("application/json");
+foreach (var path in new[] { "maintenance/{id:guid}/start", "maintenance/{id:guid}/complete",
+    "maintenance/{id:guid}/release", "maintenance/{id:guid}/cancel", "equipment-qualifications/{id:guid}/revoke",
+    "worker-qualifications/{id:guid}/revoke", "reticle-mounts/{id:guid}/unload", "material-mounts/{id:guid}/unload" })
+    api.MapPost("/equipment/" + path, Dispatch).Accepts<ReasonRequest>("application/json");
 api.MapGet("/planning/work-orders/{id:guid}/progress", Dispatch).Produces<ProductionProgressView>();
 api.MapPost("/planning/work-orders/{id:guid}/recalculate", Dispatch).Accepts<ReasonRequest>("application/json");
 api.MapPost("/quality/reason-codes", Dispatch).Accepts<SaveQualityReason>("application/json");

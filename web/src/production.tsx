@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useSearchParams } from "react-router-dom";
+import { traceUrl } from "./traceability";
 import {
     Alert,
     App,
@@ -19,6 +21,7 @@ import {
 } from "antd";
 import { api, ApiError, type Me } from "./api";
 import { fmt as formatDate } from "./shared";
+import { originLotLink, WaferOriginSelect } from "./materials";
 
 type Item = { id: string; etag: string; [key: string]: any };
 type Page = { items: Item[]; total: number; page: number; pageSize: number };
@@ -89,11 +92,18 @@ function OptionSelect({ path, labelKey, enabled = true, ...props }: any) {
 
 export function Production({ me }: { me: Me }) {
     const can = (p: string) => !!me.permissions?.includes(`production.${p}`);
-    const tabs = [
-        { key: "lots", label: "批次与血缘", permission: "lots.read" },
-        { key: "wafers", label: "晶圆履历", permission: "wafers.read" },
-        { key: "carriers", label: "载具与槽位", permission: "carriers.read" },
-    ].filter((x) => can(x.permission));
+    const [params, setParams] = useSearchParams();
+    const tabs = (
+        [
+            { key: "lots", label: "批次与血缘", permission: "lots.read" },
+            { key: "wafers", label: "晶圆履历", permission: "wafers.read" },
+            {
+                key: "carriers",
+                label: "载具与槽位",
+                permission: "carriers.read",
+            },
+        ] as const
+    ).filter((x) => can(x.permission));
     return (
         <>
             <Typography.Title level={2}>生产管理</Typography.Title>
@@ -105,6 +115,11 @@ export function Production({ me }: { me: Me }) {
             />
             <Tabs
                 destroyOnHidden
+                activeKey={
+                    tabs.find((x) => x.key === params.get("view"))?.key ??
+                    tabs[0]?.key
+                }
+                onChange={(view) => setParams({ view }, { replace: true })}
                 items={tabs.map((x) => ({
                     key: x.key,
                     label: x.label,
@@ -127,7 +142,7 @@ function ProductionTable({
     can,
     me,
 }: {
-    resource: string;
+    resource: "lots" | "wafers" | "carriers";
     can: (p: string) => boolean;
     me: Me;
 }) {
@@ -137,7 +152,12 @@ function ProductionTable({
     const [search, setSearch] = useState("");
     const [status, setStatus] = useState<string>();
     const [selection, setSelection] = useState<Item[]>([]);
-    const [detailId, setDetailId] = useState<string>();
+    const [params, setParams] = useSearchParams();
+    const detailId = params.get("detail") ?? undefined;
+    const setDetailId = (detail?: string) =>
+        setParams(detail ? { view: resource, detail } : { view: resource }, {
+            replace: true,
+        });
     const [dialog, setDialog] = useState<string>();
     const [selectedWafers, setSelectedWafers] = useState<string[]>([]);
     const [preview, setPreview] = useState<any>();
@@ -572,6 +592,22 @@ function ProductionTable({
             />
             <Drawer
                 title={detail?.[codeKey] || "详情"}
+                extra={
+                    detail?.id && (
+                        <Link
+                            to={traceUrl(
+                                {
+                                    lots: "lot",
+                                    wafers: "wafer",
+                                    carriers: "carrier",
+                                }[resource],
+                                detail.id,
+                            )}
+                        >
+                            查看生产追溯
+                        </Link>
+                    )
+                }
                 open={!!detailId}
                 size={980}
                 onClose={() => setDetailId(undefined)}
@@ -657,9 +693,28 @@ function ProductionTable({
                                             {
                                                 key: "source",
                                                 label: "物料来源",
-                                                children:
+                                                children: detail
+                                                    .originMaterialLot
+                                                    ?.canOpen ? (
+                                                    <Link
+                                                        to={originLotLink(
+                                                            detail
+                                                                .originMaterialLot
+                                                                .id,
+                                                        )}
+                                                    >
+                                                        {
+                                                            detail
+                                                                .originMaterialLot
+                                                                .lotNumber
+                                                        }
+                                                    </Link>
+                                                ) : (
+                                                    detail.originMaterialLot
+                                                        ?.lotNumber ||
                                                     detail.originMaterialLotId ||
-                                                    "来源未登记",
+                                                    "来源未登记"
+                                                ),
                                             },
                                             {
                                                 key: "slot",
@@ -984,9 +1039,9 @@ function ProductionTable({
                             </Form.Item>
                             <Form.Item
                                 name="originMaterialLotId"
-                                label="来源物料批次 ID（可空）"
+                                label="硅片来料批（可选）"
                             >
-                                <Input placeholder="未登记来源时留空" />
+                                <WaferOriginSelect />
                             </Form.Item>
                         </>
                     )}

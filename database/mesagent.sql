@@ -6456,3 +6456,575 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    DROP INDEX equipment."IX_reticle_usages_reticle_id";
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    DROP INDEX equipment."IX_material_mounts_equipment_id";
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    DROP INDEX equipment."IX_maintenance_events_schedule_id";
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.tools ADD equipment_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.tools ADD fab_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.reticles ADD fab_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.reticles ADD max_usage_count bigint NOT NULL DEFAULT 1000;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.reticles ADD usable_until timestamp with time zone;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.reticle_usages ADD reticle_mount_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.material_mounts ADD material_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE materials.material_lots ADD resource_expiry_at timestamp with time zone;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.maintenance_events ADD released_at timestamp with time zone;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.maintenance_events ADD released_by_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.equipment_events ADD processing_status character varying(32) NOT NULL DEFAULT 'Applied';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.equipment_events ADD rejection_reason character varying(500);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.equipment_events ADD source character varying(64) NOT NULL DEFAULT 'Manual';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.equipment_events ADD source_event_id character varying(128);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.equipment ADD communication_state character varying(32) NOT NULL DEFAULT 'Unknown';
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.downtimes ADD equipment_state_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE TABLE equipment.material_requirements (
+        id uuid NOT NULL DEFAULT (uuidv7()),
+        created_at timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+        updated_at timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+        operation_id uuid NOT NULL,
+        material_id uuid NOT NULL,
+        CONSTRAINT "PK_material_requirements" PRIMARY KEY (id),
+        CONSTRAINT "FK_material_requirements_materials_material_id" FOREIGN KEY (material_id) REFERENCES materials.materials (id) ON DELETE RESTRICT,
+        CONSTRAINT "FK_material_requirements_operations_operation_id" FOREIGN KEY (operation_id) REFERENCES engineering.operations (id) ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE TABLE equipment.material_run_usages (
+        id uuid NOT NULL DEFAULT (uuidv7()),
+        created_at timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+        updated_at timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+        material_mount_id uuid NOT NULL,
+        process_run_id uuid NOT NULL,
+        CONSTRAINT "PK_material_run_usages" PRIMARY KEY (id),
+        CONSTRAINT "FK_material_run_usages_material_mounts_material_mount_id" FOREIGN KEY (material_mount_id) REFERENCES equipment.material_mounts (id) ON DELETE RESTRICT,
+        CONSTRAINT "FK_material_run_usages_process_runs_process_run_id" FOREIGN KEY (process_run_id) REFERENCES production.process_runs (id) ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE TABLE equipment.operation_policies (
+        id uuid NOT NULL DEFAULT (uuidv7()),
+        created_at timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+        updated_at timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+        operation_id uuid NOT NULL,
+        require_equipment_qualification boolean NOT NULL,
+        require_worker_qualification boolean NOT NULL,
+        required_reticle_layer character varying(64),
+        CONSTRAINT "PK_operation_policies" PRIMARY KEY (id),
+        CONSTRAINT "FK_operation_policies_operations_operation_id" FOREIGN KEY (operation_id) REFERENCES engineering.operations (id) ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE TABLE equipment.reticle_mounts (
+        id uuid NOT NULL DEFAULT (uuidv7()),
+        created_at timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+        updated_at timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+        equipment_id uuid NOT NULL,
+        reticle_id uuid NOT NULL,
+        loaded_at timestamp with time zone NOT NULL,
+        unloaded_at timestamp with time zone,
+        CONSTRAINT "PK_reticle_mounts" PRIMARY KEY (id),
+        CONSTRAINT ck_reticle_mount_time CHECK (unloaded_at IS NULL OR unloaded_at >= loaded_at),
+        CONSTRAINT "FK_reticle_mounts_equipment_equipment_id" FOREIGN KEY (equipment_id) REFERENCES equipment.equipment (id) ON DELETE RESTRICT,
+        CONSTRAINT "FK_reticle_mounts_reticles_reticle_id" FOREIGN KEY (reticle_id) REFERENCES equipment.reticles (id) ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE INDEX "IX_tools_equipment_id" ON equipment.tools (equipment_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE INDEX "IX_tools_fab_id" ON equipment.tools (fab_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE INDEX "IX_reticles_fab_id" ON equipment.reticles (fab_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.reticles ADD CONSTRAINT ck_reticle_life CHECK (usage_count >= 0 AND max_usage_count > 0);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE UNIQUE INDEX "IX_reticle_usages_reticle_id_process_run_id" ON equipment.reticle_usages (reticle_id, process_run_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE INDEX "IX_reticle_usages_reticle_mount_id" ON equipment.reticle_usages (reticle_mount_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE UNIQUE INDEX "IX_material_mounts_equipment_id_material_id" ON equipment.material_mounts (equipment_id, material_id) WHERE unmounted_at IS NULL AND material_id IS NOT NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE INDEX "IX_material_mounts_material_id" ON equipment.material_mounts (material_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE INDEX "IX_maintenance_events_released_by_id" ON equipment.maintenance_events (released_by_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE UNIQUE INDEX "IX_maintenance_events_schedule_id" ON equipment.maintenance_events (schedule_id) WHERE schedule_id IS NOT NULL AND status NOT IN ('Released','Cancelled');
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE UNIQUE INDEX "IX_equipment_events_equipment_id_source_source_event_id" ON equipment.equipment_events (equipment_id, source, source_event_id) WHERE source_event_id IS NOT NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE UNIQUE INDEX "IX_downtimes_equipment_state_id" ON equipment.downtimes (equipment_state_id) WHERE equipment_state_id IS NOT NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE INDEX "IX_material_requirements_material_id" ON equipment.material_requirements (material_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE UNIQUE INDEX "IX_material_requirements_operation_id_material_id" ON equipment.material_requirements (operation_id, material_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE UNIQUE INDEX "IX_material_run_usages_material_mount_id_process_run_id" ON equipment.material_run_usages (material_mount_id, process_run_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE INDEX "IX_material_run_usages_process_run_id" ON equipment.material_run_usages (process_run_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE UNIQUE INDEX "IX_operation_policies_operation_id" ON equipment.operation_policies (operation_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE UNIQUE INDEX "IX_reticle_mounts_equipment_id" ON equipment.reticle_mounts (equipment_id) WHERE unloaded_at IS NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    CREATE UNIQUE INDEX "IX_reticle_mounts_reticle_id" ON equipment.reticle_mounts (reticle_id) WHERE unloaded_at IS NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.downtimes ADD CONSTRAINT "FK_downtimes_equipment_states_equipment_state_id" FOREIGN KEY (equipment_state_id) REFERENCES equipment.equipment_states (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.maintenance_events ADD CONSTRAINT "FK_maintenance_events_users_released_by_id" FOREIGN KEY (released_by_id) REFERENCES security.users (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.material_mounts ADD CONSTRAINT "FK_material_mounts_materials_material_id" FOREIGN KEY (material_id) REFERENCES materials.materials (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.reticle_usages ADD CONSTRAINT "FK_reticle_usages_reticle_mounts_reticle_mount_id" FOREIGN KEY (reticle_mount_id) REFERENCES equipment.reticle_mounts (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.reticles ADD CONSTRAINT "FK_reticles_fabs_fab_id" FOREIGN KEY (fab_id) REFERENCES organization.fabs (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.tools ADD CONSTRAINT "FK_tools_equipment_equipment_id" FOREIGN KEY (equipment_id) REFERENCES equipment.equipment (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    ALTER TABLE equipment.tools ADD CONSTRAINT "FK_tools_fabs_fab_id" FOREIGN KEY (fab_id) REFERENCES organization.fabs (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    INSERT INTO security.permissions(code,name,is_active)
+    SELECT code,code,true FROM unnest(ARRAY[
+        'equipment.simulate','equipment.downtime','equipment.maintenance','equipment.release',
+        'equipment.qualify','equipment.reticles','equipment.materials'
+    ]) code ON CONFLICT(code) DO NOTHING;
+    INSERT INTO security.role_permissions(role_id,permission_id)
+    SELECT r.id,p.id FROM security.roles r CROSS JOIN security.permissions p
+    WHERE r.name='SystemAdmin' AND r.is_system AND p.code IN (
+        'equipment.simulate','equipment.downtime','equipment.maintenance','equipment.release',
+        'equipment.qualify','equipment.reticles','equipment.materials')
+    ON CONFLICT(role_id,permission_id) DO NOTHING;
+
+    -- Preserve known material identity; reject incompatible duplicates rather than discard history.
+    UPDATE equipment.material_mounts m SET material_id=l.material_id FROM materials.material_lots l
+    WHERE l.id=m.material_lot_id;
+
+    -- Start recording effective running state at activation; do not invent earlier state intervals.
+    UPDATE equipment.equipment_states s SET ended_at=GREATEST(CURRENT_TIMESTAMP,s.started_at+interval '1 microsecond')
+    WHERE s.ended_at IS NULL AND s.state='Idle' AND EXISTS (
+        SELECT FROM equipment.equipment e JOIN production.process_runs r ON r.equipment_id=e.id
+        WHERE e.id=s.equipment_id AND e.operational_state='Idle' AND r.status='Running');
+    INSERT INTO equipment.equipment_states(equipment_id,state,started_at,source)
+    SELECT e.id,'Running',GREATEST(CURRENT_TIMESTAMP,COALESCE((SELECT max(s.ended_at)
+        FROM equipment.equipment_states s WHERE s.equipment_id=e.id),CURRENT_TIMESTAMP)),'Migration'
+    FROM equipment.equipment e WHERE e.operational_state='Idle'
+        AND EXISTS (SELECT FROM production.process_runs r WHERE r.equipment_id=e.id AND r.status='Running')
+        AND NOT EXISTS (SELECT FROM equipment.equipment_states s WHERE s.equipment_id=e.id AND s.ended_at IS NULL);
+
+    CREATE FUNCTION equipment.close_resource_interval() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+        IF TG_OP='DELETE' THEN
+            RAISE EXCEPTION 'resource interval history cannot be deleted' USING ERRCODE='23514';
+        END IF;
+        IF (to_jsonb(OLD)->>TG_ARGV[0]) IS NOT NULL OR (to_jsonb(NEW)->>TG_ARGV[0]) IS NULL
+            OR (to_jsonb(OLD)-ARRAY['updated_at',TG_ARGV[0]]) IS DISTINCT FROM
+                (to_jsonb(NEW)-ARRAY['updated_at',TG_ARGV[0]]) THEN
+            RAISE EXCEPTION 'resource interval may only be closed once' USING ERRCODE='23514';
+        END IF;
+        RETURN NEW;
+    END $$;
+    CREATE TRIGGER close_interval BEFORE UPDATE OR DELETE ON equipment.equipment_states
+        FOR EACH ROW EXECUTE FUNCTION equipment.close_resource_interval('ended_at');
+    CREATE TRIGGER close_interval BEFORE UPDATE OR DELETE ON equipment.reticle_mounts
+        FOR EACH ROW EXECUTE FUNCTION equipment.close_resource_interval('unloaded_at');
+    CREATE TRIGGER close_interval BEFORE UPDATE OR DELETE ON equipment.reticle_usages
+        FOR EACH ROW EXECUTE FUNCTION equipment.close_resource_interval('unloaded_at');
+    CREATE TRIGGER close_interval BEFORE UPDATE OR DELETE ON equipment.material_mounts
+        FOR EACH ROW EXECUTE FUNCTION equipment.close_resource_interval('unmounted_at');
+    CREATE TRIGGER immutable_history BEFORE UPDATE OR DELETE ON equipment.material_run_usages
+        FOR EACH ROW EXECUTE FUNCTION audit.reject_history_mutation();
+
+    CREATE FUNCTION equipment.protect_downtime() RETURNS trigger LANGUAGE plpgsql AS $$
+    DECLARE s equipment.equipment_states;
+    BEGIN
+        IF TG_OP='DELETE' THEN
+            RAISE EXCEPTION 'downtime history cannot be deleted' USING ERRCODE='23514';
+        END IF;
+        IF NEW.equipment_state_id IS NOT NULL THEN
+            SELECT * INTO STRICT s FROM equipment.equipment_states WHERE id=NEW.equipment_state_id;
+            IF s.equipment_id<>NEW.equipment_id OR s.state<>'Down' OR s.started_at<>NEW.started_at
+                OR (NEW.ended_at IS NOT NULL AND NEW.ended_at IS DISTINCT FROM s.ended_at) THEN
+                RAISE EXCEPTION 'downtime must follow its Down interval' USING ERRCODE='23514';
+            END IF;
+        END IF;
+        IF TG_OP='UPDATE' AND ((to_jsonb(OLD)-ARRAY['updated_at','reason_code_id','shift_id','notes',
+            'needs_reason','classified_at','classified_by_id','ended_at']) IS DISTINCT FROM
+            (to_jsonb(NEW)-ARRAY['updated_at','reason_code_id','shift_id','notes',
+            'needs_reason','classified_at','classified_by_id','ended_at'])
+            OR OLD.ended_at IS NOT NULL AND NEW.ended_at IS DISTINCT FROM OLD.ended_at) THEN
+            RAISE EXCEPTION 'downtime identity and closed time are immutable' USING ERRCODE='23514';
+        END IF;
+        RETURN NEW;
+    END $$;
+    CREATE TRIGGER protect_downtime BEFORE INSERT OR UPDATE OR DELETE ON equipment.downtimes
+        FOR EACH ROW EXECUTE FUNCTION equipment.protect_downtime();
+
+    CREATE FUNCTION equipment.protect_qualification() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+        IF TG_OP='DELETE' THEN
+            RAISE EXCEPTION 'qualification history cannot be deleted' USING ERRCODE='23514';
+        END IF;
+        IF OLD.qualification_status<>'Qualified' OR NEW.qualification_status<>'Revoked'
+            OR (to_jsonb(OLD)-ARRAY['updated_at','qualification_status']) IS DISTINCT FROM
+                (to_jsonb(NEW)-ARRAY['updated_at','qualification_status']) THEN
+            RAISE EXCEPTION 'qualification may only be revoked; recertify with a new record' USING ERRCODE='23514';
+        END IF;
+        RETURN NEW;
+    END $$;
+    CREATE TRIGGER protect_qualification BEFORE UPDATE OR DELETE ON equipment.equipment_qualifications
+        FOR EACH ROW EXECUTE FUNCTION equipment.protect_qualification();
+    CREATE TRIGGER protect_qualification BEFORE UPDATE OR DELETE ON equipment.worker_qualifications
+        FOR EACH ROW EXECUTE FUNCTION equipment.protect_qualification();
+
+    CREATE FUNCTION equipment.protect_maintenance() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+        IF TG_OP='DELETE' THEN
+            RAISE EXCEPTION 'maintenance history cannot be deleted' USING ERRCODE='23514';
+        END IF;
+        IF NEW.equipment_id IS DISTINCT FROM OLD.equipment_id OR NEW.tool_id IS DISTINCT FROM OLD.tool_id
+            OR NEW.schedule_id IS DISTINCT FROM OLD.schedule_id OR NEW.created_at<>OLD.created_at
+            OR OLD.status IN ('Released','Cancelled')
+            OR NOT ((OLD.status='Planned' AND NEW.status IN ('Planned','InProgress','Cancelled'))
+                OR (OLD.status='InProgress' AND NEW.status='Completed')
+                OR (OLD.status='Completed' AND NEW.status='Released')) THEN
+            RAISE EXCEPTION 'invalid maintenance transition or identity change' USING ERRCODE='23514';
+        END IF;
+        RETURN NEW;
+    END $$;
+    CREATE TRIGGER protect_maintenance BEFORE UPDATE OR DELETE ON equipment.maintenance_events
+        FOR EACH ROW EXECUTE FUNCTION equipment.protect_maintenance();
+
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261117095908_EquipmentMaintenanceResources') THEN
+    INSERT INTO public.__ef_migrations_history ("MigrationId", "ProductVersion")
+    VALUES ('20261117095908_EquipmentMaintenanceResources', '10.0.12');
+    END IF;
+END $EF$;
+COMMIT;
+
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118052836_WaferMaterialOrigins') THEN
+    ALTER TABLE materials.material_sources ALTER COLUMN integration_config_id DROP NOT NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118052836_WaferMaterialOrigins') THEN
+    ALTER TABLE materials.material_sources ADD manual_fab_id uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118052836_WaferMaterialOrigins') THEN
+    CREATE UNIQUE INDEX "IX_material_sources_manual_fab_id_material_id_external_code" ON materials.material_sources (manual_fab_id, material_id, external_code) WHERE manual_fab_id IS NOT NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118052836_WaferMaterialOrigins') THEN
+    ALTER TABLE materials.material_sources ADD CONSTRAINT ck_material_sources_mode CHECK ((integration_config_id IS NULL) <> (manual_fab_id IS NULL));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118052836_WaferMaterialOrigins') THEN
+    ALTER TABLE materials.material_sources ADD CONSTRAINT "FK_material_sources_fabs_manual_fab_id" FOREIGN KEY (manual_fab_id) REFERENCES organization.fabs (id) ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118052836_WaferMaterialOrigins') THEN
+    INSERT INTO security.permissions(code,name,is_active)
+    SELECT code,code,true
+    FROM unnest(ARRAY['materials.wafer-sources.read','materials.wafer-sources.manage']) code
+    ON CONFLICT(code) DO NOTHING;
+    INSERT INTO security.role_permissions(role_id,permission_id)
+    SELECT r.id,p.id FROM security.roles r CROSS JOIN security.permissions p
+    WHERE r.name='SystemAdmin' AND r.is_system
+        AND p.code IN ('materials.wafer-sources.read','materials.wafer-sources.manage')
+    ON CONFLICT(role_id,permission_id) DO NOTHING;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261118052836_WaferMaterialOrigins') THEN
+    INSERT INTO public.__ef_migrations_history ("MigrationId", "ProductVersion")
+    VALUES ('20261118052836_WaferMaterialOrigins', '10.0.12');
+    END IF;
+END $EF$;
+COMMIT;
+

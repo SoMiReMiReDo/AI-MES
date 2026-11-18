@@ -72,14 +72,23 @@ public sealed partial class ExecutionBackend(
         var payload = JsonSerializer.Serialize(new { schemaVersion = 1, commandId, fabId, facts }, Json);
         db.Add(new AuditLog
         {
-            UserId = actor.UserId, EntityType = entity.GetType().Name, EntityId = id,
-            Action = action, AfterState = payload, OccurredAt = Now, CorrelationId = actor.CorrelationId,
+            UserId = actor.UserId,
+            EntityType = entity.GetType().Name,
+            EntityId = id,
+            Action = action,
+            AfterState = payload,
+            OccurredAt = Now,
+            CorrelationId = actor.CorrelationId,
             SourceChannel = "Web"
         });
         db.Add(new BusinessEvent
         {
-            UserId = actor.UserId, EntityType = entity.GetType().Name, EntityId = id,
-            EventType = "Execution." + action, Payload = payload, OccurredAt = Now,
+            UserId = actor.UserId,
+            EntityType = entity.GetType().Name,
+            EntityId = id,
+            EventType = "Execution." + action,
+            Payload = payload,
+            OccurredAt = Now,
             CorrelationId = actor.CorrelationId
         });
     }
@@ -102,14 +111,15 @@ public sealed partial class ExecutionBackend(
         var p = r.Path.Split('/');
         if (p.Length < 2)
             throw Error("ResourceNotFound", "接口不存在", 404);
-        var permission = p[0] == "equipment"
-            ? r.Method == "GET" ? "equipment.read" : p[^1] == "state" ? "equipment.state" : "equipment.manage"
-            : r.Method == "GET" ? "execution.read" : "execution." + (p[^1] switch
-            {
-                "assign" => "dispatch", "records" => "record", "track-in" => "track-in",
-                "track-out" => "track-out", "abort" => "abort",
-                _ => throw Error("ResourceNotFound", "接口不存在", 404)
-            });
+        var permission = r.Method == "GET" ? "execution.read" : "execution." + (p[^1] switch
+        {
+            "assign" => "dispatch",
+            "records" => "record",
+            "track-in" => "track-in",
+            "track-out" => "track-out",
+            "abort" => "abort",
+            _ => throw Error("ResourceNotFound", "接口不存在", 404)
+        });
         require(permission);
         if (r.Method == "GET")
         {
@@ -134,15 +144,22 @@ public sealed partial class ExecutionBackend(
             if (receipt.RequestHash != hash)
                 throw Error("IdempotencyConflict", "同一幂等键对应不同参数或版本");
             return JsonSerializer.Deserialize<OrganizationIdentityAccessControlResult>(receipt.Result!, Json)!
-                with { Replayed = true };
+                with
+            { Replayed = true };
         }
         commandId = Guid.CreateVersion7();
-        var result = p[0] == "equipment" ? await EquipmentCommand(r, p) : await Command(r, p);
+        var result = await Command(r, p);
         db.Add(new CommandReceipt
         {
-            Id = commandId, Scope = scope, IdempotencyKey = key, RequestHash = hash,
-            ActorUserId = actor.UserId, CorrelationId = actor.CorrelationId,
-            Status = "Succeeded", CompletedAt = Now, Result = JsonSerializer.Serialize(result, Json)
+            Id = commandId,
+            Scope = scope,
+            IdempotencyKey = key,
+            RequestHash = hash,
+            ActorUserId = actor.UserId,
+            CorrelationId = actor.CorrelationId,
+            Status = "Succeeded",
+            CompletedAt = Now,
+            Result = JsonSerializer.Serialize(result, Json)
         });
         return result;
     }

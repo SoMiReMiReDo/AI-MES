@@ -6,8 +6,8 @@ export const THEME_STORAGE_KEY = "mesagent.theme";
 
 export type ThemeMode = "light" | "dark";
 
-const DARK_BACKGROUND = "#0c1719";
-const LIGHT_BACKGROUND = "#163f43";
+const DARK_BACKGROUND = "#17181c";
+const LIGHT_BACKGROUND = "#ffffff";
 
 function readTheme(): ThemeMode {
     try {

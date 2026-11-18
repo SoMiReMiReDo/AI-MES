@@ -9,7 +9,7 @@ using Xunit;
 
 namespace MESagent.Api.Tests;
 
-public sealed class ProductionTests(OrganizationIdentityAccessControlFixture f)
+public sealed partial class ProductionTests(OrganizationIdentityAccessControlFixture f)
     : IClassFixture<OrganizationIdentityAccessControlFixture>
 {
     private static string E(JsonElement value) => value.GetProperty("etag").GetString()!;

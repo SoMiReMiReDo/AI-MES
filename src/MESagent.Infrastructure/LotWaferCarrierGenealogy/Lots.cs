@@ -2,6 +2,7 @@ using System.Text.Json;
 using MESagent.Application;
 using MESagent.Domain;
 using MESagent.Domain.Entities;
+using MESagent.Infrastructure.MaterialConsumptionInventory;
 using Microsoft.EntityFrameworkCore;
 
 namespace MESagent.Infrastructure.LotWaferCarrierGenealogy;
@@ -94,6 +95,8 @@ public sealed partial class ProductionBackend
             throw Error("CodeConflict", "片号已登记，不能覆盖永久身份", 409);
         var order = await Order(input.WorkOrderId);
         var baseline = await Baseline(order);
+        foreach (var source in input.Wafers.Select(x => x.OriginMaterialLotId).OfType<Guid>().Distinct())
+            await ValidateMaterial(source);
         var lot = new Lot
         {
             FabId = fabId,
@@ -115,8 +118,6 @@ public sealed partial class ProductionBackend
         for (var i = 0; i < input.Wafers.Length; i++)
         {
             var entry = input.Wafers[i];
-            if (entry.OriginMaterialLotId is Guid source)
-                await ValidateMaterial(source);
             var wafer = new Wafer
             {
                 FabId = fabId,
@@ -145,6 +146,18 @@ public sealed partial class ProductionBackend
     {
         var material = await db.Set<MaterialLot>().SingleOrDefaultAsync(x => x.Id == id)
             ?? throw Error("ResourceNotFound", "来源批次不可访问", 404);
+        if (await WaferOrigins.Materials(db).AnyAsync(x => x.Id == material.MaterialId)
+            || await db.Set<MaterialSource>().AnyAsync(x => x.Id == material.SourceId && x.ManualFabId != null))
+        {
+            var scoped = WaferOrigins.Lots(db, fabId).Where(x => x.Lot.Id == id);
+            if (!await scoped.AnyAsync())
+                throw Error("ResourceNotFound", "来源批次不可访问", 404);
+            var time = Now;
+            var today = await WaferOrigins.FabDate(db, fabId, time);
+            if (!await WaferOrigins.Selectable(db, scoped, today, time).AnyAsync())
+                throw Error("LotBlocked", "硅片来料批已冻结、失效或停用", 409);
+            return;
+        }
         if (material.WarehouseId is Guid warehouse && !await db.Set<Warehouse>()
             .AnyAsync(x => x.Id == warehouse && x.FabId == fabId))
             throw Error("ResourceNotFound", "来源批次不可访问", 404);

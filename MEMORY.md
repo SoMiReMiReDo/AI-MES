@@ -1,6 +1,47 @@
 # MESagent 项目记忆
 
-更新：2026-11-17（Asia/Shanghai）｜阶段：F1～F6 首版完成，完整 F7/按需质量能力待后续｜版本：v1.1
+更新：2026-11-18（Asia/Shanghai）｜阶段：F09-01～02 本地验收完成｜版本：v1.4
+
+## 2026-11-18 生产追溯首页
+
+- 桌面加宽编号输入区，窄屏采用单列。首页新增最近查看与最近查询，各最多保留 6 条，可重开、重查和清空。历史按用户与厂区保存在当前标签页，刷新保留，退出或会话失效清除。前端构建、Chrome 全流程、浅深主题和 390 像素窄屏检查通过。
+
+## 2026-11-18 F09-01～02
+
+- 用户确认编号定位和生产履历首版。已实现工单、Lot、Wafer、载具和设备追溯、拆合批正反向下钻、实际 Run/质量原始记录与 WebUI。见 [F09 功能设计与验收](docs/feature-development/traceability-impact-analysis.md)。
+- 复用厂区与来源模块读权限、单库一致性快照，沿用既有表结构。按当时归属、实际参与片及装载区间查询，F08-01 来料批可授权下钻。架构更新至 v0.8。
+- 17 项数据库测试、93 项 API 测试及 Chrome 全流程通过。OpenAPI 类型已同步，本地 API 已刷新。F09-03 影响分析、F09-04 导出按需推进。
+
+## 2026-11-18 WebUI 左侧导航
+
+- 工作台置顶，菜单分为「生产运营」「生产准备」「组织与系统」，硅片来料归入「生产准备」。侧栏滚动条默认透明，鼠标悬停或键盘聚焦时显示半透明滑块；窄屏用图标和分隔线保留分组。前端构建、Chrome 全流程和 390 像素窄屏截图核验通过。
+
+## 2026-11-18 F08-01
+
+- 用户确认本轮仅做 F08-01 硅片来料登记、建批选来源和晶圆双向追溯，F08-02～05 与 F6-06 后置。
+- 已用独立物料模块接通 F4 建批及投放、硅片来料 WebUI 和双向追溯。建批界面将同一可选来料批应用到本次片集，API 继续逐片保存。见 [F08-01 功能设计](docs/feature-development/material-consumption-inventory.md)。
+- 已备份并应用第 10 条迁移，表数 130，账号及生产/物料事实数量核对一致，最小权限已增量配置。108 项数据库/API 测试、Chrome F1～F8-01 全流程及空库重复 DDL 已通过；本地 API 已重启。
+
+## 2026-11-17 WebUI 海力士风格配色
+
+- 用户确认整站换 SK hynix 风格「红黄白黑」浅/深两套主题，并要求柔和：红为主操作与品牌，橙黄只作强调/警示/状态点，白/黑为中性底色。
+- 主色取值：浅色红 `#c42233`、深色红 `#e31837`、橙黄 `#f58025`、白 `#ffffff`。浅色白底黑字 + 黑色侧栏（红激活条、橙黄状态点）；深色深灰蓝底（bg `#17181c`、面板 `#1f2026`、侧栏 `#111216`）白字、暗红选中背景；按用户要求降低黑度，不使用近黑（原 `#0e0e10`）。
+- 改动：`web/src/style.css` 两套 CSS 变量、`web/src/main.tsx` antd Token、`web/src/theme.tsx`、`web/index.html`（theme-color 与 favicon `?v=3`）、`web/public/favicon.svg|ico`（保持红底/橙黄晶圆轮廓/白 M）；两处 `Tag color="cyan"` 改红。
+- 语义色保留成功绿、警告橙、错误深红、信息灰，品牌红与错误红按明度/语境区分；次要文字对比度按 WCAG 上调。
+- 登录页、工作台、账号表格页浅/深双主题截图核验（隔离环境伪造只读会话，未改本地账号数据）；Web 构建与 Prettier 检查通过，Vite dev 与 `dist` 已更新。
+
+## 2026-11-17 浏览器图标
+
+- 已按用户要求设计并接入标签页图标；最新造型为红色圆形主体 + 对称双翼、橙黄晶圆轮廓、白色 MES（替换原 M），外围透明。字母以矢量路径绘制，无字体依赖。资源为 `web/public/favicon.svg` 和含 16/32/48 像素的 `favicon.ico`，由 `web/index.html` 引用，缓存版本为 `?v=5`。
+- 已检查 Chrome 渲染、页面图标引用及 SVG 本地访问；Web 构建通过。后续功能仍按用户授权推进。
+
+## 2026-11-17 F7 完成
+
+- 用户确认 F7-01～07 文档、后端、WebUI 和测试；加工中 Down 保留 Run，由 F5 收尾、F6 处置。资格按工序同时启用设备/人员校验，默认关闭；光罩按启动 Run 次数计寿命，中止不返还；耗材按时间寿命，库存/精确耗用留 F8。
+- 小时/天维护到期阻塞，完成后独立复机，延期留审计。独立设备模块复用认证、单事务和全局写锁，与 F5 共用门禁、有效状态区间及实际资源关联；含模拟事件、停机/班次统计、历史 Down 补登记、工具/资格/光罩/耗材及影响查询。
+- [F7 设计](docs/feature-development/equipment-maintenance-resources.md)、[接口与验收](docs/feature-development/equipment-maintenance-resources-api-and-acceptance.md)、[实现记录](docs/feature-development/equipment-maintenance-resources-implementation.md)已完成，架构更新至 v0.6。第9条迁移已应用，表数130；升级前备份，账号及生产事实数量核对一致，运行角色仅增量授权，未改密码。
+- 105项数据库/API测试（17+88）与 Chrome F1～F7 全流程通过，含响应丢失原键重试、启动/卸载竞争及历史停机正向登记。幂等 DDL 空库两次执行通过，字典/DDL/OpenAPI已同步，本地 API 已恢复，GAP-12 确认范围关闭。
+- 不回填启用前缺失的运行/资源历史；实机、腔体调度/共炉、自动质检、跨路线返工、库存账本、F9/F10深化与 Docker 后置。下一功能仍按用户后续授权推进。
 
 ## 2026-11-17 F6 首版完成
 
@@ -82,10 +123,10 @@
 ## 当前事实
 
 - 保留原控制台；已有 Domain/Infrastructure/Database，并新增 Application、ASP.NET Core API、React WebUI 和 API 测试；SDK 仍为 `10.0.401`。
-- 已建立 PostgreSQL 18.6 数据库：119 张业务/支撑表、7 张 Identity 表、2 个派生视图及 EF 迁移历史表；8 条迁移已应用，字段字典与 SQL 已同步导出。
+- 已建立 PostgreSQL 18.6 数据库：123 张业务/支撑表、7 张 Identity 表、2 个派生视图及 EF 迁移历史表；10 条迁移已应用，字段字典与 SQL 已同步导出。
 - 本地 Docker 服务 `mesagent-postgres-1`，数据库 `mesagent`，仅绑定 `127.0.0.1:55432`，使用独立卷；密码在 Git 忽略的 `.env`，不记入记忆或仓库。未修改 OpenMES 参考服务。
 - 已验证外键、数量/时间、归属/槽位互斥、幂等键、xmin 并发、历史与发布版本保护、事务及迁移回滚；具体操作与验证见数据库实施说明。
-- 已实现组织/身份/权限、F2 工艺、F3 工单与真实片进度、F4 建批/投放/拆合批/载具、F5 首版派工过站及真实终点；F1 扩展、F6 首版异常/Hold/检验/报废及同站恢复已接通；按需质量、完整设备资源、Agent 尚待后续，见阶段记录。
+- 已实现组织/身份/权限、F2 工艺、F3 工单与真实片进度、F4 建批/投放/拆合批/载具、F5 首版派工过站及真实终点；F1 扩展、F6 首版异常/Hold/检验/报废及同站恢复已接通；F7 设备/维护/资格/光罩/耗材已接通；按需质量、实机、库存与 Agent 待后续，见阶段记录。
 - `docs/` 既有内容是 OpenMES 的学习和开发参考资料，其 Laravel/React 实现不属于 MESagent。
 - 已只读核查本地 OpenMES v0.25.0 后台并验证工单到成品批次的下钻；[沿用建议](docs/development-process/01-current-state.md#4-本地-openmes-后台核查与沿用建议) 优先参考看板、追溯、异常和审计界面，晶圆执行规则由 C# 业务层设计，待确认。
 - 已初始化 Git 并推送公开仓库 [SoMiReMiReDo/AI-MES](https://github.com/SoMiReMiReDo/AI-MES)：`main` 为默认分支，`dev/mes-backend` 为后端开发分支。
@@ -121,11 +162,11 @@
 - [Fab 数据字段沿用与保留](docs/development-process/04-fab-data-field-retention.md)
 - [数据库实际字段字典](docs/development-process/05-database-catalog.md)
 - [数据库实施与操作](docs/development-process/06-database-implementation.md)
-- [Fab 全功能清单](docs/development-process/07-fab-function-catalog.md)：基于最初 114 个业务实体整理 14 个模块、87 项功能；当前 F1/F2/F3 及 F4 基础能力已实现，完整生产执行尚未接通。
+- [Fab 全功能清单](docs/development-process/07-fab-function-catalog.md)：14 个模块、87 项功能；现已验收 F1～F6 首版、F7-01～07、F08-01 和 F09-01～02。
 - [功能实现架构](docs/development-process/08-feature-implementation-architecture.md)：模块职责、共享应用层、事务/授权、WebUI 与交付顺序。
 - [F1-`OrganizationIdentityAccessControl` 功能设计](docs/feature-development/organization-identity-access-control.md) · [接口与验收](docs/feature-development/organization-identity-access-control-api-and-acceptance.md)：设计规则与 32 项验收场景；执行证据见 [F1-`OrganizationIdentityAccessControl` 实现与启动](docs/feature-development/organization-identity-access-control-implementation.md)。
 
-下一步：按后续授权推进 GAP-12 完整 F7；跨路线返工、自动质检/来料、复杂存量与关闭竞争专项保留。F6 首版与 F3/F4/F5 已接通，Docker 继续后置；新任务开始前先沟通范围。
+下一步：等待后续功能授权；F09-03/04、跨路线返工、自动质检/来料、库存账本、复杂存量与关闭竞争专项保留。Docker 继续后置。
 
 ## 决策记录
 

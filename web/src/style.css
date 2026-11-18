@@ -1,112 +1,117 @@
+/*
+ * 主题色：SK hynix 风格（红 #e31837 + 橙黄 #f58025 + 白/黑中性色）。
+ * 浅色：白底、近黑文字、黑色侧栏；深色：近黑底、白字、亮红主色。
+ */
 :root {
     color-scheme: light;
-    --bg: #f4f6f7;
-    --text: #223338;
-    --surface: #fff;
-    --line: #e2e8e9;
-    --line-soft: #e0e7e8;
-    --muted: #829395;
-    --muted-2: #75858b;
-    --breadcrumb: #91a0a3;
-    --eyebrow: #487e7b;
-    --code: #35615e;
-    --code-bg: #f5f8f7;
-    --footer: #8c9d9f;
-    --table-head-bg: #f7f9f9;
-    --table-head-text: #77878a;
-    --sidebar-bg: #102f33;
-    --sidebar-text: #d7e4e5;
-    --sidebar-label: #81a0a3;
-    --sidebar-link: #b7ced0;
-    --sidebar-hover-bg: #1d4145;
+    --bg: #f6f6f7;
+    --text: #1b1c1e;
+    --surface: #ffffff;
+    --line: #e8e8eb;
+    --line-soft: #ededf0;
+    --muted: #74757d;
+    --muted-2: #6b6c74;
+    --breadcrumb: #74757d;
+    --eyebrow: #c42233;
+    --code: #a3122a;
+    --code-bg: #faf7f7;
+    --footer: #6e6f76;
+    --table-head-bg: #faf9f9;
+    --table-head-text: #6e6f76;
+    --sidebar-bg: #141416;
+    --sidebar-text: #e6e6e9;
+    --sidebar-label: #8b8b94;
+    --sidebar-link: #c6c6cd;
+    --sidebar-hover-bg: #232326;
     --sidebar-hover-text: #fff;
-    --sidebar-active-bg: #28504e;
-    --sidebar-active-text: #cef0db;
-    --sidebar-active-line: #80c7a6;
-    --sidebar-bottom: #a3babc;
-    --sidebar-small: #769294;
-    --sidebar-dot: #84c9a6;
-    --brand-border: #60a59e;
-    --brand-color: #89d2bd;
-    --brand-from: #1c4e51;
-    --brand-to: #143b3e;
-    --banner-from: #e3efeb;
-    --banner-to: #edf3ef;
-    --banner-border: #ccded5;
-    --banner-text: #5c7a71;
-    --banner-icon: #8db3a7;
-    --stat-label: #7a8a8e;
-    --stat-em: #81938d;
-    --stat-note: #8a989d;
-    --step-line: #dde7e6;
-    --step-num: #6a9d91;
-    --step-text: #7e8d92;
-    --login-bg: #edf2f0;
-    --login-intro: #183f3e;
-    --login-text: #6a8681;
-    --login-small: #8aa39b;
-    --login-card-border: #dbe5e1;
-    --login-card-shadow: #213e3610;
-    --login-brand: #203f3c;
-    --login-muted: #8a9993;
-    --login-note: #8b9c96;
-    --wafer-line: #9bbcac;
-    --wafer-grid: #adc8bb55;
+    --sidebar-active-bg: #2e1015;
+    --sidebar-active-text: #ffe3e7;
+    --sidebar-active-line: #e31837;
+    --sidebar-bottom: #9a9aa3;
+    --sidebar-small: #7f7f88;
+    --sidebar-dot: #f58025;
+    --brand-border: #e31837;
+    --brand-color: #ffffff;
+    --brand-from: #e31837;
+    --brand-to: #f58025;
+    --banner-from: #fdf4f5;
+    --banner-to: #fff8ef;
+    --banner-border: #f2dde0;
+    --banner-text: #8a5f68;
+    --banner-icon: #e3a48f;
+    --stat-label: #74757d;
+    --stat-em: #8c7c80;
+    --stat-note: #74757d;
+    --step-line: #eceaec;
+    --step-num: #c42233;
+    --step-text: #74757d;
+    --login-bg: #f6f6f7;
+    --login-intro: #1b1c1e;
+    --login-text: #62636b;
+    --login-small: #6e6f76;
+    --login-card-border: #e9e9ec;
+    --login-card-shadow: #1b1c1e12;
+    --login-brand: #1b1c1e;
+    --login-muted: #6e6f76;
+    --login-note: #6e6f76;
+    --wafer-line: #e6c9c7;
+    --wafer-grid: #e7ccc955;
 }
 :root[data-theme="dark"] {
     color-scheme: dark;
-    --bg: #0c1719;
-    --text: #d8e4e5;
-    --surface: #132527;
-    --line: #223a3d;
-    --line-soft: #1d3235;
-    --muted: #93a6a9;
-    --muted-2: #9aacae;
-    --breadcrumb: #7e9396;
-    --eyebrow: #6fb6a9;
-    --code: #a6d6c8;
-    --code-bg: #0f2022;
-    --footer: #718689;
-    --table-head-bg: #172a2d;
-    --table-head-text: #9fb3b5;
-    --sidebar-bg: #081719;
-    --sidebar-text: #d0e2e3;
-    --sidebar-label: #7c9a9d;
-    --sidebar-link: #a9c4c6;
-    --sidebar-hover-bg: #123033;
+    /* 深色底整体提亮一档：深灰蓝调，不再是近黑 */
+    --bg: #17181c;
+    --text: #ededef;
+    --surface: #1f2026;
+    --line: #33343d;
+    --line-soft: #2a2b33;
+    --muted: #a6a6ae;
+    --muted-2: #b6b6be;
+    --breadcrumb: #9f9fa7;
+    --eyebrow: #ff7f8b;
+    --code: #ffb3bc;
+    --code-bg: #1b1c21;
+    --footer: #9d9da5;
+    --table-head-bg: #23242b;
+    --table-head-text: #b0b0b8;
+    --sidebar-bg: #111216;
+    --sidebar-text: #e5e5e9;
+    --sidebar-label: #92929b;
+    --sidebar-link: #c6c6ce;
+    --sidebar-hover-bg: #222329;
     --sidebar-hover-text: #fff;
-    --sidebar-active-bg: #17413f;
-    --sidebar-active-text: #c8f2dd;
-    --sidebar-active-line: #6fc4a4;
-    --sidebar-bottom: #93abad;
-    --sidebar-small: #6d8588;
-    --sidebar-dot: #74c9a4;
-    --brand-border: #3d8b82;
-    --brand-color: #8fe0c6;
-    --brand-from: #123a3d;
-    --brand-to: #0b2629;
-    --banner-from: #14302e;
-    --banner-to: #10262a;
-    --banner-border: #274a43;
-    --banner-text: #9dc3b6;
-    --banner-icon: #6fa896;
-    --stat-label: #93a6a9;
-    --stat-em: #9cadab;
-    --stat-note: #84989b;
-    --step-line: #223b3b;
-    --step-num: #7fb8a9;
-    --step-text: #93a5aa;
-    --login-bg: #0a1517;
-    --login-intro: #d9e8e6;
-    --login-text: #9db6b0;
-    --login-small: #7e9c96;
-    --login-card-border: #223a3d;
+    --sidebar-active-bg: #3a171e;
+    --sidebar-active-text: #ffe0e6;
+    --sidebar-active-line: #f25465;
+    --sidebar-bottom: #9d9da5;
+    --sidebar-small: #88888f;
+    --sidebar-dot: #f79a52;
+    --brand-border: #e31837;
+    --brand-color: #ffffff;
+    --brand-from: #e31837;
+    --brand-to: #f58025;
+    --banner-from: #2b161b;
+    --banner-to: #2b2017;
+    --banner-border: #432830;
+    --banner-text: #e0bcc1;
+    --banner-icon: #db9479;
+    --stat-label: #a6a6ae;
+    --stat-em: #b6a4a8;
+    --stat-note: #9c9ca4;
+    --step-line: #2f3038;
+    --step-num: #f47a85;
+    --step-text: #a6a6ae;
+    --login-bg: #14151a;
+    --login-intro: #f2f2f4;
+    --login-text: #b3b3bb;
+    --login-small: #92929a;
+    --login-card-border: #33343d;
     --login-card-shadow: #00000059;
-    --login-brand: #d4e7e3;
-    --login-muted: #93a5a0;
-    --login-note: #8ba09a;
-    --wafer-line: #4c6f71;
-    --wafer-grid: #4f7b7455;
+    --login-brand: #f2f2f4;
+    --login-muted: #a6a6ae;
+    --login-note: #9c9ca4;
+    --wafer-line: #6b3b43;
+    --wafer-grid: #84465055;
 }
 * {
     box-sizing: border-box;
@@ -176,39 +181,59 @@ input {
     background: linear-gradient(140deg, var(--brand-from), var(--brand-to));
 }
 .side-label {
-    font-size: 10px;
-    letter-spacing: 2px;
+    font-size: 11px;
     color: var(--sidebar-label);
-    margin: 43px 12px 15px;
+    padding: 0 12px 4px;
 }
-nav {
+.sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 14px;
+    min-height: 0;
+    margin-top: 24px;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
 }
-nav a {
+.sidebar-nav:hover,
+.sidebar-nav:focus-within {
+    scrollbar-color: rgb(255 255 255 / 24%) transparent;
+}
+.sidebar-group {
     display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: 2px;
+}
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
     gap: 12px;
     color: var(--sidebar-link);
     text-decoration: none;
-    padding: 12px 14px;
+    padding: 9px 12px;
     font-size: 14px;
     border-radius: 6px;
 }
-nav a:hover {
+.sidebar-nav a:hover {
     background: var(--sidebar-hover-bg);
     color: var(--sidebar-hover-text);
 }
-nav a.active {
+.sidebar-nav a:focus-visible {
+    outline: 2px solid var(--sidebar-active-line);
+    outline-offset: -2px;
+}
+.sidebar-nav a.active {
     background: var(--sidebar-active-bg);
     color: var(--sidebar-active-text);
     border-left: 3px solid var(--sidebar-active-line);
-    padding-left: 11px;
+    padding-left: 9px;
 }
 .side-bottom {
     margin-top: auto;
     font-size: 11px;
-    padding-top: 45px;
+    padding-top: 20px;
     line-height: 2;
     color: var(--sidebar-bottom);
 }
@@ -563,21 +588,26 @@ footer {
     }
     .shell aside .brand > div:not(.brand-mark),
     .side-label,
-    nav span:not(.anticon),
+    .sidebar-nav span:not(.anticon),
     .side-bottom {
         display: none;
     }
     .shell aside .brand {
         justify-content: center;
     }
-    nav {
-        margin-top: 30px;
+    .sidebar-nav {
+        margin-top: 20px;
+        gap: 8px;
     }
-    nav a {
+    .sidebar-group + .sidebar-group {
+        border-top: 1px solid var(--sidebar-hover-bg);
+        padding-top: 8px;
+    }
+    .sidebar-nav a {
         justify-content: center;
         padding: 12px;
     }
-    nav a.active {
+    .sidebar-nav a.active {
         padding-left: 9px;
     }
     .workspace {

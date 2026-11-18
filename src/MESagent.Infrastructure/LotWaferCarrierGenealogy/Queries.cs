@@ -1,5 +1,6 @@
 using MESagent.Application;
 using MESagent.Domain.Entities;
+using MESagent.Infrastructure.MaterialConsumptionInventory;
 using Microsoft.EntityFrameworkCore;
 
 namespace MESagent.Infrastructure.LotWaferCarrierGenealogy;
@@ -79,6 +80,17 @@ public sealed partial class ProductionBackend
         view["release"] = await db.Set<WaferRelease>().SingleOrDefaultAsync(x => x.WaferId == wafer.Id);
         view["completion"] = await db.Set<WaferCompletion>().SingleOrDefaultAsync(x => x.WaferId == wafer.Id);
         view["sourceCoverage"] = wafer.OriginMaterialLotId == null ? "Unregistered" : "Referenced";
+        if (wafer.OriginMaterialLotId is Guid sourceId)
+        {
+            view["originMaterialLot"] = await WaferOrigins.Lots(db, fabId).Where(x => x.Lot.Id == sourceId)
+                .Select(x => new
+                {
+                    x.Lot.Id,
+                    x.Lot.LotNumber,
+                    materialCode = x.Material.Code,
+                    canOpen = can(MaterialBackend.ReadPermission)
+                }).SingleOrDefaultAsync();
+        }
         return view;
     }
 

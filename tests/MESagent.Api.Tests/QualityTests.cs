@@ -343,6 +343,17 @@ public sealed class QualityTests(OrganizationIdentityAccessControlFixture f)
         var original = await Get($"execution/runs/{Id(run)}");
         Assert.Equal(abort ? "Aborted" : "Failed", original.GetProperty("wafers")[0].GetProperty("result").GetString());
         Assert.Equal("Completed", (await QLot(sample)).GetProperty("status").GetString());
+        var waferId = Id(original.GetProperty("wafers")[0]);
+        var timeline = await f.Admin.GetFromJsonAsync<PageView<TraceEvent>>(
+            $"/api/v1/traceability/wafer/{waferId}/events?group=execution");
+        var visits = timeline!.Items.Where(x => x.Type == "step-visit").ToArray();
+        Assert.Equal(2, visits.Length);
+        Assert.NotEqual(visits[0].SourceId, visits[1].SourceId);
+        Assert.Contains(timeline.Items, x => x.Type == "run-ended" && x.SourceId == Id(run)
+            && x.Result == (abort ? "Aborted" : "Completed"));
+        Assert.Contains(timeline.Items, x => x.Type == "run-wafer" && x.Result == (abort ? "Aborted" : "Failed"));
+        Assert.Contains(timeline.Items, x => x.Type == "run-ended" && x.SourceId == Id(next)
+            && x.Result == "Completed");
     }
     private async Task<(JsonElement Template, JsonElement[] Specs)> InspectionSetup(Sample sample,
         string? templateName = null)
@@ -431,6 +442,15 @@ public sealed class QualityTests(OrganizationIdentityAccessControlFixture f)
             (await QLot(sample)).GetProperty("holds")[0].GetProperty("releasedAt").ValueKind);
         await using var db = f.Database.CreateContext();
         var original = await db.Set<Measurement>().FirstAsync(x => x.QualityCheckId == Id(check));
+        var waferId = Id(lot.GetProperty("wafers")[0]);
+        var path = $"/api/v1/traceability/wafer/{waferId}/events";
+        var timeline = await f.Admin.GetFromJsonAsync<PageView<TraceEvent>>($"{path}?group=quality");
+        var measurement = Assert.Single(timeline!.Items, x => x.SourceId == original.Id);
+        Assert.StartsWith("批级", measurement.Summary);
+        Assert.Contains(timeline.Items, x => x.Type == "hold");
+        var evidence = await f.Admin.GetFromJsonAsync<TraceEvidence>($"{path}/measurement/{original.Id}");
+        Assert.Contains(evidence!.Fields, x => x.Label == "测量值");
+        Assert.Contains(evidence.Fields, x => x.Label == "检验记录 ID" && x.Value == Id(check).ToString());
         original.IsPassed = !original.IsPassed;
         await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
     }
@@ -539,6 +559,13 @@ public sealed class QualityTests(OrganizationIdentityAccessControlFixture f)
         Assert.False(await db.Set<CarrierLoad>().AnyAsync(x => x.WaferId == Id(failed) && x.UnloadedAt == null));
         Assert.Equal(Id(sample.Lot),
             (await db.Set<WaferDisposition>().SingleAsync(x => x.ScrapEntryId == Id(entry))).LotIdAtEvent);
+        var waferTrace = await f.Admin.GetFromJsonAsync<PageView<TraceEvent>>(
+            $"/api/v1/traceability/wafer/{Id(failed)}/events");
+        Assert.Contains(waferTrace!.Items, x => x.Type == "disposition" && x.Result == "Scrap");
+        var carrierTrace = await f.Admin.GetFromJsonAsync<PageView<TraceEvent>>(
+            $"/api/v1/traceability/carrier/{Id(carrier)}/events");
+        Assert.Contains(carrierTrace!.Items, x => x.Type == "run-started" && x.SourceId == Id(run));
+        Assert.Contains(carrierTrace.Items, x => x.Type == "carrier-unloaded" && x.Related.Any(l => l.Id == Id(failed)));
     }
 
     [Fact]

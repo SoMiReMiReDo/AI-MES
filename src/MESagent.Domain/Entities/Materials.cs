@@ -71,7 +71,8 @@ public sealed class MaterialSource
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public uint RowVersion { get; set; }
     public Guid MaterialId { get; set; }
-    public Guid IntegrationConfigId { get; set; }
+    public Guid? IntegrationConfigId { get; set; }
+    public Guid? ManualFabId { get; set; }
     public string ExternalCode { get; set; } = null!;
     public string? ExternalName { get; set; }
     public string? UnitMapping { get; set; }
@@ -96,6 +97,7 @@ public sealed class MaterialLot
     public DateTime ReceivedAt { get; set; }
     public DateOnly? ManufacturingDate { get; set; }
     public DateOnly? ExpiryDate { get; set; }
+    public DateTime? ResourceExpiryAt { get; set; }
     public string Status { get; set; } = null!;
     public string? SupplierLotNo { get; set; }
     public string? SupplierReference { get; set; }

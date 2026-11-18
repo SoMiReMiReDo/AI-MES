@@ -28,47 +28,6 @@ public sealed partial class ExecutionBackend
 
     private async Task<object> Query(OrganizationIdentityAccessControlRequest r, string[] p)
     {
-        if (p[0] == "equipment")
-        {
-            if (p.Length == 2 && p[1] == "options")
-                return new
-                {
-                    areas = await db.Set<Area>().Where(x => x.FabId == fabId && x.IsActive)
-                        .OrderBy(x => x.Code).Select(x => new { x.Id, x.Code, x.Name }).ToListAsync(),
-                    groups = await db.Set<EquipmentGroup>().Where(x => x.FabId == fabId && x.IsActive)
-                        .OrderBy(x => x.Code).Select(x => new { x.Id, x.Code, x.Name }).ToListAsync(),
-                    types = await db.Set<EquipmentType>().Where(x => x.IsActive)
-                        .OrderBy(x => x.Code).Select(x => new { x.Id, x.Code, x.Name }).ToListAsync()
-                };
-            if (p.Length == 2 && p[1] == "types")
-                return await Page(db.Set<EquipmentType>().OrderBy(x => x.Code).ThenBy(x => x.Id), r);
-            if (p.Length == 2 && p[1] == "groups")
-                return await Page(db.Set<EquipmentGroup>().Where(x => x.FabId == fabId)
-                    .OrderBy(x => x.Code).ThenBy(x => x.Id), r);
-            if (p.Length == 2 && p[1] == "tools")
-            {
-                var query = from tool in db.Set<Equipment>()
-                            join area in db.Set<Area>() on tool.AreaId equals area.Id
-                            join equipmentGroup in db.Set<EquipmentGroup>()
-                                on tool.EquipmentGroupId equals equipmentGroup.Id
-                            where area.FabId == fabId && equipmentGroup.FabId == fabId
-                            select tool;
-                return await Page(query.OrderBy(x => x.Code).ThenBy(x => x.Id), r);
-            }
-            if (p.Length == 3 && p[1] == "tools")
-            {
-                var tool = await Equipment(Id(p[2]));
-                return new
-                {
-                    equipment = View(tool),
-                    currentRun = await db.Set<ProcessRun>()
-                        .Where(x => x.EquipmentId == tool.Id && x.Status == "Running")
-                        .Select(x => new { x.Id, x.StepExecutionId, x.TrackInAt }).SingleOrDefaultAsync(),
-                    states = await db.Set<EquipmentState>().Where(x => x.EquipmentId == tool.Id)
-                        .OrderByDescending(x => x.StartedAt).ThenBy(x => x.Id).Take(100).ToListAsync()
-                };
-            }
-        }
         if (p[0] != "execution")
             throw Error("ResourceNotFound", "接口不存在", 404);
         if (p.Length == 2 && p[1] == "dispatch")
@@ -100,7 +59,7 @@ public sealed partial class ExecutionBackend
                 work = step == null ? null : await Work(step),
                 candidates = step is { Status: "Waiting" } ? await Candidates(lot, step) : [],
                 blocks = await Blocks(lot, step is { Status: "Waiting" }),
-                missingDependencies = new[] { "跨路线返工 / 自动质检任务", "完整 F7 资格与维护" }
+                missingDependencies = new[] { "跨路线返工 / 自动质检任务", "腔体级调度 / 多 Lot 共炉" }
             };
         }
         if (p.Length == 6 && p[1] == "lots" && p[3] == "documents" && p[5] == "content")

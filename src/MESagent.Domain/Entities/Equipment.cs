@@ -43,6 +43,7 @@ public sealed class Equipment
     public Guid EquipmentGroupId { get; set; }
     public Guid EquipmentTypeId { get; set; }
     public string OperationalState { get; set; } = null!;
+    public string CommunicationState { get; set; } = "Unknown";
 }
 
 /// <summary>Equipment / chambers，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
@@ -76,6 +77,10 @@ public sealed class EquipmentEvent
     public DateTime ReceivedAt { get; set; }
     public Guid CorrelationId { get; set; }
     public bool IsSimulated { get; set; }
+    public string Source { get; set; } = "Manual";
+    public string? SourceEventId { get; set; }
+    public string ProcessingStatus { get; set; } = "Applied";
+    public string? RejectionReason { get; set; }
 }
 
 /// <summary>Equipment / equipment_states，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
@@ -104,6 +109,7 @@ public sealed class Downtime
     public Guid EquipmentId { get; set; }
     public Guid? ReasonCodeId { get; set; }
     public Guid? ShiftId { get; set; }
+    public Guid? EquipmentStateId { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? EndedAt { get; set; }
     public string? Notes { get; set; }
@@ -125,6 +131,8 @@ public sealed class Tool
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
     public Guid? EquipmentTypeId { get; set; }
+    public Guid? FabId { get; set; }
+    public Guid? EquipmentId { get; set; }
     public string Status { get; set; } = null!;
     public DateTime? NextServiceAt { get; set; }
 }
@@ -166,6 +174,8 @@ public sealed class MaintenanceEvent
     public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
     public string? ResolutionNotes { get; set; }
+    public DateTime? ReleasedAt { get; set; }
+    public Guid? ReleasedById { get; set; }
 }
 
 /// <summary>Equipment / equipment_qualifications，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
@@ -215,6 +225,9 @@ public sealed class Reticle
     public string LayerCode { get; set; } = null!;
     public string Status { get; set; } = null!;
     public long UsageCount { get; set; }
+    public Guid? FabId { get; set; }
+    public long MaxUsageCount { get; set; } = 1000;
+    public DateTime? UsableUntil { get; set; }
 }
 
 /// <summary>Equipment / reticle_usages，字段范围见 docs/development-process/04-fab-data-field-retention.md。</summary>
@@ -225,6 +238,7 @@ public sealed class ReticleUsage
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public uint RowVersion { get; set; }
     public Guid ReticleId { get; set; }
+    public Guid? ReticleMountId { get; set; }
     public Guid ProcessRunId { get; set; }
     public DateTime LoadedAt { get; set; }
     public DateTime? UnloadedAt { get; set; }
@@ -238,6 +252,7 @@ public sealed class MaterialMount
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public uint RowVersion { get; set; }
     public Guid MaterialLotId { get; set; }
+    public Guid? MaterialId { get; set; }
     public Guid EquipmentId { get; set; }
     public DateTime? OpenedAt { get; set; }
     public DateTime MountedAt { get; set; }

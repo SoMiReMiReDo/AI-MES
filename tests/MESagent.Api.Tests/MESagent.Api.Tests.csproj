@@ -11,4 +11,8 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../database/equipment-runtime-grants.sql" Link="equipment-runtime-grants.sql"
+      CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

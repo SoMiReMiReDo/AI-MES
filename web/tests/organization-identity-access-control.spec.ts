@@ -2,12 +2,14 @@ import { test, expect } from "@playwright/test";
 import { productionFlow } from "./production-flow";
 import { executionFlow } from "./execution-flow";
 import { qualityFlow } from "./quality-flow";
+import { equipmentFlow } from "./equipment-flow";
+import { traceabilityFlow } from "./traceability-flow";
 
 test("真实浏览器：首登改密、组织维护、账号分权、退出与撤权", async ({
     page,
     browser,
 }) => {
-    test.setTimeout(300000);
+    test.setTimeout(600000);
     const suffix = Date.now().toString();
     const initial = process.env.MES_E2E_PASSWORD!;
     const final = initial + "-changed";
@@ -212,6 +214,8 @@ test("真实浏览器：首登改密、组织维护、账号分权、退出与�
     await productionFlow(page, "WO" + suffix, suffix);
     await executionFlow(page, suffix);
     await qualityFlow(page, suffix);
+    await equipmentFlow(page, suffix, final);
+    await traceabilityFlow(page, suffix);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
     await page.screenshot({ path: "test-results/mobile.png", fullPage: true });

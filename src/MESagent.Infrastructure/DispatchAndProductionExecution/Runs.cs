@@ -3,6 +3,7 @@ using MESagent.Application;
 using MESagent.Domain;
 using MESagent.Domain.Entities;
 using MESagent.Infrastructure.LotWaferCarrierGenealogy;
+using MESagent.Infrastructure.EquipmentMaintenanceResources;
 using Microsoft.EntityFrameworkCore;
 
 namespace MESagent.Infrastructure.DispatchAndProductionExecution;
@@ -28,9 +29,15 @@ public sealed partial class ExecutionBackend
     {
         db.Add(new TrackEvent
         {
-            ProcessRunId = run.Id, EventType = type, OccurredAt = Now, RecordedAt = Now,
-            ActorId = actor.UserId, Source = "Web", CorrelationId = actor.CorrelationId,
-            IdempotencyKey = commandId.ToString(), Payload = JsonSerializer.Serialize(facts, Json)
+            ProcessRunId = run.Id,
+            EventType = type,
+            OccurredAt = Now,
+            RecordedAt = Now,
+            ActorId = actor.UserId,
+            Source = "Web",
+            CorrelationId = actor.CorrelationId,
+            IdempotencyKey = commandId.ToString(),
+            Payload = JsonSerializer.Serialize(facts, Json)
         });
     }
 
@@ -50,8 +57,12 @@ public sealed partial class ExecutionBackend
         }
         var run = new ProcessRun
         {
-            StepExecutionId = step.Id, EquipmentId = equipment.Id, RecipeVersionId = input.RecipeVersionId,
-            RecipeApplicabilityId = match.ApplicabilityId, TrackInAt = Now, TrackInById = actor.UserId,
+            StepExecutionId = step.Id,
+            EquipmentId = equipment.Id,
+            RecipeVersionId = input.RecipeVersionId,
+            RecipeApplicabilityId = match.ApplicabilityId,
+            TrackInAt = Now,
+            TrackInById = actor.UserId,
             Status = "Running"
         };
         db.Add(run);
@@ -64,7 +75,9 @@ public sealed partial class ExecutionBackend
         Touch(step);
         Touch(equipment);
         await TouchResources(wafers.Select(x => x.Id).ToArray());
-        Track(run, "TrackIn", new { match, waferIds = wafers.Select(x => x.Id) });
+        var resources = await EquipmentResources.BeginRun(db, fabId, run, Now);
+        await EquipmentResources.RefreshState(db, equipment, Now, actor.UserId, "Execution");
+        Track(run, "TrackIn", new { match, resources, waferIds = wafers.Select(x => x.Id) });
         Record(run, "TrackedIn", new { lot.Id, step.RouteStepId, match, waferIds = wafers.Select(x => x.Id) });
         await db.SaveChangesAsync();
         return new(View(run), Tag(run.RowVersion), 201);
@@ -97,6 +110,9 @@ public sealed partial class ExecutionBackend
             throw Error("MembershipConflict", "参与片身份或当前归属不一致");
         await RequiredWork(step);
         var blocks = await Blocks(lot, false);
+        var equipment = await Equipment(run.EquipmentId);
+        if (equipment.OperationalState != "Idle")
+            blocks.Add("设备异常条件未解除，须质量审核后继续");
         var time = LotRules.NextEventTime(Now, [run.TrackInAt, step.EnteredAt]);
         foreach (var participant in participants)
         {
@@ -118,7 +134,10 @@ public sealed partial class ExecutionBackend
         Touch(run);
         Touch(step);
         Touch(lot);
-        Touch(await Equipment(run.EquipmentId));
+        var endEquipment = await Equipment(run.EquipmentId);
+        Touch(endEquipment);
+        await EquipmentResources.FinishRun(db, run, time);
+        await EquipmentResources.RefreshState(db, endEquipment, time, actor.UserId, "Execution");
         await TouchResources(wafers.Select(x => x.Id).ToArray());
         Track(run, "TrackOut", new { input.Wafers, advance, blocks });
         Record(run, "TrackedOut", new { lot.Id, input.Wafers, advance, blocks });
@@ -162,7 +181,10 @@ public sealed partial class ExecutionBackend
         Touch(run);
         Touch(step);
         Touch(lot);
-        Touch(await Equipment(run.EquipmentId));
+        var endEquipment = await Equipment(run.EquipmentId);
+        Touch(endEquipment);
+        await EquipmentResources.FinishRun(db, run, time);
+        await EquipmentResources.RefreshState(db, endEquipment, time, actor.UserId, "Execution");
         await TouchResources(participants.Select(x => x.WaferId).ToArray());
         Track(run, "Abort", new { reason });
         Record(run, "Aborted", new { lot.Id, reason });
