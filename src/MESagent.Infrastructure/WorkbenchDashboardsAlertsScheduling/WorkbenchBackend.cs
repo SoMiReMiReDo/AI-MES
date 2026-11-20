@@ -35,6 +35,7 @@ internal sealed partial class WorkbenchBackend(
             {
                 "options" => new(await Options()),
                 "overview" => new(await Overview(r.Query)),
+                "plant-board" => new(await PlantBoard(r.Query)),
                 "records" => new(await Records(r.Query)),
                 "history" => new(await History(r.Query)),
                 "shifts" => new(await Shifts(r.Query)),
@@ -45,6 +46,8 @@ internal sealed partial class WorkbenchBackend(
             };
         }
 
+        if (r.Method == "GET" && parts.Length == 3 && parts[1] == "shift-monitor")
+            return new(await ShiftMonitor(Id(parts[2]), r.Query));
         if (r.Method == "GET" && parts.Length == 4 && parts[1] == "schedule" && parts[3] == "history")
             return new(await PlanHistory(Id(parts[2])));
         if (parts[1] == "schedule")
@@ -110,7 +113,7 @@ internal sealed partial class WorkbenchBackend(
 
     private DateOnly Today(TimeZoneInfo zone) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(Now, zone));
 
-    private static DateTime Utc(DateOnly date, TimeOnly time, TimeZoneInfo zone)
+    internal static DateTime Utc(DateOnly date, TimeOnly time, TimeZoneInfo zone)
     {
         var local = date.ToDateTime(time);
         if (zone.IsInvalidTime(local))

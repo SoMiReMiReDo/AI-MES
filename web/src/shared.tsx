@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Alert, Select } from "antd";
 import React from "react";
 import { api, type Page, type Row } from "./api";
+import { useSiteAppearance, type SiteAppearance } from "./siteAppearance";
 
 export const labels: Record<string, string> = {
     fabs: "厂区",
@@ -34,13 +35,34 @@ export function setDisplayTimezone(value: string) {
     displayTimezone = value;
 }
 
-export function Brand() {
+export function Brand({
+    compact = false,
+    preview,
+}: {
+    compact?: boolean;
+    preview?: SiteAppearance;
+}) {
+    const { appearance } = useSiteAppearance();
+    const { name, subtitle } = preview ?? appearance;
+
     return (
-        <div className="brand">
-            <div className="brand-mark">M</div>
-            <div>
-                MESagent<small>MANUFACTURING SYSTEM</small>
-            </div>
+        <div
+            className="brand"
+            title={subtitle ? `${name} · ${subtitle}` : name}
+        >
+            <img
+                className="brand-mark"
+                src="/mesagent-gear.svg"
+                alt={compact ? name : ""}
+                width={38}
+                height={38}
+            />
+            {!compact && (
+                <div className="brand-text">
+                    <span>{name}</span>
+                    {subtitle && <small>{subtitle}</small>}
+                </div>
+            )}
         </div>
     );
 }

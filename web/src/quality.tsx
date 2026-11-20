@@ -51,7 +51,7 @@ export function Quality({ me }: { me: Me }) {
     const view = routeParams.get("view");
     const record = routeParams.get("record");
     const initialTab =
-        view && ["issues", "holds", "checks", "lots"].includes(view)
+        view && ["issues", "holds", "checks", "lots", "scraps"].includes(view)
             ? view
             : "issues";
     const [tab, setTab] = useState(initialTab);

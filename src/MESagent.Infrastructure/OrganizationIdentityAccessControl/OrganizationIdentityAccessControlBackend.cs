@@ -272,12 +272,13 @@ public sealed partial class OrganizationIdentityAccessControlBackend(
     public async Task<OrganizationIdentityAccessControlResult> Execute(RequestActor a, OrganizationIdentityAccessControlRequest r)
     {
         actor = a;
-        var isolation = r.Method == "GET" && r.Path != "auth/me"
-            ? System.Data.IsolationLevel.RepeatableRead : System.Data.IsolationLevel.ReadCommitted;
+        var snapshot = r.Method == "GET" && r.Path != "auth/me"
+            || r.Method == "POST" && r.Path == "analytics/work-orders/export";
+        var isolation = snapshot ? System.Data.IsolationLevel.RepeatableRead : System.Data.IsolationLevel.ReadCommitted;
         await using var tx = await db.Database.BeginTransactionAsync(isolation);
         // Serializes the small OrganizationIdentityAccessControl administrative workload and its shared parent/security invariants.
-        // All mutations, including login and bootstrap, use this same database lock.
-        if (r.Method != "GET" || r.Path == "auth/me")
+        // Login, bootstrap, and mutations of shared business and authorization state use the same database lock.
+        if (!snapshot)
             await Lock();
         db.ChangeTracker.Clear();
         current = await db.Users.SingleOrDefaultAsync(x => x.Id == a.UserId)
@@ -290,12 +291,17 @@ public sealed partial class OrganizationIdentityAccessControlBackend(
             Fail(403, "PasswordChangeRequired", "请先修改初始密码");
         await LoadAccess();
         OrganizationIdentityAccessControlResult result;
-        if (r.Path.StartsWith("reliability/"))
+        if (r.Path.StartsWith("settings/"))
+            result = await WebsiteSettings(r);
+        else if (r.Path.StartsWith("reliability/"))
             result = await new ReliabilityBackend(db, options.DeploymentFabId, actor, Require,
                 p => hasScope && permissions.Contains(p) && (!p.StartsWith("security.") || admin), clock).Execute(r);
         else if (r.Path.StartsWith("integration/"))
             result = await new MESagent.Infrastructure.DataImportEquipmentIntegration.IntegrationBackend(
                 db, options.DeploymentFabId, actor, Require, clock).Execute(r);
+        else if (r.Path.StartsWith("analytics/"))
+            result = await new MESagent.Infrastructure.ProductionAnalytics.AnalyticsBackend(
+                db, options.DeploymentFabId, actor, Require, p => hasScope && permissions.Contains(p), clock).Execute(r);
         else if (r.Path.StartsWith("workbench/"))
             result = await new MESagent.Infrastructure.WorkbenchDashboardsAlertsScheduling.WorkbenchBackend(
                 db, options.DeploymentFabId, actor, Require, p => hasScope && permissions.Contains(p), clock).Execute(r);
@@ -326,7 +332,7 @@ public sealed partial class OrganizationIdentityAccessControlBackend(
             result = await Security(r);
         else
             result = await Account(r, session);
-        if (!restricted && session.RevokedAt is null && (r.Method != "GET" || r.Path == "auth/me"))
+        if (!restricted && session.RevokedAt is null && !snapshot)
         {
             session.LastActivityAt = Now;
             session.IdleExpiresAt = new[] { Now.AddMinutes(options.IdleMinutes), session.AbsoluteExpiresAt }.Min();

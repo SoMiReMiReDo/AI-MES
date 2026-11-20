@@ -14,10 +14,12 @@ import {
     Tabs,
     Typography,
 } from "antd";
-import { useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { type Me } from "./api";
 import { roleLabels } from "./shared";
+import { searchNavigation } from "./navigationSearch";
+import type { NavigationEntry } from "./sidebar";
 import { WorkbenchAlerts } from "./workbenchAlerts";
 import { useWorkbenchLive } from "./workbenchLive";
 import { WorkbenchOverview } from "./workbenchOverview";
@@ -30,13 +32,6 @@ import {
     type WorkbenchSchemas,
 } from "./workbenchShared";
 import "./workbench.css";
-
-export type WorkbenchMenuItem = {
-    path: string;
-    label: string;
-    group?: string;
-    icon: ReactNode;
-};
 
 const roleEntries: Record<string, string[]> = {
     SystemAdmin: [
@@ -60,10 +55,11 @@ const roleEntries: Record<string, string[]> = {
     Viewer: ["/traceability", "/planning", "/production"],
 };
 
-export function Dashboard({ me, menu }: { me: Me; menu: WorkbenchMenuItem[] }) {
+export function Dashboard({ me, menu }: { me: Me; menu: NavigationEntry[] }) {
     const [search, setSearch] = useState("");
-    const [tab, setTab] = useState("overview");
+    const [params, setParams] = useSearchParams();
     const client = useQueryClient();
+    const navigate = useNavigate();
     const sources = [
         permission.lots,
         permission.execution,
@@ -89,11 +85,7 @@ export function Dashboard({ me, menu }: { me: Me; menu: WorkbenchMenuItem[] }) {
         (me.roles ?? []).flatMap((role) => roleEntries[role] ?? []),
     );
     const visible = normalized
-        ? menu.filter((entry) =>
-              `${entry.label} ${entry.group ?? ""} ${entry.path}`
-                  .toLocaleLowerCase()
-                  .includes(normalized),
-          )
+        ? searchNavigation(menu, search)
         : [
               ...Array.from(preferred).flatMap((path) =>
                   menu.filter((entry) => entry.path === path),
@@ -187,6 +179,9 @@ export function Dashboard({ me, menu }: { me: Me; menu: WorkbenchMenuItem[] }) {
                         value={search}
                         allowClear
                         onChange={(event) => setSearch(event.target.value)}
+                        onPressEnter={() => {
+                            if (visible[0]) navigate(visible[0].path);
+                        }}
                     />
                 </div>
                 {visible.length === 0 ? (
@@ -212,8 +207,16 @@ export function Dashboard({ me, menu }: { me: Me; menu: WorkbenchMenuItem[] }) {
             </Card>
             {canView && (
                 <Tabs
-                    activeKey={tab}
-                    onChange={setTab}
+                    activeKey={
+                        tabs.some(({ key }) => key === params.get("tab"))
+                            ? params.get("tab")!
+                            : "overview"
+                    }
+                    onChange={(key) =>
+                        setParams(key === "overview" ? {} : { tab: key }, {
+                            replace: true,
+                        })
+                    }
                     items={tabs}
                     destroyOnHidden
                     className="workbench-tabs"

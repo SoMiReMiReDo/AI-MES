@@ -12,7 +12,8 @@ psql -X -q -h postgres -U mesagent_owner -d mesagent --single-transaction -v ON_
     -f /delivery/database/equipment-runtime-grants.sql \
     -f /delivery/database/workbench-runtime-grants.sql \
     -f /delivery/database/integration-runtime-grants.sql \
-    -f /delivery/database/reliability-runtime-grants.sql <<'SQL'
+    -f /delivery/database/reliability-runtime-grants.sql \
+    -f /delivery/database/settings-runtime-grants.sql <<'SQL'
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'mesagent_app') THEN

@@ -121,6 +121,37 @@ public sealed partial class ExecutionTests
     }
 
     [Fact]
+    public async Task Workbench_week_uses_fab_midnight_and_includes_overnight_capacity_across_years()
+    {
+        var sample = await Setup(1, 1);
+        await Ok("equipment/shifts", new
+        {
+            code = Guid.NewGuid().ToString("N"),
+            name = "跨年夜班",
+            startTime = "22:00:00",
+            endTime = "06:00:00"
+        });
+        var equipment = $"equipmentId={Id(sample.Tool)}";
+        var week = await Get($"workbench/schedule?{equipment}&from=2029-12-31&to=2030-01-06");
+        var days = week.GetProperty("days").EnumerateArray().ToArray();
+        Assert.Equal(7, days.Length);
+        Assert.Equal("2029-12-31", days[0].GetProperty("date").GetString());
+        Assert.Equal(new DateTime(2029, 12, 31, 16, 0, 0, DateTimeKind.Utc),
+            days[0].GetProperty("endsAt").GetDateTime());
+        Assert.Equal(days[0].GetProperty("endsAt").GetDateTime(),
+            days[1].GetProperty("startsAt").GetDateTime());
+        Assert.Contains(week.GetProperty("capacity").EnumerateArray(), x =>
+            x.GetProperty("label").GetString() == "跨年夜班"
+            && x.GetProperty("startsAt").GetDateTime() < days[1].GetProperty("startsAt").GetDateTime()
+            && x.GetProperty("endsAt").GetDateTime() > days[1].GetProperty("startsAt").GetDateTime());
+        var day = await Get($"workbench/schedule?{equipment}&from=2030-01-01&to=2030-01-01");
+        Assert.Equal(days[1].GetProperty("startsAt").GetDateTime(), day.GetProperty("startsAt").GetDateTime());
+        Assert.Contains(day.GetProperty("capacity").EnumerateArray(), x =>
+            x.GetProperty("label").GetString() == "跨年夜班"
+            && x.GetProperty("startsAt").GetDateTime() == day.GetProperty("startsAt").GetDateTime());
+    }
+
+    [Fact]
     public async Task Workbench_shift_metrics_expose_missing_rate_and_compute_from_actual_run_and_wafer_results()
     {
         var sample = await Setup(2, 1);

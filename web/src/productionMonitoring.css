@@ -1,0 +1,793 @@
+.production-monitor {
+    --monitor-neutral: #6e7380;
+    --monitor-running: #087b61;
+    --monitor-idle: #526587;
+    --monitor-down: #be2d48;
+    --monitor-maintenance: #98520d;
+    --monitor-offline: #705d92;
+    --monitor-brand: var(--eyebrow);
+    display: grid;
+    gap: 18px;
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme="dark"] .production-monitor {
+    --monitor-neutral: #a6aabb;
+    --monitor-running: #56c4a3;
+    --monitor-idle: #a3b8dc;
+    --monitor-down: #ff8295;
+    --monitor-maintenance: #efad64;
+    --monitor-offline: #c6adf0;
+}
+
+.production-monitor [data-state] {
+    --monitor-state: var(--monitor-neutral);
+}
+.production-monitor [data-state="All"] {
+    --monitor-state: var(--monitor-brand);
+}
+.production-monitor [data-state="Running"] {
+    --monitor-state: var(--monitor-running);
+}
+.production-monitor [data-state="Idle"] {
+    --monitor-state: var(--monitor-idle);
+}
+.production-monitor [data-state="Down"] {
+    --monitor-state: var(--monitor-down);
+}
+.production-monitor [data-state="Maintenance"] {
+    --monitor-state: var(--monitor-maintenance);
+}
+.production-monitor [data-state="Offline"] {
+    --monitor-state: var(--monitor-offline);
+}
+
+.production-monitor h1,
+.production-monitor h2,
+.production-monitor p,
+.production-monitor dl,
+.production-monitor dd {
+    margin: 0;
+}
+
+.production-monitor h1 {
+    font-size: clamp(28px, 4vw, 42px);
+    letter-spacing: -0.04em;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+.production-monitor h2 {
+    font-size: 16px;
+    line-height: 1.45;
+}
+
+.monitor-hero {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding: clamp(18px, 3vw, 32px);
+    border: 1px solid var(--banner-border);
+    border-radius: 18px;
+    background: linear-gradient(
+        112deg,
+        var(--banner-from),
+        var(--surface) 67%,
+        var(--banner-to)
+    );
+}
+
+.monitor-fab {
+    margin-bottom: 8px !important;
+    color: var(--monitor-brand);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    font-size: 12px;
+}
+
+.monitor-subtitle,
+.monitor-detail-identity {
+    margin-top: 9px !important;
+    color: var(--muted-2);
+    font-size: 13px;
+}
+
+.monitor-detail-identity,
+.monitor-hero-actions,
+.monitor-refresh,
+.monitor-filters,
+.monitor-results-heading,
+.monitor-window-actions,
+.monitor-window-label,
+.monitor-current {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-width: 0;
+}
+
+.monitor-refresh-meta {
+    display: grid;
+    gap: 3px;
+    font-size: 11px;
+    line-height: 1.25;
+    color: var(--muted-2);
+}
+
+.monitor-refresh-state {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted-2);
+    font-weight: 700;
+}
+
+.monitor-refresh-state[data-live="true"] {
+    color: var(--monitor-running);
+}
+
+.monitor-refresh-state i,
+.monitor-counters i,
+.monitor-status-chip i {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.monitor-counters,
+.monitor-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 115px), 1fr));
+    gap: 10px;
+}
+
+.monitor-counters button {
+    display: grid;
+    gap: 6px;
+    padding: 12px 14px;
+    text-align: left;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    color: var(--text);
+    background: var(--surface);
+    transition:
+        border-color 160ms,
+        background 160ms;
+}
+
+.monitor-counters button:hover,
+.monitor-counters button[aria-pressed="true"] {
+    border-color: var(--monitor-state);
+    background: color-mix(in srgb, var(--monitor-state) 8%, var(--surface));
+}
+
+.monitor-counters button span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    color: var(--muted-2);
+    font-size: 12px;
+}
+
+.monitor-counters i {
+    color: var(--monitor-state);
+}
+.monitor-counters strong {
+    font-size: 24px;
+    line-height: 1.1;
+}
+
+.monitor-tools,
+.monitor-detail-nav,
+.monitor-shift-window,
+.monitor-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.monitor-results-heading span {
+    font-size: 12px;
+    color: var(--muted-2);
+}
+.monitor-filters > .ant-select {
+    min-width: 145px;
+}
+.monitor-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.monitor-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+    gap: 14px;
+}
+
+.monitor-equipment {
+    min-width: 0;
+    padding: 15px 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--monitor-state);
+    border-radius: 14px;
+    color: var(--text);
+    background: var(--surface);
+    text-decoration: none;
+    box-shadow: 0 2px 5px rgb(10 12 18 / 4%);
+    transition:
+        border-color 160ms,
+        box-shadow 160ms,
+        transform 160ms;
+}
+
+.monitor-equipment:hover {
+    color: var(--text);
+    border-color: var(--monitor-state);
+    transform: translateY(-2px);
+    box-shadow: 0 7px 18px rgb(10 12 18 / 10%);
+}
+
+.production-monitor :is(button, a):focus-visible {
+    outline: 2px solid var(--monitor-brand);
+    outline-offset: 3px;
+}
+
+.monitor-equipment-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 8px;
+}
+
+.monitor-equipment-identity {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.monitor-equipment-code {
+    font-family: ui-monospace, monospace;
+    color: var(--monitor-brand);
+    font-size: 12px;
+    font-weight: 700;
+}
+.monitor-equipment-identity h2 {
+    margin-top: 3px;
+}
+.monitor-equipment-identity p {
+    font-size: 12px;
+    margin-top: 2px;
+    color: var(--muted-2);
+}
+
+.monitor-status-chip {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--monitor-state);
+    background: color-mix(in srgb, var(--monitor-state) 11%, var(--surface));
+}
+
+.monitor-stop-note,
+.monitor-card-run {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 10px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.monitor-stop-note {
+    padding: 7px 8px;
+    border-radius: 7px;
+    color: var(--monitor-down);
+    background: color-mix(in srgb, var(--monitor-down) 9%, var(--surface));
+}
+
+.monitor-card-run {
+    align-items: start;
+    color: var(--muted-2);
+}
+.monitor-card-run strong {
+    color: var(--text);
+}
+.monitor-card-run > div {
+    min-width: 0;
+    display: grid;
+    text-align: right;
+    gap: 2px;
+}
+
+.monitor-equipment-shift {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted-2);
+    overflow-wrap: anywhere;
+}
+
+.monitor-equipment:hover .monitor-equipment-shift .anticon {
+    color: var(--monitor-brand);
+}
+
+.monitor-card-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+}
+
+.monitor-card-metrics dt,
+.monitor-shift-metrics dt,
+.monitor-analysis-values dt {
+    color: var(--muted-2);
+    font-size: 11px;
+}
+
+.monitor-card-metrics dd {
+    margin-top: 1px;
+    font-size: 14px;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+}
+.monitor-card-metrics div:first-child dd {
+    color: var(--monitor-brand);
+}
+
+.monitor-empty,
+.monitor-panel,
+.monitor-shift-window {
+    padding: 19px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    min-width: 0;
+}
+
+.monitor-pagination {
+    justify-self: end;
+}
+.monitor-detail-nav > .ant-select {
+    width: min(100%, 340px);
+}
+.monitor-detail-nav a,
+.monitor-current a,
+.monitor-records a {
+    color: var(--code);
+}
+.monitor-hero-detail {
+    align-items: center;
+}
+.monitor-window-label {
+    flex-wrap: nowrap;
+}
+.monitor-window-label > .anticon {
+    font-size: 21px;
+    color: var(--monitor-brand);
+}
+.monitor-window-label p,
+.monitor-section-heading p {
+    color: var(--muted-2);
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.monitor-current {
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.monitor-current-stop {
+    border-color: color-mix(in srgb, var(--monitor-down) 45%, var(--line));
+}
+.monitor-current-stop strong {
+    color: var(--monitor-down);
+}
+
+.monitor-shift-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    overflow: hidden;
+}
+
+.monitor-shift-metrics div {
+    padding: 13px 16px;
+    border-inline-start: 1px solid var(--line);
+}
+.monitor-shift-metrics div:first-child {
+    border: 0;
+}
+.monitor-shift-metrics dd {
+    font-size: clamp(16px, 3vw, 24px);
+    font-weight: 750;
+    margin-top: 4px;
+}
+
+.monitor-timeline {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 7px 10px;
+    margin-top: 14px;
+}
+
+.monitor-ruler {
+    grid-column: 2;
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted-2);
+    font-size: 10px;
+}
+
+.monitor-lane-label {
+    font-size: 11px;
+    color: var(--muted-2);
+    align-self: center;
+}
+.monitor-lane,
+.monitor-legend-future {
+    background: repeating-linear-gradient(
+        135deg,
+        var(--line-soft),
+        var(--line-soft) 3px,
+        var(--surface) 3px,
+        var(--surface) 7px
+    );
+}
+
+.monitor-lane {
+    height: 26px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    position: relative;
+}
+
+.monitor-elapsed,
+.monitor-segment,
+.monitor-now {
+    position: absolute;
+    inset-block: 1px;
+    border-radius: 3px;
+}
+
+.monitor-elapsed,
+.monitor-legend-elapsed {
+    background: color-mix(in srgb, var(--monitor-neutral) 20%, var(--surface));
+}
+.monitor-segment {
+    background: var(--monitor-state);
+}
+.monitor-run-segment {
+    background: var(--monitor-brand);
+    min-width: 2px;
+}
+.monitor-run-segment:is(:focus-visible, :hover) {
+    min-width: 5px;
+    z-index: 1;
+}
+.monitor-now {
+    width: 2px;
+    background: var(--text);
+    pointer-events: none;
+}
+
+.monitor-legend {
+    margin-top: 11px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px 12px;
+    color: var(--muted-2);
+    font-size: 11px;
+}
+
+.monitor-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.monitor-legend-elapsed,
+.monitor-legend-future {
+    width: 15px;
+    height: 9px;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+}
+.monitor-intervals {
+    margin-top: 12px;
+    color: var(--muted-2);
+    font-size: 12px;
+}
+.monitor-intervals summary {
+    cursor: pointer;
+}
+.monitor-intervals li {
+    margin-block: 3px;
+    overflow-wrap: anywhere;
+}
+
+.monitor-chart-scroll {
+    overflow: auto;
+    margin-top: 16px;
+    padding: 8px 4px 4px;
+}
+.monitor-chart {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 8px;
+}
+.monitor-chart-scale {
+    height: 122px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: var(--muted-2);
+    text-align: right;
+    font-size: 10px;
+}
+.monitor-chart-main {
+    position: relative;
+    height: 122px;
+    margin-bottom: 22px;
+}
+.monitor-chart-axis,
+.monitor-chart-benchmark {
+    position: absolute;
+    inset-inline: 0;
+    border-top: 1px solid var(--line);
+    pointer-events: none;
+}
+.monitor-chart-axis {
+    inset-block: 0;
+    border-bottom: 1px solid var(--line);
+}
+.monitor-chart-axis::before {
+    position: absolute;
+    top: 50%;
+    inset-inline: 0;
+    content: "";
+    border-top: 1px solid var(--line-soft);
+}
+.monitor-chart-benchmark {
+    border-top: 1px dashed var(--monitor-maintenance);
+    z-index: 1;
+}
+.monitor-bars {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: stretch;
+}
+.monitor-bars button {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+    color: var(--muted-2);
+    background: transparent;
+}
+.monitor-bars button:hover,
+.monitor-bars button[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--monitor-brand) 8%, transparent);
+}
+.monitor-chart-bar {
+    position: absolute;
+    bottom: 0;
+    left: 22%;
+    right: 22%;
+    min-height: 2px;
+    border-radius: 4px 4px 0 0;
+    background: color-mix(in srgb, var(--monitor-brand) 55%, var(--surface));
+}
+.monitor-bars button[aria-pressed="true"] .monitor-chart-bar {
+    background: var(--monitor-brand);
+}
+.monitor-hour-label {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 3px;
+    font-size: 9px;
+    white-space: nowrap;
+}
+.monitor-chart-detail {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 5px;
+    color: var(--muted-2);
+    font-size: 12px;
+}
+.monitor-chart-detail strong {
+    color: var(--text);
+}
+
+.monitor-analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 295px), 1fr));
+    align-items: start;
+    gap: 14px;
+}
+.monitor-analysis-values {
+    display: grid;
+    gap: 7px;
+    padding-top: 13px;
+}
+.monitor-analysis-values div,
+.monitor-records li,
+.monitor-reasons li div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: baseline;
+}
+.monitor-analysis-values dd {
+    font-weight: 700;
+}
+.monitor-oee {
+    color: var(--monitor-brand);
+    font-size: 25px;
+}
+.monitor-records,
+.monitor-reasons {
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+}
+.monitor-records li {
+    padding: 9px 0;
+    border-top: 1px solid var(--line);
+    overflow-wrap: anywhere;
+}
+.monitor-records li:last-child {
+    padding-bottom: 0;
+}
+.monitor-records p {
+    color: var(--muted-2);
+    font-size: 11px;
+}
+.monitor-records a {
+    white-space: nowrap;
+    font-size: 12px;
+}
+.monitor-reasons {
+    display: grid;
+    gap: 8px;
+    padding-bottom: 8px;
+}
+.monitor-reasons li {
+    font-size: 12px;
+}
+.monitor-reason-track {
+    display: block;
+    margin-top: 3px;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--line);
+}
+.monitor-reason-track i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--monitor-down);
+}
+
+.monitoring-kiosk .left-sidebar,
+.monitoring-kiosk .sidebar-backdrop,
+.monitoring-kiosk .workspace > header,
+.monitoring-kiosk .workspace > footer {
+    display: none;
+}
+
+.monitoring-kiosk .workspace {
+    margin-left: 0 !important;
+}
+.monitoring-kiosk main {
+    max-width: 1900px;
+    padding: clamp(12px, 2.8vw, 36px);
+}
+.monitoring-kiosk .monitor-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+}
+
+@media (max-width: 600px) {
+    .production-monitor {
+        gap: 14px;
+    }
+    .monitor-hero {
+        border-radius: 13px;
+        padding: 14px;
+    }
+    .monitor-counters {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+    }
+    .monitor-counters button {
+        padding: 8px 7px;
+    }
+    .monitor-counters strong {
+        font-size: 20px;
+    }
+    .monitor-filters,
+    .monitor-search {
+        width: 100%;
+    }
+    .monitor-search .ant-input-affix-wrapper {
+        min-width: 0;
+    }
+    .monitor-detail-nav > .ant-select {
+        width: 100%;
+    }
+    .monitor-panel,
+    .monitor-shift-window {
+        padding: 12px;
+    }
+    .monitor-window-actions {
+        gap: 5px;
+    }
+    .monitor-window-actions .ant-btn {
+        font-size: 11px;
+        padding-inline: 6px;
+    }
+    .monitor-shift-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .monitor-shift-metrics div {
+        padding: 10px;
+    }
+    .monitor-shift-metrics div:nth-child(n + 3) {
+        border-top: 1px solid var(--line);
+    }
+    .monitor-shift-metrics div:nth-child(3) {
+        border-left: 0;
+    }
+    .monitor-card-metrics dd {
+        font-size: 12px;
+    }
+    .monitor-timeline {
+        gap: 5px;
+    }
+    .monitor-ruler span:nth-child(even) {
+        visibility: hidden;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .monitor-equipment,
+    .monitor-counters button {
+        transition: none;
+    }
+    .monitor-equipment:hover {
+        transform: none;
+    }
+}

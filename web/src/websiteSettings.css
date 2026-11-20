@@ -1,0 +1,38 @@
+.website-settings {
+    max-width: 1000px;
+}
+
+.settings-appearance {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    margin: 8px 0;
+}
+
+.settings-preview {
+    min-width: 0;
+    align-self: start;
+    padding: 18px;
+    border: 1px solid #ededf0;
+    border-radius: 8px;
+    background: #f6f6f7;
+    color: #1b1c1e;
+}
+
+.settings-preview[data-preview-theme="dark"] {
+    border-color: #33343d;
+    background: #17181c;
+    color: #ededef;
+}
+
+.settings-preview > span {
+    display: block;
+    margin-bottom: 16px;
+    font-size: 12px;
+}
+
+@media (max-width: 900px) {
+    .settings-appearance {
+        grid-template-columns: 1fr;
+    }
+}

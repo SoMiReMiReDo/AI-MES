@@ -100,7 +100,9 @@ export function Execution({ me }: { me: Me }) {
     const [page, setPage] = useState(1);
     const [routeParams] = useSearchParams();
     const [tab, setTab] = useState(
-        routeParams.has("run") ? "runs" : "dispatch",
+        routeParams.has("run") || routeParams.get("view") === "runs"
+            ? "runs"
+            : "dispatch",
     );
     const [runStatus, setRunStatus] = useState("Running");
     const [lotId, setLotId] = useState<string | null>(routeParams.get("lot"));

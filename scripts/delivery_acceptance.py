@@ -62,12 +62,16 @@ def snapshot(session, deployment, ids):
     lot, order, pdf, checksum = ids
     account = json.loads(api(session, deployment, "auth/me"))
     progress = json.loads(api(session, deployment, f"planning/work-orders/{order}/progress"))
+    appearance = json.loads(api(session, deployment, "site/appearance"))
+    schedule_settings = json.loads(api(session, deployment, "settings/schedule"))
     events = json.loads(api(session, deployment, f"traceability/lot/{lot}/events?pageSize=100"))
     attachment = api(session, deployment, f"engineering/documents/{pdf}/content")
     if progress["completedQty"] != 5 or events["total"] == 0:
         raise ValueError("演示预期五片完工及可查询的追溯事件。")
     if sha256(attachment).hexdigest().upper() != checksum:
         raise ValueError("工艺 PDF 与数据库摘要不一致。")
+    if appearance["name"] != "晶圆制造工作台" or schedule_settings["defaultView"] != "day":
+        raise ValueError("浏览器设置未持久化。")
     return {
         "account": account["userId"],
         "fab": account["fab"]["id"],
@@ -75,6 +79,8 @@ def snapshot(session, deployment, ids):
         "quantities": {k: v for k, v in progress.items() if k.endswith("Qty")},
         "traceability": events,
         "pdf": checksum,
+        "appearance": appearance,
+        "schedule_settings": schedule_settings,
         "facts": deployment.sql("""
             SELECT (SELECT count(*) FROM production.process_runs),
                    (SELECT count(*) FROM production.wafer_completions),
@@ -175,7 +181,7 @@ def verify_recovery(source, target, password):
         check_runtime_role(target)
         if snapshot(session, target, ids) != before:
             raise ValueError("恢复后会话、授权、工单、追溯或 PDF 与原实例不一致。")
-        print("独立实例恢复验证通过，原登录 Cookie 仍可读取原有工单、追溯和 PDF。", flush=True)
+        print("独立实例恢复验证通过，原登录 Cookie 可读取工单、追溯、PDF 和网站设置。", flush=True)
 
 
 def accept(port, keep, prebuilt):

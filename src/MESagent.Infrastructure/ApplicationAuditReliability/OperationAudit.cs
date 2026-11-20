@@ -20,12 +20,14 @@ internal sealed partial class ReliabilityBackend
         {
             ("engineering", "engineering.read"),
             ("planning", "planning.work-orders.read"),
+            ("analytics", "planning.work-orders.read"),
             ("lots", WorkbenchAccess.Lots),
             ("carriers", "production.carriers.read"),
             ("execution", WorkbenchAccess.Execution),
             ("quality", WorkbenchAccess.Quality),
             ("equipment", WorkbenchAccess.Equipment),
             ("materials", "materials.wafer-sources.read"),
+            ("settings", WebsiteSettingsAccess.Read),
             ("reliability", ReliabilityAccess.OutboxRead)
         })
             if (can(permission))

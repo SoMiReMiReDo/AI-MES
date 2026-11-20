@@ -113,7 +113,9 @@ def main():
             env=env,
             check=True
         )
-    elif cmd in ('provision-workbench', 'provision-integration', 'provision-reliability'):
+    elif cmd in (
+        'provision-workbench', 'provision-integration', 'provision-reliability', 'provision-settings'
+    ):
         module = cmd.removeprefix('provision-')
         sql = (ROOT / f'database/{module}-runtime-grants.sql').read_text()
         subprocess.run(
@@ -229,7 +231,8 @@ ALTER ROLE mesagent_app PASSWORD '{pwd}';
             input=(ROOT / 'database/equipment-runtime-grants.sql').read_text()
             + (ROOT / 'database/workbench-runtime-grants.sql').read_text()
             + (ROOT / 'database/integration-runtime-grants.sql').read_text()
-            + (ROOT / 'database/reliability-runtime-grants.sql').read_text(),
+            + (ROOT / 'database/reliability-runtime-grants.sql').read_text()
+            + (ROOT / 'database/settings-runtime-grants.sql').read_text(),
             text=True, cwd=ROOT, check=True, stdout=subprocess.DEVNULL
         )
         print('已配置应用运行角色；无 DDL 权限，已授予当前模块所需权限。')
@@ -237,7 +240,7 @@ ALTER ROLE mesagent_app PASSWORD '{pwd}';
         raise SystemExit(
             '用法: python3 scripts/app.py configure|serve|bootstrap|bootstrap-generated|recover-admin|'
             'test|provision|provision-execution|provision-quality|provision-equipment|provision-materials|'
-            'provision-workbench|provision-integration|provision-reliability'
+            'provision-workbench|provision-integration|provision-reliability|provision-settings'
         )
 
 

@@ -1,6 +1,11 @@
 import {
     ApartmentOutlined,
+    BarChartOutlined,
+    FileSearchOutlined,
+    PieChartOutlined,
+    WalletOutlined,
     AppstoreOutlined,
+    FundOutlined,
     AuditOutlined,
     DashboardOutlined,
     DesktopOutlined,
@@ -31,20 +36,28 @@ import { createRoot } from "react-dom/client";
 import {
     BrowserRouter,
     Navigate,
-    NavLink,
     Route,
     Routes,
     useLocation,
+    useNavigate,
 } from "react-router-dom";
 import { api, refreshCsrf, type Me } from "./api";
+import { AnalyticsOrderDetail, AnalyticsOrders } from "./analyticsOrders";
+import { AnalyticsOee } from "./analyticsOee";
+import { AnalyticsCost, AnalyticsScrap } from "./analyticsScrap";
 import { Logs } from "./audit";
 import { Login, PasswordForm } from "./auth";
 import { Dashboard } from "./dashboard";
+import { PlantBoard } from "./plantBoard";
+import { ShiftMonitor } from "./shiftMonitor";
 import { Organization, OrgTable } from "./organization";
 import { Profile } from "./profile";
 import { qc } from "./queryClient";
 import { Roles } from "./roles";
 import { Brand, Denied, setDisplayTimezone } from "./shared";
+import { Sidebar } from "./sidebar";
+import { SiteAppearanceProvider, useSiteAppearance } from "./siteAppearance";
+import { WebsiteSettings } from "./websiteSettings";
 import { ThemeProvider, ThemeToggle, useTheme } from "./theme";
 import "./style.css";
 import { Manufacturing } from "./manufacturing";
@@ -68,7 +81,8 @@ type SidebarLink = [
 
 function Application() {
     const location = useLocation();
-    const { message } = AntApp.useApp();
+    const navigate = useNavigate();
+    const { appearance } = useSiteAppearance();
     const [me, setMe] = useState<Me | null>(null);
     const [loading, setLoading] = useState(true);
     const [expired, setExpired] = useState(false);
@@ -119,6 +133,7 @@ function Application() {
                 onDone={async () => {
                     setExpired(false);
                     await refreshCsrf();
+                    void navigate("/", { replace: true });
                     await load();
                 }}
             />
@@ -139,6 +154,16 @@ function Application() {
         );
     setDisplayTimezone(me.fab?.timezone || "Asia/Shanghai");
     const can = (p: string) => me.permissions?.includes(p) ?? false;
+    const canMonitor = can("equipment.read");
+    const canOrderAnalytics = can("planning.work-orders.read");
+    const canScrapAnalytics = can("quality.read");
+    const canOeeAnalytics = canMonitor && can("execution.read");
+    const kiosk =
+        canMonitor &&
+        location.pathname === "/monitoring" &&
+        new URLSearchParams(location.search).get("kiosk") === "1";
+    const canReadSettings =
+        can("security.settings.read") && !!me.roles?.includes("SystemAdmin");
     const integration = integrationAccess(me);
     const canIntegrate = integration.simulator || integration.imports;
     const canAudit =
@@ -152,6 +177,7 @@ function Application() {
         {
             label: "生产运营",
             links: [
+                ["/monitoring", "厂区看板", <FundOutlined />, canMonitor],
                 [
                     "/planning",
                     "工单管理",
@@ -181,6 +207,35 @@ function Application() {
                     can("quality.read"),
                 ],
                 ["/traceability", "生产追溯", <SearchOutlined />, canTrace(me)],
+            ],
+        },
+        {
+            label: "生产分析",
+            links: [
+                [
+                    "/analytics/work-orders",
+                    "工单履历",
+                    <FileSearchOutlined />,
+                    canOrderAnalytics,
+                ],
+                [
+                    "/analytics/scrap",
+                    "报废分析",
+                    <PieChartOutlined />,
+                    canScrapAnalytics,
+                ],
+                [
+                    "/analytics/oee",
+                    "设备 OEE",
+                    <BarChartOutlined />,
+                    canOeeAnalytics,
+                ],
+                [
+                    "/analytics/cost-readiness",
+                    "生产成本",
+                    <WalletOutlined />,
+                    canOrderAnalytics,
+                ],
             ],
         },
         {
@@ -257,60 +312,36 @@ function Application() {
                     <AuditOutlined />,
                     canAudit,
                 ],
+                [
+                    "/settings/system",
+                    "系统设置",
+                    <SettingOutlined />,
+                    canReadSettings,
+                ],
                 ["/account/profile", "个人设置", <UserOutlined />, true],
             ],
         },
     ];
-    const activeLabel = nav
-        .flatMap((group) => group.links)
-        .find(([path]) => path === location.pathname)?.[1];
+    const menu = nav.flatMap(({ label: group, links }) =>
+        links
+            .filter(([, , , visible]) => visible)
+            .map(([path, label, icon]) => ({ path, label, icon, group })),
+    );
+    const activeLabel =
+        menu.find(({ path }) => path === location.pathname)?.label ??
+        (location.pathname.startsWith("/monitoring/")
+            ? "班次监控"
+            : location.pathname.startsWith("/analytics/work-orders/")
+              ? "工单履历详情"
+              : undefined);
 
     return (
-        <div className="shell">
-            <aside>
-                <Brand />
-                <nav className="sidebar-nav" aria-label="主导航">
-                    {nav.map(({ label, links }) => {
-                        const visibleLinks = links.filter(
-                            ([, , , visible]) => visible,
-                        );
-                        if (!visibleLinks.length) return null;
-                        return (
-                            <div
-                                key={label ?? "/"}
-                                className="sidebar-group"
-                                role={label ? "group" : undefined}
-                                aria-label={label}
-                            >
-                                {label && (
-                                    <div className="side-label">{label}</div>
-                                )}
-                                {visibleLinks.map(([path, name, icon]) => (
-                                    <NavLink
-                                        key={path}
-                                        to={path}
-                                        end={path === "/"}
-                                        aria-label={name}
-                                        title={name}
-                                    >
-                                        {icon}
-                                        <span>{name}</span>
-                                    </NavLink>
-                                ))}
-                            </div>
-                        );
-                    })}
-                </nav>
-                <div className="side-bottom">
-                    <span className="status-dot" /> 组织、身份与访问控制
-                    <br />
-                    <small>单厂部署 · 服务端权限校验</small>
-                </div>
-            </aside>
+        <div className={kiosk ? "shell monitoring-kiosk" : "shell"}>
+            <Sidebar entries={menu} />
             <div className="workspace">
                 <header>
                     <div>
-                        <span className="breadcrumb">MESagent / </span>
+                        <span className="breadcrumb">{appearance.name} / </span>
                         {activeLabel ?? "基础管理"}
                     </div>
                     <Space size="middle">
@@ -328,6 +359,72 @@ function Application() {
                 </header>
                 <main>
                     <Routes>
+                        <Route
+                            path="/monitoring"
+                            element={
+                                canMonitor ? <PlantBoard me={me} /> : <Denied />
+                            }
+                        />
+                        <Route
+                            path="/monitoring/:equipmentId"
+                            element={
+                                canMonitor ? (
+                                    <ShiftMonitor me={me} />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
+                        <Route
+                            path="/analytics/work-orders"
+                            element={
+                                canOrderAnalytics ? (
+                                    <AnalyticsOrders me={me} />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
+                        <Route
+                            path="/analytics/work-orders/:id"
+                            element={
+                                canOrderAnalytics ? (
+                                    <AnalyticsOrderDetail />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
+                        <Route
+                            path="/analytics/scrap"
+                            element={
+                                canScrapAnalytics ? (
+                                    <AnalyticsScrap me={me} />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
+                        <Route
+                            path="/analytics/oee"
+                            element={
+                                canOeeAnalytics ? (
+                                    <AnalyticsOee me={me} />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
+                        <Route
+                            path="/analytics/cost-readiness"
+                            element={
+                                canOrderAnalytics ? (
+                                    <AnalyticsCost />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
                         <Route
                             path="/traceability"
                             element={
@@ -435,19 +532,8 @@ function Application() {
                                 <Dashboard
                                     key={`${me.userId}/${me.fab?.id ?? ""}`}
                                     me={me}
-                                    menu={nav.flatMap(
-                                        ({ label: group, links }) =>
-                                            links
-                                                .filter(
-                                                    ([path, , , visible]) =>
-                                                        path !== "/" && visible,
-                                                )
-                                                .map(([path, label, icon]) => ({
-                                                    path,
-                                                    label,
-                                                    icon,
-                                                    group,
-                                                })),
+                                    menu={menu.filter(
+                                        ({ path }) => path !== "/",
                                     )}
                                 />
                             }
@@ -500,6 +586,16 @@ function Application() {
                             }
                         />
                         <Route
+                            path="/settings/system"
+                            element={
+                                canReadSettings ? (
+                                    <WebsiteSettings key={me.fab?.id} />
+                                ) : (
+                                    <Denied />
+                                )
+                            }
+                        />
+                        <Route
                             path="/settings/security-events"
                             element={canAudit ? <Logs me={me} /> : <Denied />}
                         />
@@ -517,7 +613,7 @@ function Application() {
                     </Routes>
                 </main>
                 <footer>
-                    MESagent / Semiconductor Manufacturing{" "}
+                    {appearance.name} / Semiconductor Manufacturing{" "}
                     <span>组织、身份与访问控制</span>
                 </footer>
             </div>
@@ -568,8 +664,10 @@ function Root() {
 
 createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
-        <ThemeProvider>
-            <Root />
-        </ThemeProvider>
+        <SiteAppearanceProvider>
+            <ThemeProvider>
+                <Root />
+            </ThemeProvider>
+        </SiteAppearanceProvider>
     </React.StrictMode>,
 );

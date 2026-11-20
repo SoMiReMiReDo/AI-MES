@@ -95,7 +95,9 @@ internal sealed partial class WorkbenchBackend
             can(WorkbenchAccess.Equipment) ? await tools
                 .Select(x => new WorkbenchOption(x.Id, x.Code, x.Name)).ToArrayAsync() : [],
             equipmentFilters ? (await ShiftDefinitions()).OrderBy(x => x.Code).ThenBy(x => x.Id)
-                .Select(x => new WorkbenchOption(x.Id, x.Code, x.Name)).ToArray() : []);
+                .Select(x => new WorkbenchOption(x.Id, x.Code, x.Name)).ToArray() : [],
+            await db.Set<FabSchedulePreference>().Where(x => x.FabId == fabId)
+                .Select(x => x.DefaultView).SingleOrDefaultAsync() ?? FabSchedulePreference.InitialView);
     }
 
     private IQueryable<WorkbenchRecord> WipRecords(string kind, IReadOnlyDictionary<string, string> q)

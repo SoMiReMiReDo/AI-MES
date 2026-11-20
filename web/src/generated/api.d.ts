@@ -70,6 +70,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/site/appearance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WebsiteAppearance"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -1920,6 +1955,76 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["WorkbenchOverview"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/plant-board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchPlantBoard"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workbench/shift-monitor/{equipmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkbenchShiftMonitor"];
                     };
                 };
             };
@@ -5371,6 +5476,229 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/settings/system": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WebsiteSystemInfo"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings/appearance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WebsiteAppearanceSettings"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["WebsiteAppearance"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WebsiteAppearanceSettings"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+                /** @description Precondition Failed */
+                412: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+                /** @description Precondition Required */
+                428: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FabScheduleSettings"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["FabScheduleSettingsInput"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FabScheduleSettings"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+                /** @description Precondition Failed */
+                412: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+                /** @description Precondition Required */
+                428: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["MesProblem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reliability/audit-logs": {
         parameters: {
             query?: never;
@@ -5928,6 +6256,284 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analytics/work-orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AnalyticsOrders"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/work-orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AnalyticsOrderDetail"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/work-orders/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/scrap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AnalyticsScrap"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/scrap/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AnalyticsScrapRecords"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/oee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AnalyticsOee"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/oee/shifts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AnalyticsOeeShifts"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/cost-readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AnalyticsCostReadiness"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5939,6 +6545,262 @@ export interface components {
             effectiveOn: string;
             /** Format: double */
             idealSeconds: number | string;
+        };
+        AnalyticsBreakdown: {
+            /** Format: uuid */
+            id: null | string;
+            code: null | string;
+            name: string;
+            /** Format: int32 */
+            wafers: number | string;
+            /** Format: double */
+            cumulativeRatio?: null | number | string;
+        };
+        AnalyticsContext: {
+            /** Format: date-time */
+            asOf: string;
+            timezone: string;
+            metricVersion: string;
+            filters: {
+                [key: string]: string;
+            };
+            units: {
+                [key: string]: string;
+            };
+            missing: string[];
+            evidence: components["schemas"]["AnalyticsEvidence"][];
+        };
+        AnalyticsCostReadiness: {
+            context: components["schemas"]["AnalyticsContext"];
+            sources: components["schemas"]["AnalyticsCostSource"][];
+            /** Format: double */
+            totalCost: null | number | string;
+            /** Format: double */
+            unitCost: null | number | string;
+        };
+        AnalyticsCostSource: {
+            kind: string;
+            status: string;
+            description: string;
+            evidence: null | components["schemas"]["AnalyticsEvidence"];
+        };
+        AnalyticsEvidence: {
+            kind: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            occurredAt: null | string;
+            url: string;
+        };
+        AnalyticsOee: {
+            context: components["schemas"]["AnalyticsContext"];
+            devices: components["schemas"]["PageViewOfAnalyticsOeeDevice"];
+            areas: components["schemas"]["WorkbenchOption"][];
+            lines: components["schemas"]["WorkbenchOption"][];
+            equipment: components["schemas"]["WorkbenchOption"][];
+            shifts: components["schemas"]["WorkbenchOption"][];
+        };
+        AnalyticsOeeDevice: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            /** Format: uuid */
+            areaId: string;
+            /** Format: uuid */
+            lineId: null | string;
+            /** Format: int32 */
+            startedShifts: number | string;
+            /** Format: int32 */
+            completeShifts: number | string;
+            metrics: components["schemas"]["AnalyticsOeeMetrics"];
+            days: components["schemas"]["AnalyticsOeePoint"][];
+        };
+        AnalyticsOeeMetrics: {
+            /** Format: double */
+            plannedMinutes: null | number | string;
+            /** Format: double */
+            runMinutes: null | number | string;
+            /** Format: double */
+            downtimeMinutes: null | number | string;
+            /** Format: double */
+            idealMinutes: null | number | string;
+            /** Format: double */
+            processed: null | number | string;
+            /** Format: double */
+            passed: null | number | string;
+            /** Format: double */
+            failed: null | number | string;
+            /** Format: double */
+            availability: null | number | string;
+            /** Format: double */
+            performance: null | number | string;
+            /** Format: double */
+            quality: null | number | string;
+            /** Format: double */
+            oee: null | number | string;
+            missing: string[];
+        };
+        AnalyticsOeePoint: {
+            /** Format: date */
+            date: string;
+            metrics: components["schemas"]["AnalyticsOeeMetrics"];
+        };
+        AnalyticsOeeShift: {
+            /** Format: uuid */
+            equipmentId: string;
+            equipmentCode: string;
+            /** Format: uuid */
+            shiftId: null | string;
+            shift: null | string;
+            /** Format: date */
+            date: null | string;
+            /** Format: date-time */
+            startsAt: null | string;
+            /** Format: date-time */
+            endsAt: null | string;
+            /** Format: double */
+            idealSeconds: null | number | string;
+            metrics: components["schemas"]["AnalyticsOeeMetrics"];
+            evidence: components["schemas"]["AnalyticsEvidence"][];
+        };
+        AnalyticsOeeShifts: {
+            context: components["schemas"]["AnalyticsContext"];
+            records: components["schemas"]["PageViewOfAnalyticsOeeShift"];
+        };
+        AnalyticsOrderBaseline: {
+            /** Format: int32 */
+            version: number | string;
+            /** Format: date-time */
+            releasedAt: string;
+            /** Format: int32 */
+            planned: null | number | string;
+            /** Format: int32 */
+            priority: null | number | string;
+            /** Format: date */
+            dueDate: null | string;
+        };
+        AnalyticsOrderDetail: {
+            context: components["schemas"]["AnalyticsContext"];
+            order: components["schemas"]["AnalyticsWorkOrder"];
+            baseline: null | components["schemas"]["AnalyticsOrderBaseline"];
+            lots: null | components["schemas"]["PageViewOfAnalyticsOrderLot"];
+        };
+        AnalyticsOrderLot: {
+            /** Format: uuid */
+            id: string;
+            number: string;
+            status: string;
+            evidence: components["schemas"]["AnalyticsEvidence"];
+        };
+        AnalyticsOrders: {
+            context: components["schemas"]["AnalyticsContext"];
+            summary: components["schemas"]["AnalyticsOrderSummary"];
+            records: components["schemas"]["PageViewOfAnalyticsWorkOrder"];
+            products: components["schemas"]["WorkbenchOption"][];
+            revisions: components["schemas"]["WorkbenchOption"][];
+        };
+        AnalyticsOrderSummary: {
+            /** Format: int32 */
+            orders: number | string;
+            /** Format: int64 */
+            planned: number | string;
+            /** Format: int64 */
+            released: null | number | string;
+            /** Format: int64 */
+            completed: null | number | string;
+            /** Format: int64 */
+            scrapped: null | number | string;
+            /** Format: int32 */
+            reached: number | string;
+            /** Format: int32 */
+            closedBelowPlan: number | string;
+            /** Format: int32 */
+            onTime: number | string;
+            /** Format: int32 */
+            withDueDate: number | string;
+            /** Format: double */
+            onTimeRatio: null | number | string;
+            /** Format: double */
+            averageProductionMinutes: null | number | string;
+            /** Format: int32 */
+            durationSamples: number | string;
+        };
+        AnalyticsScrap: {
+            context: components["schemas"]["AnalyticsContext"];
+            /** Format: int32 */
+            wafers: number | string;
+            /** Format: int32 */
+            entries: number | string;
+            /** Format: int32 */
+            completed: null | number | string;
+            /** Format: int32 */
+            settled: null | number | string;
+            /** Format: double */
+            settledScrapRatio: null | number | string;
+            reasons: components["schemas"]["AnalyticsBreakdown"][];
+            days: components["schemas"]["AnalyticsScrapDay"][];
+            operations: components["schemas"]["AnalyticsBreakdown"][];
+            equipment: null | components["schemas"]["AnalyticsBreakdown"][];
+            products: components["schemas"]["WorkbenchOption"][];
+            operationOptions: components["schemas"]["WorkbenchOption"][];
+            reasonOptions: components["schemas"]["WorkbenchOption"][];
+            equipmentOptions: null | components["schemas"]["WorkbenchOption"][];
+        };
+        AnalyticsScrapDay: {
+            /** Format: date */
+            date: string;
+            /** Format: int32 */
+            wafers: number | string;
+        };
+        AnalyticsScrapRecord: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: uuid */
+            entryId: string;
+            lotNumber: string;
+            waferCode: string;
+            product: components["schemas"]["WorkbenchOption"];
+            reason: components["schemas"]["WorkbenchOption"];
+            operation: null | components["schemas"]["WorkbenchOption"];
+            equipment: null | components["schemas"]["WorkbenchOption"];
+            evidence: components["schemas"]["AnalyticsEvidence"][];
+        };
+        AnalyticsScrapRecords: {
+            context: components["schemas"]["AnalyticsContext"];
+            records: components["schemas"]["PageViewOfAnalyticsScrapRecord"];
+        };
+        AnalyticsWorkOrder: {
+            /** Format: uuid */
+            id: string;
+            orderNo: string;
+            product: components["schemas"]["WorkbenchOption"];
+            revision: components["schemas"]["WorkbenchOption"];
+            status: string;
+            event: string;
+            /** Format: date-time */
+            eventAt: null | string;
+            /** Format: date-time */
+            completedAt: null | string;
+            /** Format: date-time */
+            terminalAt: null | string;
+            /** Format: date */
+            dueDate: null | string;
+            /** Format: int32 */
+            planned: number | string;
+            /** Format: int32 */
+            released: null | number | string;
+            /** Format: int32 */
+            completed: null | number | string;
+            /** Format: int32 */
+            scrapped: null | number | string;
+            onTime: null | boolean;
+            /** Format: double */
+            productionMinutes: null | number | string;
+            missing: string[];
+            evidence: components["schemas"]["AnalyticsEvidence"][];
         };
         AssignProductionLot: {
             /** Format: uuid */
@@ -6133,6 +6995,13 @@ export interface components {
             status: string;
             isActive: boolean;
         };
+        FabScheduleSettings: {
+            defaultView: string;
+            etag: string;
+        };
+        FabScheduleSettingsInput: {
+            defaultView: string;
+        };
         FabView: {
             /** Format: uuid */
             id: string;
@@ -6291,6 +7160,51 @@ export interface components {
             errorCode: null | string;
             etag: string;
         };
+        PageViewOfAnalyticsOeeDevice: {
+            items: components["schemas"]["AnalyticsOeeDevice"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
+        PageViewOfAnalyticsOeeShift: {
+            items: components["schemas"]["AnalyticsOeeShift"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
+        PageViewOfAnalyticsOrderLot: {
+            items: components["schemas"]["AnalyticsOrderLot"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
+        PageViewOfAnalyticsScrapRecord: {
+            items: components["schemas"]["AnalyticsScrapRecord"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
+        PageViewOfAnalyticsWorkOrder: {
+            items: components["schemas"]["AnalyticsWorkOrder"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
         PageViewOfOperationAuditView: {
             items: components["schemas"]["OperationAuditView"][];
             /** Format: int32 */
@@ -6374,6 +7288,15 @@ export interface components {
         };
         PageViewOfWorkbenchAlert: {
             items: components["schemas"]["WorkbenchAlert"][];
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+        };
+        PageViewOfWorkbenchMonitorEquipment: {
+            items: components["schemas"]["WorkbenchMonitorEquipment"][];
             /** Format: int32 */
             total: number | string;
             /** Format: int32 */
@@ -6849,6 +7772,28 @@ export interface components {
             /** Format: uuid */
             toSlotId: null | string;
         };
+        WebsiteAppearance: {
+            name: string;
+            subtitle: string;
+            defaultTheme: string;
+        };
+        WebsiteAppearanceSettings: {
+            appearance: components["schemas"]["WebsiteAppearance"];
+            etag: string;
+        };
+        WebsiteSystemInfo: {
+            /** Format: uuid */
+            fabId: string;
+            fabCode: string;
+            fabName: string;
+            timezone: string;
+            /** Format: int32 */
+            idleMinutes: number | string;
+            /** Format: int32 */
+            absoluteHours: number | string;
+            canManageAppearance: boolean;
+            canManageSchedule: boolean;
+        };
         WorkbenchAlert: {
             source: components["schemas"]["WorkbenchRecord"];
             /** Format: date-time */
@@ -6917,6 +7862,79 @@ export interface components {
             /** Format: double */
             cycleMinutes: null | number | string;
         };
+        WorkbenchMonitorCount: {
+            state: string;
+            /** Format: int32 */
+            count: number | string;
+        };
+        WorkbenchMonitorEquipment: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            area: string;
+            line: null | string;
+            state: string;
+            /** Format: date-time */
+            stateSince: null | string;
+            currentStop: null | components["schemas"]["WorkbenchMonitorStop"];
+            activeRun: null | components["schemas"]["WorkbenchMonitorRun"];
+            shift: null | components["schemas"]["WorkbenchMonitorWindow"];
+            metrics: null | components["schemas"]["WorkbenchShiftMetric"];
+        };
+        WorkbenchMonitorHour: {
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /** Format: int32 */
+            passed: number | string;
+            /** Format: int32 */
+            failed: number | string;
+        };
+        WorkbenchMonitorRun: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            equipmentId: string;
+            lotNumber: string;
+            orderNo: null | string;
+            step: string;
+            status: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: null | string;
+        };
+        WorkbenchMonitorState: {
+            state: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+        };
+        WorkbenchMonitorStop: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            equipmentId: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: null | string;
+            reason: null | string;
+            needsReason: boolean;
+            notes: null | string;
+        };
+        WorkbenchMonitorWindow: {
+            label: string;
+            /** Format: date */
+            day: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+        };
         WorkbenchOption: {
             /** Format: uuid */
             id: string;
@@ -6930,6 +7948,7 @@ export interface components {
             products: components["schemas"]["WorkbenchOption"][];
             equipment: components["schemas"]["WorkbenchOption"][];
             shifts: components["schemas"]["WorkbenchOption"][];
+            defaultScheduleView: string;
         };
         WorkbenchOverview: {
             /** Format: date-time */
@@ -6987,6 +8006,13 @@ export interface components {
             /** Format: date-time */
             endsAt: string;
         };
+        WorkbenchPlantBoard: {
+            /** Format: date-time */
+            asOf: string;
+            areas: components["schemas"]["WorkbenchOption"][];
+            counts: components["schemas"]["WorkbenchMonitorCount"][];
+            equipment: components["schemas"]["PageViewOfWorkbenchMonitorEquipment"];
+        };
         WorkbenchQueueItem: {
             /** Format: uuid */
             stepExecutionId: string;
@@ -7028,6 +8054,15 @@ export interface components {
             plans: components["schemas"]["WorkbenchPlan"][];
             capacity: components["schemas"]["WorkbenchCapacity"][];
             queue: components["schemas"]["PageViewOfWorkbenchQueueItem"];
+            days: components["schemas"]["WorkbenchScheduleDay"][];
+        };
+        WorkbenchScheduleDay: {
+            /** Format: date */
+            date: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
         };
         WorkbenchShiftMetric: {
             /** Format: uuid */
@@ -7061,6 +8096,22 @@ export interface components {
             /** Format: double */
             failedWafers: null | number | string;
             missing: null | string;
+        };
+        WorkbenchShiftMonitor: {
+            /** Format: date-time */
+            asOf: string;
+            equipment: components["schemas"]["WorkbenchMonitorEquipment"];
+            devices: components["schemas"]["WorkbenchOption"][];
+            shift: null | components["schemas"]["WorkbenchMonitorWindow"];
+            /** Format: date-time */
+            previousShift: null | string;
+            /** Format: date-time */
+            nextShift: null | string;
+            metrics: null | components["schemas"]["WorkbenchShiftMetric"];
+            states: components["schemas"]["WorkbenchMonitorState"][];
+            stops: components["schemas"]["WorkbenchMonitorStop"][];
+            runs: null | components["schemas"]["WorkbenchMonitorRun"][];
+            hours: null | components["schemas"]["WorkbenchMonitorHour"][];
         };
         WorkbenchShifts: {
             metrics: components["schemas"]["PageViewOfWorkbenchShiftMetric"];

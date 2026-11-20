@@ -3,6 +3,7 @@ import { Alert, Button, Form, Input } from "antd";
 import { useState } from "react";
 import { api, refreshCsrf, signIn } from "./api";
 import { Brand } from "./shared";
+import { useSiteAppearance } from "./siteAppearance";
 import { ThemeToggle } from "./theme";
 
 export function Login({
@@ -14,6 +15,7 @@ export function Login({
 }) {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
+    const { appearance } = useSiteAppearance();
 
     return (
         <div className="login-scene">
@@ -35,7 +37,7 @@ export function Login({
                     <div />
                     <div />
                 </div>
-                <small>MESagent / FAB OPERATIONS</small>
+                <small>{appearance.name} / FAB OPERATIONS</small>
             </section>
             <div className="login-card">
                 <Brand />

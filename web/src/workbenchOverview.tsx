@@ -1,8 +1,20 @@
-import { ArrowRightOutlined } from "@ant-design/icons";
+import {
+    AppstoreOutlined,
+    ArrowRightOutlined,
+    CheckCircleOutlined,
+    DesktopOutlined,
+    HourglassOutlined,
+    PauseCircleOutlined,
+    PlayCircleOutlined,
+    RadarChartOutlined,
+    WarningOutlined,
+} from "@ant-design/icons";
 import { Card, Modal, Space, Table, Tag, Typography } from "antd";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { type Me } from "./api";
 import {
+    has,
     metric,
     RecordLabel,
     TimeCell,
@@ -14,25 +26,104 @@ import {
 } from "./workbenchShared";
 
 type Overview = WorkbenchSchemas["WorkbenchOverview"];
+type OverviewMetric = keyof Omit<Overview, "asOf">;
+
+const lotLink = { to: "/production?view=lots", label: "批次列表" };
+const waferLink = {
+    to: "/production?view=wafers",
+    label: "晶圆履历",
+    permission: "production.wafers.read",
+};
 
 const cards: {
-    key: keyof Omit<Overview, "asOf">;
+    key: OverviewMetric;
     kind: string;
     title: string;
     unit: string;
+    icon: typeof AppstoreOutlined;
+    note: string;
+    tone?: "positive" | "warning" | "critical";
+    share?: { total: OverviewMetric; label: string };
+    link: { to: string; label: string; permission?: string };
 }[] = [
-    { key: "wipLots", kind: "wip", title: "在制批次", unit: "批" },
-    { key: "wipWafers", kind: "wip", title: "在制晶圆", unit: "片" },
-    { key: "waiting", kind: "waiting", title: "待加工", unit: "批" },
-    { key: "running", kind: "running", title: "运行中", unit: "Run" },
-    { key: "held", kind: "held", title: "Hold 批次", unit: "批" },
-    { key: "equipment", kind: "equipment", title: "启用设备", unit: "台" },
-    { key: "equipmentDown", kind: "down", title: "停机设备", unit: "台" },
+    {
+        key: "wipLots",
+        kind: "wip",
+        title: "在制批次",
+        unit: "批",
+        icon: AppstoreOutlined,
+        note: "已投放且仍在制",
+        link: lotLink,
+    },
+    {
+        key: "wipWafers",
+        kind: "wip",
+        title: "在制晶圆",
+        unit: "片",
+        icon: RadarChartOutlined,
+        note: "在制批次的有效片",
+        link: waferLink,
+    },
+    {
+        key: "waiting",
+        kind: "waiting",
+        title: "待加工",
+        unit: "批",
+        icon: HourglassOutlined,
+        note: "等待当前工序开工",
+        tone: "warning",
+        share: { total: "wipLots", label: "占在制批次" },
+        link: { to: "/execution", label: "派工列表" },
+    },
+    {
+        key: "running",
+        kind: "running",
+        title: "运行中",
+        unit: "Run",
+        icon: PlayCircleOutlined,
+        note: "已开工、尚未结束",
+        tone: "positive",
+        link: { to: "/execution?view=runs", label: "加工记录" },
+    },
     {
         key: "completedToday",
         kind: "completed",
         title: "今日终点完工",
         unit: "片",
+        icon: CheckCircleOutlined,
+        note: "厂区当日累计完工",
+        tone: "positive",
+        link: waferLink,
+    },
+    {
+        key: "held",
+        kind: "held",
+        title: "Hold 批次",
+        unit: "批",
+        icon: PauseCircleOutlined,
+        note: "仍有有效 Hold 记录",
+        tone: "warning",
+        link: { to: "/quality?view=holds", label: "Hold 列表" },
+    },
+    {
+        key: "equipment",
+        kind: "equipment",
+        title: "启用设备",
+        unit: "台",
+        icon: DesktopOutlined,
+        note: "当前筛选下已启用",
+        link: { to: "/equipment?view=tools", label: "设备台账" },
+    },
+    {
+        key: "equipmentDown",
+        kind: "down",
+        title: "停机设备",
+        unit: "台",
+        icon: WarningOutlined,
+        note: "当前状态为停机",
+        tone: "critical",
+        share: { total: "equipment", label: "占启用设备" },
+        link: { to: "/equipment?view=downtimes", label: "停机记录" },
     },
 ];
 
@@ -157,22 +248,68 @@ export function WorkbenchOverview({ me }: { me: Me }) {
                     {cards.map((card) => {
                         const value = overview.data?.[card.key];
                         if (value == null) return null;
+                        const { icon: Icon, share, link } = card;
+                        const total = share
+                            ? overview.data?.[share.total]
+                            : undefined;
+                        const destination =
+                            link.permission && !has(me, link.permission)
+                                ? lotLink
+                                : link;
+
                         return (
-                            <button
+                            <article
                                 className="workbench-kpi"
-                                type="button"
                                 key={card.key}
-                                onClick={() => setDrill(card)}
+                                data-tone={card.tone}
                             >
-                                <span>
-                                    {card.title}
-                                    <ArrowRightOutlined />
-                                </span>
-                                <div>
+                                <div className="workbench-kpi-heading">
+                                    <span className="workbench-kpi-icon">
+                                        <Icon aria-hidden />
+                                    </span>
+                                    <h3>
+                                        <Link
+                                            className="workbench-kpi-link"
+                                            to={destination.to}
+                                            aria-label={`${card.title} · ${destination.label}`}
+                                            title={destination.label}
+                                        >
+                                            {card.title}
+                                        </Link>
+                                    </h3>
+                                </div>
+                                <div className="workbench-kpi-value">
                                     <strong>{metric(value)}</strong>
                                     <small>{card.unit}</small>
                                 </div>
-                            </button>
+                                <div className="workbench-kpi-note">
+                                    {share && total != null && total > 0 ? (
+                                        <>
+                                            <span>{share.label}</span>
+                                            <span>
+                                                {metric((value / total) * 100)}%
+                                            </span>
+                                            <progress
+                                                aria-label={share.label}
+                                                value={value}
+                                                max={total}
+                                            />
+                                        </>
+                                    ) : (
+                                        card.note
+                                    )}
+                                </div>
+                                <div className="workbench-kpi-footer">
+                                    <button
+                                        type="button"
+                                        aria-label={`查看${card.title}明细`}
+                                        onClick={() => setDrill(card)}
+                                    >
+                                        查看明细
+                                    </button>
+                                    <ArrowRightOutlined aria-hidden />
+                                </div>
+                            </article>
                         );
                     })}
                 </div>

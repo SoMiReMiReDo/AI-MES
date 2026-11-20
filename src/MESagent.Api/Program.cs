@@ -256,6 +256,8 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 app.MapHub<WorkbenchLiveHub>("/api/v1/workbench/live", o => o.CloseOnAuthenticationExpiration = true)
     .RequireAuthorization();
 var api = app.MapGroup("/api/v1");
+api.MapGet("/site/appearance", (MesDbContext db, CancellationToken cancellationToken) =>
+    WebsiteBranding.Read(db, cancellationToken)).AllowAnonymous();
 api.MapGet("/auth/csrf", (HttpContext ctx, IAntiforgery antiforgery) =>
     Results.Ok(new { requestToken = antiforgery.GetAndStoreTokens(ctx).RequestToken }));
 api.MapPost("/auth/login", async (LoginRequest body, HttpContext ctx, OrganizationIdentityAccessControlService service) =>
@@ -349,12 +351,26 @@ async Task<IResult> Dispatch(HttpContext ctx, OrganizationIdentityAccessControlS
         if (json.TryGetProperty("id", out var id))
             ctx.Response.Headers.Location = ctx.Request.Path + "/" + id.GetString();
     }
+    if (result.Data is AnalyticsExport export)
+        return Results.File(export.Content, "text/csv; charset=utf-8", export.Filename);
     if (result.Data is EngineeringFile fileResult)
         return Results.File(fileResult.Content, "application/pdf", fileResult.Filename);
     return result.Status == 204 ? Results.NoContent() : Results.Json(result.Data, statusCode: result.Status);
 }
 
 api.MapGet("/auth/me", Dispatch).Produces<CurrentUserView>();
+var settings = api.MapGroup("/settings");
+settings.MapGet("/system", Dispatch).Produces<WebsiteSystemInfo>();
+settings.MapGet("/appearance", Dispatch).Produces<WebsiteAppearanceSettings>();
+settings.MapPut("/appearance", Dispatch).Accepts<WebsiteAppearance>("application/json")
+    .Produces<WebsiteAppearanceSettings>().Produces<MesProblem>(400, "application/problem+json")
+    .Produces<MesProblem>(403, "application/problem+json").Produces<MesProblem>(412, "application/problem+json")
+    .Produces<MesProblem>(428, "application/problem+json");
+settings.MapGet("/schedule", Dispatch).Produces<FabScheduleSettings>();
+settings.MapPut("/schedule", Dispatch).Accepts<FabScheduleSettingsInput>("application/json")
+    .Produces<FabScheduleSettings>().Produces<MesProblem>(400, "application/problem+json")
+    .Produces<MesProblem>(403, "application/problem+json").Produces<MesProblem>(412, "application/problem+json")
+    .Produces<MesProblem>(428, "application/problem+json");
 var reliability = api.MapGroup("/reliability");
 reliability.MapGet("/audit-logs", Dispatch).Produces<PageView<OperationAuditView>>()
     .Produces<MesProblem>(400, "application/problem+json").Produces<MesProblem>(403, "application/problem+json");
@@ -441,8 +457,20 @@ api.MapGet("/materials/wafer-lots/{id:guid}", Dispatch);
 api.MapGet("/materials/wafer-lots/{id:guid}/wafers", Dispatch);
 api.MapGet("/materials/wafer-origin-options", Dispatch);
 
+var analytics = api.MapGroup("/analytics");
+analytics.MapGet("/work-orders", Dispatch).Produces<AnalyticsOrders>();
+analytics.MapGet("/work-orders/{id:guid}", Dispatch).Produces<AnalyticsOrderDetail>();
+analytics.MapPost("/work-orders/export", Dispatch).Produces(200, contentType: "text/csv");
+analytics.MapGet("/scrap", Dispatch).Produces<AnalyticsScrap>();
+analytics.MapGet("/scrap/records", Dispatch).Produces<AnalyticsScrapRecords>();
+analytics.MapGet("/oee", Dispatch).Produces<AnalyticsOee>();
+analytics.MapGet("/oee/shifts", Dispatch).Produces<AnalyticsOeeShifts>();
+analytics.MapGet("/cost-readiness", Dispatch).Produces<AnalyticsCostReadiness>();
+
 api.MapGet("/workbench/options", Dispatch).Produces<WorkbenchOptions>();
 api.MapGet("/workbench/overview", Dispatch).Produces<WorkbenchOverview>();
+api.MapGet("/workbench/plant-board", Dispatch).Produces<WorkbenchPlantBoard>();
+api.MapGet("/workbench/shift-monitor/{equipmentId:guid}", Dispatch).Produces<WorkbenchShiftMonitor>();
 api.MapGet("/workbench/records", Dispatch).Produces<PageView<WorkbenchRecord>>();
 api.MapGet("/workbench/history", Dispatch).Produces<WorkbenchHistoryDay[]>();
 api.MapGet("/workbench/shifts", Dispatch).Produces<WorkbenchShifts>();

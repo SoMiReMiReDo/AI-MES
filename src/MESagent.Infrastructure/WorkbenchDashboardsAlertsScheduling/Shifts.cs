@@ -7,7 +7,7 @@ namespace MESagent.Infrastructure.WorkbenchDashboardsAlertsScheduling;
 
 internal sealed partial class WorkbenchBackend
 {
-    private sealed record ShiftWindow(string Label, DateOnly Day, DateTime From, DateTime To);
+    private sealed record ShiftWindow(Guid Id, string Label, DateOnly Day, DateTime From, DateTime To, bool ForLine);
 
     private static ShiftWindow[] Windows(Equipment tool, Shift[] shifts, IEnumerable<DateOnly> days, TimeZoneInfo zone)
     {
@@ -20,7 +20,7 @@ internal sealed partial class WorkbenchBackend
                 let to = Utc(shift.EndTime < shift.StartTime ? day.AddDays(1) : day, shift.EndTime, zone)
                 where to > start
                 orderby start, to, shift.Code, shift.Id
-                select new ShiftWindow(shift.Name, day, start, to)).ToArray();
+                select new ShiftWindow(shift.Id, shift.Name, day, start, to, shift.LineId != null)).ToArray();
     }
 
     private static int Weekday(DateOnly day) => ((int)day.DayOfWeek + 6) % 7 + 1;
@@ -93,59 +93,13 @@ internal sealed partial class WorkbenchBackend
         var toolIds = selected.Select(x => x.Tool.Id).Distinct().ToArray();
         var lower = Utc(days[0], TimeOnly.MinValue, zone);
         var upper = Utc(days[^1].AddDays(2), TimeOnly.MinValue, zone);
-        var runs = await (from run in HistoryRuns(q)
-                          where toolIds.Contains(run.Run.EquipmentId) && run.Run.TrackInAt < upper
-                              && (run.Run.TrackOutAt == null || run.Run.TrackOutAt > lower)
-                          select new
-                          {
-                              run.Run.Id, run.Run.EquipmentId, run.Run.TrackInAt, run.Run.TrackOutAt, run.Run.Status,
-                              Passed = db.Set<ProcessRunWafer>().Count(x => x.ProcessRunId == run.Run.Id
-                                  && x.Result == "Passed"),
-                              Failed = db.Set<ProcessRunWafer>().Count(x => x.ProcessRunId == run.Run.Id
-                                  && x.Result == "Failed"),
-                              Members = db.Set<ProcessRunWafer>().Count(x => x.ProcessRunId == run.Run.Id)
-                          }).ToArrayAsync();
-        var losses = await db.Set<Downtime>().Where(x => toolIds.Contains(x.EquipmentId)
-            && x.StartedAt < upper && (x.EndedAt == null || x.EndedAt > lower))
-            .Select(x => new { x.EquipmentId, x.StartedAt, x.EndedAt }).ToArrayAsync();
+        var runs = (await ShiftRuns(q, toolIds, lower, upper)).ToLookup(x => x.EquipmentId);
+        var losses = (await ShiftLosses(toolIds, lower, upper)).ToLookup(x => x.EquipmentId);
         var lastDay = days[^1];
-        var rates = await Rates.Where(x => toolIds.Contains(x.EquipmentId) && x.EffectiveOn <= lastDay)
-            .ToArrayAsync();
-        var metrics = new List<WorkbenchShiftMetric>();
-        foreach (var (tool, window) in selected)
-        {
-            if (window == null || window.From >= Now)
-            {
-                metrics.Add(new(tool.Id, tool.Code, window?.Label, window?.From, window?.To,
-                    null, null, null, null, null, null, null, null, null, null, null,
-                    window == null ? "无适用班次" : "班次尚未开始"));
-                continue;
-            }
-
-            var end = Min(Now, window.To);
-            var planned = (end - window.From).TotalMinutes;
-            var overlaps = runs.Where(x => x.EquipmentId == tool.Id && x.TrackInAt < end
-                && (x.TrackOutAt == null || x.TrackOutAt > window.From)).ToArray();
-            var running = Coverage(overlaps.Select(x => (x.TrackInAt, x.TrackOutAt ?? end)), window.From, end);
-            var stopped = Coverage(losses.Where(x => x.EquipmentId == tool.Id)
-                .Select(x => (x.StartedAt, x.EndedAt ?? end)), window.From, end);
-            var rate = EffectiveRate(rates, tool.Id, window.Day);
-            var classified = overlaps.Length > 0 && overlaps.All(x => x.Status == "Completed"
-                && x.TrackOutAt > x.TrackInAt && x.Members > 0 && x.Members == x.Passed + x.Failed);
-            double? processed = classified ? overlaps.Sum(x => x.Members
-                * Share(x.TrackInAt, x.TrackOutAt!.Value, window.From, end)) : null;
-            double? failed = classified ? overlaps.Sum(x => x.Failed
-                * Share(x.TrackInAt, x.TrackOutAt!.Value, window.From, end)) : null;
-            var availability = running / planned;
-            var ideal = (double?)rate * processed / 60;
-            var performance = running > 0 ? ideal / running : null;
-            var quality = processed > 0 ? (processed - failed) / processed : null;
-            metrics.Add(new(tool.Id, tool.Code, window.Label, window.From, window.To,
-                planned, running, stopped, rate, availability, performance, quality,
-                availability * performance * quality, planned - running,
-                ideal == null ? null : Math.Max(0, running - ideal.Value), failed,
-                rate == null ? "缺少设备理想产速" : !classified ? "缺少完整逐片结果" : null));
-        }
+        var rates = (await Rates.Where(x => toolIds.Contains(x.EquipmentId) && x.EffectiveOn <= lastDay)
+            .ToArrayAsync()).ToLookup(x => x.EquipmentId);
+        var metrics = selected.Select(x => ShiftMetrics(x.Tool, x.Window, runs[x.Tool.Id], losses[x.Tool.Id],
+            rates[x.Tool.Id])).ToArray();
 
         var queue = FilterWip(q).Where(x => x.Step.Status == "Waiting");
         var bottlenecks = await (from row in queue
@@ -155,7 +109,76 @@ internal sealed partial class WorkbenchBackend
                                  select new WorkbenchBottleneck(
                                      g.Key.Id, g.Key.Name, g.Count(), g.Min(x => x.Step.EnteredAt)))
             .Take(10).ToArrayAsync();
-        return new(new(metrics.ToArray(), windows.Length, page, size), bottlenecks);
+        return new(new(metrics, windows.Length, page, size), bottlenecks);
+    }
+
+    private sealed record ShiftRun(Guid Id, Guid EquipmentId, DateTime TrackInAt, DateTime? TrackOutAt,
+        string Status, int Passed, int Failed, int Members);
+
+    private sealed record ShiftLoss(Guid Id, Guid EquipmentId, DateTime StartedAt, DateTime? EndedAt);
+
+    private Task<ShiftRun[]> ShiftRuns(IReadOnlyDictionary<string, string> filters, Guid[] equipment,
+        DateTime lower, DateTime to) =>
+        (from run in HistoryRuns(filters)
+         where equipment.Contains(run.Run.EquipmentId) && run.Run.TrackInAt < to
+             && (run.Run.TrackOutAt == null || run.Run.TrackOutAt > lower)
+         select new ShiftRun(run.Run.Id, run.Run.EquipmentId, run.Run.TrackInAt, run.Run.TrackOutAt, run.Run.Status,
+             db.Set<ProcessRunWafer>().Count(x => x.ProcessRunId == run.Run.Id && x.Result == "Passed"),
+             db.Set<ProcessRunWafer>().Count(x => x.ProcessRunId == run.Run.Id && x.Result == "Failed"),
+             db.Set<ProcessRunWafer>().Count(x => x.ProcessRunId == run.Run.Id))).ToArrayAsync();
+
+    private Task<ShiftLoss[]> ShiftLosses(Guid[] equipment, DateTime from, DateTime to) =>
+        db.Set<Downtime>().Where(x => equipment.Contains(x.EquipmentId)
+            && x.StartedAt < to && (x.EndedAt == null || x.EndedAt > from))
+            .Select(x => new ShiftLoss(x.Id, x.EquipmentId, x.StartedAt, x.EndedAt)).ToArrayAsync();
+
+    private sealed record ShiftObservation(
+        WorkbenchShiftMetric Metric, double? IdealMinutes, double? Processed, double? Failed, string[] Missing);
+
+    private WorkbenchShiftMetric ShiftMetrics(Equipment tool, ShiftWindow? window, IEnumerable<ShiftRun> runs,
+        IEnumerable<ShiftLoss> losses, IEnumerable<EquipmentIdealRate> rates) =>
+        ObserveShift(tool, window, runs, losses, rates).Metric;
+
+    private ShiftObservation ObserveShift(Equipment tool, ShiftWindow? window, IEnumerable<ShiftRun> runs,
+        IEnumerable<ShiftLoss> losses, IEnumerable<EquipmentIdealRate> rates)
+    {
+        if (window == null || window.From >= Now)
+            return new(new(tool.Id, tool.Code, window?.Label, window?.From, window?.To,
+                null, null, null, null, null, null, null, null, null, null, null,
+                window == null ? "无适用班次" : "班次尚未开始"), null, null, null,
+                [window == null ? "no-shift" : "shift-not-started"]);
+
+        var end = Min(Now, window.To);
+        var planned = (end - window.From).TotalMinutes;
+        var overlaps = runs.Where(x => x.TrackInAt < end
+            && (x.TrackOutAt == null || x.TrackOutAt > window.From)).ToArray();
+        var running = Coverage(overlaps.Select(x => (x.TrackInAt, x.TrackOutAt ?? end)), window.From, end);
+        var stopped = Coverage(losses.Select(x => (x.StartedAt, x.EndedAt ?? end)), window.From, end);
+        var rate = EffectiveRate(rates, tool.Id, window.Day);
+        var classified = overlaps.Length > 0 && overlaps.All(x => x.Status == "Completed"
+            && x.TrackOutAt > x.TrackInAt && x.TrackOutAt <= Now
+            && x.Members > 0 && x.Members == x.Passed + x.Failed);
+        double? processed = classified ? overlaps.Sum(x => x.Members
+            * Share(x.TrackInAt, x.TrackOutAt!.Value, window.From, end)) : null;
+        double? failed = classified ? overlaps.Sum(x => x.Failed
+            * Share(x.TrackInAt, x.TrackOutAt!.Value, window.From, end)) : null;
+        var availability = running / planned;
+        var ideal = (double?)rate * processed / 60;
+        var performance = running > 0 ? ideal / running : null;
+        var quality = processed > 0 ? (processed - failed) / processed : null;
+        var missing = new List<string>();
+        if (overlaps.Length == 0)
+            missing.Add("no-run");
+        else if (!classified)
+            missing.Add("run-results-missing");
+        if (rate == null)
+            missing.Add("ideal-rate-missing");
+        return new(new(tool.Id, tool.Code, window.Label, window.From, window.To,
+                planned, running, stopped, rate, availability, performance, quality,
+                availability * performance * quality, planned - running,
+                ideal == null ? null : Math.Max(0, running - ideal.Value), failed,
+                rate == null ? "缺少设备理想产速" : !classified ? "缺少完整逐片结果" : null),
+            ideal, processed, failed, missing.ToArray());
     }
 
     private static DateTime Min(DateTime a, DateTime b) => a < b ? a : b;

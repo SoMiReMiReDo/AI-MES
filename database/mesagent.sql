@@ -7466,3 +7466,78 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261119113118_WebsiteSettings') THEN
+        IF NOT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname = 'settings') THEN
+            CREATE SCHEMA settings;
+        END IF;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261119113118_WebsiteSettings') THEN
+    CREATE TABLE settings.fab_schedule_preferences (
+        fab_id uuid NOT NULL,
+        default_view character varying(4) NOT NULL,
+        version uuid NOT NULL,
+        CONSTRAINT "PK_fab_schedule_preferences" PRIMARY KEY (fab_id),
+        CONSTRAINT ck_fab_schedule_view CHECK (default_view IN ('day', 'week')),
+        CONSTRAINT "FK_fab_schedule_preferences_fabs_fab_id" FOREIGN KEY (fab_id) REFERENCES organization.fabs (id) ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261119113118_WebsiteSettings') THEN
+    CREATE TABLE settings.site_appearance (
+        id uuid NOT NULL,
+        name character varying(60) NOT NULL,
+        subtitle character varying(100) NOT NULL,
+        default_theme character varying(5) NOT NULL,
+        version uuid NOT NULL,
+        CONSTRAINT "PK_site_appearance" PRIMARY KEY (id),
+        CONSTRAINT ck_site_appearance_name CHECK (char_length(btrim(name)) BETWEEN 1 AND 60),
+        CONSTRAINT ck_site_appearance_singleton CHECK (id = '67c6f063-676d-452b-bdd1-3a4556b9a35c'::uuid),
+        CONSTRAINT ck_site_appearance_theme CHECK (default_theme IN ('light', 'dark'))
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261119113118_WebsiteSettings') THEN
+    INSERT INTO settings.site_appearance (id, default_theme, name, subtitle, version)
+    VALUES ('67c6f063-676d-452b-bdd1-3a4556b9a35c', 'light', 'MESagent', 'MANUFACTURING SYSTEM', '00000000-0000-0000-0000-000000000000');
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261119113118_WebsiteSettings') THEN
+    INSERT INTO security.permissions(code,name,is_active)
+    SELECT code,code,true FROM unnest(ARRAY[
+        'security.settings.read','security.settings.appearance.manage','security.settings.schedule.manage'
+    ]) code ON CONFLICT(code) DO NOTHING;
+    INSERT INTO security.role_permissions(role_id,permission_id)
+    SELECT r.id,p.id FROM security.roles r CROSS JOIN security.permissions p
+    WHERE r.name='SystemAdmin' AND r.is_system
+        AND p.code IN ('security.settings.read','security.settings.appearance.manage',
+                       'security.settings.schedule.manage')
+    ON CONFLICT(role_id,permission_id) DO NOTHING;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261119113118_WebsiteSettings') THEN
+    INSERT INTO public.__ef_migrations_history ("MigrationId", "ProductVersion")
+    VALUES ('20261119113118_WebsiteSettings', '10.0.12');
+    END IF;
+END $EF$;
+COMMIT;
+

@@ -11,6 +11,7 @@ export default defineConfig({
                 ws: true,
             },
             "/openapi": process.env.MES_API_TARGET || "http://127.0.0.1:5080",
+            "/health": process.env.MES_API_TARGET || "http://127.0.0.1:5080",
         },
     },
 });

@@ -6,6 +6,7 @@ import { equipmentFlow } from "./equipment-flow";
 import { traceabilityFlow } from "./traceability-flow";
 import { workbenchFlow } from "./workbench-flow";
 import { integrationFlow } from "./integration-flow";
+import { websiteSettingsFlow } from "./website-settings-flow";
 
 test("真实浏览器：首登改密、组织维护、账号分权、退出与撤权", async ({
     page,
@@ -15,8 +16,13 @@ test("真实浏览器：首登改密、组织维护、账号分权、退出与�
     const suffix = Date.now().toString();
     const initial = process.env.MES_E2E_PASSWORD!;
     const final = initial + "-changed";
-    const login = async (p: typeof page, name: string, pwd: string) => {
-        await p.goto("/");
+    const login = async (
+        p: typeof page,
+        name: string,
+        pwd: string,
+        path = "/",
+    ) => {
+        await p.goto(path);
         await p.getByLabel("用户名", { exact: true }).fill(name);
         await p.getByLabel("密码", { exact: true }).fill(pwd);
         await p.getByRole("button", { name: /登\s*录/, exact: true }).click();
@@ -34,7 +40,8 @@ test("真实浏览器：首登改密、组织维护、账号分权、退出与�
     await expect(
         page.getByRole("heading", { name: "登录工作台" }),
     ).toBeVisible();
-    await login(page, "e2e_admin", final);
+    await login(page, "e2e_admin", final, "/materials");
+    await expect(page).toHaveURL(/\/$/);
     await expect(
         page.getByRole("heading", { name: "你好，系统管理员" }),
     ).toBeVisible();
@@ -103,6 +110,14 @@ test("真实浏览器：首登改密、组织维护、账号分权、退出与�
     );
     await expect(viewer.getByRole("link", { name: "审计与安全" })).toHaveCount(
         0,
+    );
+    const viewerNavSearch = viewer.getByRole("textbox", { name: "搜索导航" });
+    await viewerNavSearch.fill("系统设置");
+    await expect(
+        viewer.getByRole("navigation", { name: "主导航" }).getByRole("status"),
+    ).toHaveText("没有匹配的菜单");
+    expect((await viewer.request.get("/api/v1/settings/system")).status()).toBe(
+        403,
     );
     expect((await viewer.request.get("/api/v1/security/users")).status()).toBe(
         403,
@@ -268,6 +283,7 @@ test("真实浏览器：首登改密、组织维护、账号分权、退出与�
     await expect(deadLetter.getByText("已投递", { exact: true })).toBeVisible({
         timeout: 12000,
     });
+    await websiteSettingsFlow(page, browser);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({

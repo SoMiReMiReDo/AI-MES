@@ -2,7 +2,7 @@
 
 由 `MESagent.Database catalog` 从 EF Core 当前模型导出；重新生成命令：`python3 scripts/database.py catalog`。
 
-业务对象使用 UUID 主键；时间采用 UTC，可修改实体使用 PostgreSQL `xmin` 并发令牌（系统列）。追加型生产事实不提供更新令牌。可空字段带 `?`。角色、授权和登录信息采用 ASP.NET Core Identity。实施边界与验证见 [数据库实施说明](06-database-implementation.md)。
+业务对象使用 UUID 主键，时间采用 UTC。可修改实体使用并发令牌，字段列表省略 PostgreSQL 系统列 `xmin`。追加型生产事实不提供更新令牌。可空字段带 `?`。角色、授权和登录信息采用 ASP.NET Core Identity。实施边界与验证见 [数据库实施说明](06-database-implementation.md)。
 
 ## audit（5 张表）
 
@@ -178,6 +178,13 @@
 | `security.user_sessions` / `UserSession` | `absolute_expires_at: timestamp with time zone`、`created_at: timestamp with time zone`、`id: uuid`、`idle_expires_at: timestamp with time zone`、`last_activity_at: timestamp with time zone`、`restricted: boolean`、`revoke_reason: character varying(500)?`、`revoked_at: timestamp with time zone?`、`security_stamp: character varying(128)`、`terminal_id: uuid?`、`user_id: uuid` | `terminal_id → organization.terminals`；`user_id → security.users` |
 | `security.user_tokens` / `IdentityUserToken1` | `login_provider: text`、`name: text`、`user_id: uuid`、`value: text?` | `user_id → security.users` |
 | `security.users` / `MesUser` | `access_failed_count: integer`、`account_type: character varying(32)`、`concurrency_stamp: text?`、`created_at: timestamp with time zone`、`email: character varying(256)?`、`email_confirmed: boolean`、`force_password_change: boolean`、`id: uuid`、`is_active: boolean`、`last_login_at: timestamp with time zone?`、`lockout_enabled: boolean`、`lockout_end: timestamp with time zone?`、`name: character varying(200)`、`normalized_email: character varying(256)?`、`normalized_user_name: character varying(256)?`、`password_hash: text?`、`phone_number: text?`、`phone_number_confirmed: boolean`、`security_stamp: text?`、`two_factor_enabled: boolean`、`user_name: character varying(256)?`、`worker_id: uuid?` | `worker_id → organization.workers` |
+
+## settings（2 张表）
+
+| 数据表 / C# 对象 | 数据字段与类型 | 外键目标 |
+| --- | --- | --- |
+| `settings.fab_schedule_preferences` / `FabSchedulePreference` | `default_view: character varying(4)`、`fab_id: uuid`、`version: uuid` | `fab_id → organization.fabs` |
+| `settings.site_appearance` / `SiteAppearance` | `default_theme: character varying(5)`、`id: uuid`、`name: character varying(60)`、`subtitle: character varying(100)`、`version: uuid` |  |
 
 ## workbench（4 张表）
 

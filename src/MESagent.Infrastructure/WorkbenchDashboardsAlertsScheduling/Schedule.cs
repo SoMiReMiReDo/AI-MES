@@ -72,8 +72,12 @@ internal sealed partial class WorkbenchBackend
         var days = Days(Date(q, "from", today), Date(q, "to", today), 14);
         var lanes = await Calendar(days, zone, q);
         var ids = lanes.Select(x => x.Tool.Id).ToArray();
-        var lower = Utc(days[0], TimeOnly.MinValue, zone);
-        var to = Utc(days[^1].AddDays(1), TimeOnly.MinValue, zone);
+        var dates = days.Select(day => new WorkbenchScheduleDay(
+            day,
+            Utc(day, TimeOnly.MinValue, zone),
+            Utc(day.AddDays(1), TimeOnly.MinValue, zone))).ToArray();
+        var lower = dates[0].StartsAt;
+        var to = dates[^1].EndsAt;
         var plans = await (from plan in Plans.AsNoTracking()
                            join step in db.Set<StepExecution>().AsNoTracking() on plan.StepExecutionId equals step.Id
                            join lot in Lots on step.LotId equals lot.Id
@@ -88,7 +92,7 @@ internal sealed partial class WorkbenchBackend
                 .ToArray(),
             lanes.SelectMany(lane => lane.Windows.Where(x => x.From < to && x.To > lower)
                 .Select(x => new WorkbenchCapacity(lane.Tool.Id, x.Label,
-                    Max(x.From, lower), Min(x.To, to), lane.BlockedAt))).ToArray(), queue);
+                    Max(x.From, lower), Min(x.To, to), lane.BlockedAt))).ToArray(), queue, dates);
     }
 
     private async Task<WorkbenchPlanChange[]> PlanHistory(Guid id)

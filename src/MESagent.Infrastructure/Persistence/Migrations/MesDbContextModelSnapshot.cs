@@ -2034,6 +2034,31 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                     b.ToTable("fabs", "organization");
                 });
 
+            modelBuilder.Entity("MESagent.Domain.Entities.FabSchedulePreference", b =>
+                {
+                    b.Property<Guid>("FabId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fab_id");
+
+                    b.Property<string>("DefaultView")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("default_view");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid")
+                        .HasColumnName("version");
+
+                    b.HasKey("FabId");
+
+                    b.ToTable("fab_schedule_preferences", "settings", t =>
+                        {
+                            t.HasCheckConstraint("ck_fab_schedule_view", "default_view IN ('day', 'week')");
+                        });
+                });
+
             modelBuilder.Entity("MESagent.Domain.Entities.GenealogyDetail", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7512,6 +7537,57 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MESagent.Domain.Entities.SiteAppearance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("DefaultTheme")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("default_theme");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Subtitle")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("subtitle");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("site_appearance", "settings", t =>
+                        {
+                            t.HasCheckConstraint("ck_site_appearance_name", "char_length(btrim(name)) BETWEEN 1 AND 60");
+
+                            t.HasCheckConstraint("ck_site_appearance_singleton", "id = '67c6f063-676d-452b-bdd1-3a4556b9a35c'::uuid");
+
+                            t.HasCheckConstraint("ck_site_appearance_theme", "default_theme IN ('light', 'dark')");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("67c6f063-676d-452b-bdd1-3a4556b9a35c"),
+                            DefaultTheme = "light",
+                            Name = "MESagent",
+                            Subtitle = "MANUFACTURING SYSTEM",
+                            Version = new Guid("00000000-0000-0000-0000-000000000000")
+                        });
+                });
+
             modelBuilder.Entity("MESagent.Domain.Entities.SpecificationVersion", b =>
                 {
                     b.Property<Guid>("Id")
@@ -10362,6 +10438,15 @@ namespace MESagent.Infrastructure.Persistence.Migrations
                     b.HasOne("MESagent.Domain.Entities.Equipment", null)
                         .WithMany()
                         .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MESagent.Domain.Entities.FabSchedulePreference", b =>
+                {
+                    b.HasOne("MESagent.Domain.Entities.Fab", null)
+                        .WithMany()
+                        .HasForeignKey("FabId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

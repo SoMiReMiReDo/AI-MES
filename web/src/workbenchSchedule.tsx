@@ -9,6 +9,7 @@ import {
     Input,
     InputNumber,
     Modal,
+    Segmented,
     Select,
     Space,
     Table,
@@ -40,6 +41,7 @@ type AutoInput = WorkbenchSchemas["WorkbenchAutoPlanInput"];
 type AutoResult = WorkbenchSchemas["WorkbenchAutoResult"];
 type History = WorkbenchSchemas["WorkbenchPlanChange"];
 type FuturePlan = { row: QueueRow | Plan; plan?: Plan };
+type CalendarView = "day" | "week";
 
 const planActions: Record<string, string> = {
     ScheduleCreated: "创建",
@@ -55,6 +57,170 @@ function timeLabel(value: number, timezone?: string | null) {
         minute: "2-digit",
         hourCycle: "h23",
     }).format(new Date(value));
+}
+
+function shiftDate(day: string, offset: number) {
+    const date = new Date(`${day}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + offset);
+    return date.toISOString().slice(0, 10);
+}
+
+function monday(day: string) {
+    const weekday = new Date(`${day}T00:00:00Z`).getUTCDay();
+    return shiftDate(day, -((weekday + 6) % 7));
+}
+
+const weekdayLabel = new Intl.DateTimeFormat("zh-CN", {
+    weekday: "short",
+    timeZone: "UTC",
+});
+
+function WeekCalendar({
+    data,
+    day,
+    timezone,
+    openDay,
+    show,
+}: {
+    data: Schedule;
+    day: string;
+    timezone?: string | null;
+    openDay: (date: string) => void;
+    show: (plan: Plan) => void;
+}) {
+    if (!data.equipment.length) return <Empty description="没有启用的设备" />;
+    return (
+        <div className="workbench-calendar-scroll">
+            <table className="workbench-week" aria-label="设备周历">
+                <thead>
+                    <tr>
+                        <th scope="col">设备</th>
+                        {data.days.map(({ date }) => (
+                            <th key={date} scope="col">
+                                <Button
+                                    type={date === day ? "primary" : "text"}
+                                    size="small"
+                                    aria-label={`查看 ${date} 日历`}
+                                    onClick={() => openDay(date)}
+                                >
+                                    {date.slice(5)}{" "}
+                                    {weekdayLabel.format(
+                                        new Date(`${date}T00:00:00Z`),
+                                    )}
+                                </Button>
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {data.equipment.map((tool) => {
+                        const capacity = data.capacity.filter(
+                            (x) => x.equipmentId === tool.id,
+                        );
+                        const plans = data.plans.filter(
+                            (x) =>
+                                x.equipmentId === tool.id &&
+                                x.status !== "Cancelled",
+                        );
+                        return (
+                            <tr key={tool.id}>
+                                <th scope="row" title={tool.name}>
+                                    <strong>{tool.code}</strong>
+                                    <small>{tool.name}</small>
+                                </th>
+                                {data.days.map(({ date, startsAt, endsAt }) => {
+                                    const lower = Date.parse(startsAt);
+                                    const upper = Date.parse(endsAt);
+                                    const windows = capacity.flatMap((slot) => {
+                                        const from = Math.max(
+                                            lower,
+                                            Date.parse(slot.startsAt),
+                                        );
+                                        const until = Math.min(
+                                            upper,
+                                            Date.parse(slot.endsAt),
+                                            slot.blockedAt
+                                                ? Date.parse(slot.blockedAt)
+                                                : upper,
+                                        );
+                                        return from < until
+                                            ? [
+                                                  {
+                                                      from,
+                                                      until,
+                                                      label: slot.label,
+                                                  },
+                                              ]
+                                            : [];
+                                    });
+                                    const scheduled = plans.filter(
+                                        (plan) =>
+                                            Date.parse(plan.startsAt) < upper &&
+                                            Date.parse(plan.endsAt) > lower,
+                                    );
+                                    const range = (
+                                        from: number,
+                                        until: number,
+                                    ) =>
+                                        `${timeLabel(from, timezone)}–${until === upper ? "24:00" : timeLabel(until, timezone)}`;
+                                    return (
+                                        <td key={date}>
+                                            {windows.map(
+                                                ({ from, until, label }) => (
+                                                    <div
+                                                        key={`${from}/${until}/${label}`}
+                                                        className="workbench-week-capacity"
+                                                        title={label}
+                                                    >
+                                                        {range(from, until)}
+                                                    </div>
+                                                ),
+                                            )}
+                                            {scheduled.map((plan) => (
+                                                <button
+                                                    type="button"
+                                                    key={plan.id}
+                                                    className={`workbench-week-plan ${plan.status.toLowerCase()}`}
+                                                    aria-label={`计划 ${plan.lotNumber}`}
+                                                    onClick={() => show(plan)}
+                                                >
+                                                    <strong>
+                                                        {plan.lotNumber}
+                                                    </strong>
+                                                    <small>
+                                                        {range(
+                                                            Math.max(
+                                                                lower,
+                                                                Date.parse(
+                                                                    plan.startsAt,
+                                                                ),
+                                                            ),
+                                                            Math.min(
+                                                                upper,
+                                                                Date.parse(
+                                                                    plan.endsAt,
+                                                                ),
+                                                            ),
+                                                        )}
+                                                    </small>
+                                                </button>
+                                            ))}
+                                            {!windows.length &&
+                                                !scheduled.length && (
+                                                    <span className="workbench-week-empty">
+                                                        —
+                                                    </span>
+                                                )}
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    );
 }
 
 function Timeline({
@@ -214,7 +380,9 @@ function Timeline({
 }
 
 export function WorkbenchSchedule({ me }: { me: Me }) {
-    const [day, setDay] = useState(fabDate(me.fab?.timezone));
+    const timezone = me.fab?.timezone;
+    const [day, setDay] = useState(() => fabDate(timezone));
+    const [selectedMode, setSelectedMode] = useState<CalendarView>();
     const [equipmentId, setEquipmentId] = useState("");
     const [page, setPage] = useState(1);
     const [edit, setEdit] = useState<FuturePlan>();
@@ -234,10 +402,15 @@ export function WorkbenchSchedule({ me }: { me: Me }) {
     const manage = has(me, permission.schedule);
     const options =
         useWorkbench<WorkbenchSchemas["WorkbenchOptions"]>("options");
+    const mode =
+        selectedMode ??
+        (options.data?.defaultScheduleView === "day" ? "day" : "week");
+    const from = mode === "week" ? monday(day) : day;
+    const to = mode === "week" ? shiftDate(from, 6) : day;
     const schedule = useWorkbench<Schedule>(
         "schedule",
-        { from: day, to: day, equipmentId, page: String(page) },
-        !!day,
+        { from, to, equipmentId, page: String(page) },
+        !options.isPending,
     );
     const history = useWorkbench<History[]>(
         `schedule/${view?.id}/history`,
@@ -247,18 +420,24 @@ export function WorkbenchSchedule({ me }: { me: Me }) {
 
     function open(row: QueueRow | Plan, plan?: Plan) {
         const range = schedule.data;
+        const selectedDay = range?.days.find((item) => item.date === day);
+        const now = Date.now();
+        const from = selectedDay ? Date.parse(selectedDay.startsAt) : now;
+        const until = selectedDay ? Date.parse(selectedDay.endsAt) : now;
         const capacity = range?.capacity.find(
             (item) =>
-                item.equipmentId === equipmentId ||
-                (!equipmentId && Date.parse(item.endsAt) > Date.now()),
+                (!equipmentId || item.equipmentId === equipmentId) &&
+                Math.max(now, from, Date.parse(item.startsAt)) <
+                    Math.min(
+                        until,
+                        Date.parse(item.endsAt),
+                        item.blockedAt ? Date.parse(item.blockedAt) : until,
+                    ),
         );
         const earliest = Math.max(
-            Date.now() + 120000,
-            capacity
-                ? Date.parse(capacity.startsAt)
-                : range
-                  ? Date.parse(range.startsAt)
-                  : 0,
+            now + 120000,
+            from,
+            capacity ? Date.parse(capacity.startsAt) : from,
         );
         const start = Math.ceil(earliest / 60000) * 60000;
         setError("");
@@ -349,13 +528,45 @@ export function WorkbenchSchedule({ me }: { me: Me }) {
     return (
         <Space orientation="vertical" size="middle" className="workbench-stack">
             <div className="workbench-filters">
+                <Segmented<CalendarView>
+                    aria-label="排程视图"
+                    value={mode}
+                    options={[
+                        { label: "周视图", value: "week" },
+                        { label: "日视图", value: "day" },
+                    ]}
+                    onChange={setSelectedMode}
+                />
+                <Space size="small" wrap>
+                    <Button
+                        onClick={() =>
+                            setDay(shiftDate(day, mode === "week" ? -7 : -1))
+                        }
+                    >
+                        {mode === "week" ? "上周" : "前一天"}
+                    </Button>
+                    <Button onClick={() => setDay(fabDate(timezone))}>
+                        {mode === "week" ? "本周" : "今天"}
+                    </Button>
+                    <Button
+                        onClick={() =>
+                            setDay(shiftDate(day, mode === "week" ? 7 : 1))
+                        }
+                    >
+                        {mode === "week" ? "下周" : "后一天"}
+                    </Button>
+                </Space>
                 <label className="workbench-filter">
                     <span>日历日期（厂区）</span>
                     <Input
                         type="date"
                         aria-label="日历日期"
                         value={day}
-                        onChange={(event) => setDay(event.target.value)}
+                        onChange={(event) => {
+                            const value = event.target.value;
+                            if (/^\d{4}-\d{2}-\d{2}$/.test(value))
+                                setDay(value);
+                        }}
                     />
                 </label>
                 <WorkbenchSelect
@@ -386,16 +597,32 @@ export function WorkbenchSchedule({ me }: { me: Me }) {
             <WorkbenchError error={schedule.error || options.error} />
             <Card
                 size="small"
-                title="设备日历"
-                loading={schedule.isLoading}
+                title={
+                    mode === "week"
+                        ? `设备周历 · ${from} 至 ${to}`
+                        : `设备日历 · ${day}`
+                }
+                loading={options.isPending || schedule.isLoading}
                 extra={
                     <span className="workbench-capacity-key">班次可排时段</span>
                 }
             >
-                {schedule.data && (
+                {schedule.data && mode === "week" && (
+                    <WeekCalendar
+                        data={schedule.data}
+                        day={day}
+                        timezone={timezone}
+                        show={setView}
+                        openDay={(date) => {
+                            setDay(date);
+                            setSelectedMode("day");
+                        }}
+                    />
+                )}
+                {schedule.data && mode === "day" && (
                     <Timeline
                         data={schedule.data}
-                        timezone={me.fab?.timezone}
+                        timezone={timezone}
                         manage={manage && !busy}
                         show={setView}
                         move={(row, tool, start) => {
@@ -675,6 +902,14 @@ export function WorkbenchSchedule({ me }: { me: Me }) {
                 width={760}
                 footer={null}
             >
+                {view && (
+                    <Typography.Paragraph>
+                        {toolName(view.equipmentId)} · {view.step} ·{" "}
+                        <TimeCell value={view.startsAt} /> 至{" "}
+                        <TimeCell value={view.endsAt} />{" "}
+                        <Tag>{workbenchStatus[view.status] ?? view.status}</Tag>
+                    </Typography.Paragraph>
+                )}
                 <WorkbenchError error={history.error} />
                 <Table
                     size="small"

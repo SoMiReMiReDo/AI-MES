@@ -16,7 +16,7 @@ public sealed record WorkbenchOption(Guid Id, string Code, string Name);
 
 public sealed record WorkbenchOptions(
     WorkbenchOption[] Areas, WorkbenchOption[] Operations, WorkbenchOption[] Groups,
-    WorkbenchOption[] Products, WorkbenchOption[] Equipment, WorkbenchOption[] Shifts);
+    WorkbenchOption[] Products, WorkbenchOption[] Equipment, WorkbenchOption[] Shifts, string DefaultScheduleView);
 
 public sealed record WorkbenchOverview(
     DateTime AsOf, int? WipLots, int? WipWafers, int? Waiting, int? Running, int? Held,
@@ -71,9 +71,11 @@ public sealed record WorkbenchQueueItem(
 public sealed record WorkbenchPlanChange(
     DateTime OccurredAt, string Action, string? Actor, WorkbenchPlan? Before, WorkbenchPlan? After);
 
+public sealed record WorkbenchScheduleDay(DateOnly Date, DateTime StartsAt, DateTime EndsAt);
+
 public sealed record WorkbenchSchedule(
     DateTime StartsAt, DateTime EndsAt, WorkbenchOption[] Equipment, WorkbenchPlan[] Plans, WorkbenchCapacity[] Capacity,
-    PageView<WorkbenchQueueItem> Queue);
+    PageView<WorkbenchQueueItem> Queue, WorkbenchScheduleDay[] Days);
 
 public sealed record WorkbenchUnplanned(Guid LotId, string LotNumber, string Reason);
 

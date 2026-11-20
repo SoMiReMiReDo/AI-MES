@@ -95,12 +95,35 @@ export async function workbenchFlow(
     ).toHaveCount(0);
     await menu.clear();
 
+    await expect(
+        page.getByRole("progressbar", { name: "占在制批次" }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("progressbar", { name: "占启用设备" }),
+    ).toBeVisible();
     await page.getByRole("button", { name: /在制批次/ }).click();
     const wip = page.getByRole("dialog", { name: "在制批次" });
     await expect(
         wip.getByRole("link", { name: code, exact: true }),
     ).toBeVisible();
     await page.keyboard.press("Escape");
+    const runningValue = page
+        .getByRole("article")
+        .filter({
+            has: page.getByRole("link", { name: "运行中 · 加工记录" }),
+        })
+        .locator(".workbench-kpi-value strong");
+    await runningValue.scrollIntoViewIfNeeded();
+    const bounds = (await runningValue.boundingBox())!;
+    await page.mouse.click(
+        bounds.x + bounds.width / 2,
+        bounds.y + bounds.height / 2,
+    );
+    await expect(page.getByRole("tab", { name: "加工与历史" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+    );
+    await home.click();
     await page.getByRole("tab", { name: "历史趋势" }).click();
     await expect(page.getByText("按日趋势", { exact: true })).toBeVisible();
     await page.getByRole("tab", { name: "班次与 OEE" }).click();
@@ -108,9 +131,22 @@ export async function workbenchFlow(
         page.getByText("设备班次与损失", { exact: true }),
     ).toBeVisible();
     await page.getByRole("tab", { name: "排程日历" }).click();
+    const week = page.getByRole("table", { name: "设备周历" });
+    await expect(week).toBeVisible();
+    await expect(week.getByRole("columnheader")).toHaveCount(8);
+    await page.getByLabel("日历日期", { exact: true }).fill("2030-01-01");
+    await expect(
+        week.getByRole("button", { name: "查看 2029-12-31 日历" }),
+    ).toBeVisible();
+    await expect(
+        week.getByRole("button", { name: "查看 2030-01-06 日历" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: /^本\s*周$/ }).click();
     await page.getByLabel("日历日期", { exact: true }).fill(tomorrow);
     await page.getByRole("button", { name: "自动排程" }).click();
     const auto = page.getByRole("dialog", { name: "自动排程", exact: true });
+    await expect(auto.getByLabel("起始日期（厂区）")).toHaveValue(tomorrow);
+    await expect(auto.getByLabel("结束日期（厂区）")).toHaveValue(tomorrow);
     await auto.getByRole("button", { name: /确\s*定/ }).click();
     const outcome = page.getByRole("dialog", { name: "自动排程结果" });
     await expect(outcome.getByText(/已生成 [1-9]/)).toBeVisible();
@@ -119,6 +155,14 @@ export async function workbenchFlow(
         name: `计划 ${code}`,
         exact: true,
     });
+    await week
+        .getByRole("button", { name: `计划 ${code}`, exact: true })
+        .click();
+    await expect(
+        page.getByRole("dialog", { name: `变更记录 · ${code}` }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await week.getByRole("button", { name: `查看 ${tomorrow} 日历` }).click();
     await expect(plan).toBeVisible();
     const lane = page.getByTestId(`schedule-lane-${sample.equipmentId}`);
     const box = await lane.boundingBox();
@@ -169,6 +213,8 @@ export async function workbenchFlow(
     await expect(
         page.getByRole("dialog", { name: "停机", exact: true }),
     ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await monitoringFlow(page, suffix, sample.equipmentId);
     await write(
         `equipment/tools/${sample.equipmentId}/state`,
         { state: "Idle", reason: "验收复机" },
@@ -196,4 +242,101 @@ export async function workbenchFlow(
     });
     await page.getByRole("button", { name: "切换到浅色模式" }).click();
     await page.setViewportSize(desktop);
+}
+
+async function monitoringFlow(page: Page, suffix: string, equipmentId: string) {
+    await page.getByRole("link", { name: "厂区看板", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "厂区看板" })).toBeVisible();
+    await expect(page.getByText("实时更新", { exact: true })).toBeVisible();
+    const keyword = page.getByRole("textbox", { name: "设备编号或名称" });
+    await keyword.fill(`EXEC-${suffix}`);
+    await keyword.press("Enter");
+    await page.getByRole("button", { name: /^停机/ }).click();
+    const card = page.getByRole("link", {
+        name: new RegExp(`EXEC-${suffix}.*查看班次监控`),
+    });
+    await expect(card).toBeVisible();
+    await expect(card.getByText("停机原因待补录")).toBeVisible();
+    await page.getByRole("button", { name: "大屏模式" }).click();
+    await expect(page.locator(".monitoring-kiosk")).toBeVisible();
+    await expect(page.locator(".left-sidebar")).toBeHidden();
+    await page.screenshot({
+        path: "test-results/monitoring-kiosk.png",
+        animations: "disabled",
+    });
+    await page.getByRole("button", { name: "退出大屏" }).click();
+    await card.focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(new RegExp(`/monitoring/${equipmentId}$`));
+    await expect(
+        page.getByRole("heading", { name: "班次时间轴" }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("heading", { name: "晶圆过站速率" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "上一班" }).click();
+    await expect(page.getByText(/历史班次/)).toBeVisible();
+    await page.getByRole("button", { name: "回到当前班" }).click();
+    await expect(page.getByText(/当前时段/)).toBeVisible();
+    await page.getByText("班次分析", { exact: true }).click();
+    await expect(
+        page.getByRole("heading", { name: "停机原因分布" }),
+    ).toBeVisible();
+    await page.screenshot({
+        path: "test-results/monitoring-shift.png",
+        fullPage: true,
+        animations: "disabled",
+    });
+    const desktop = page.viewportSize()!;
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(
+        page.getByRole("heading", { name: "停机原因分布" }),
+    ).toBeVisible();
+    expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(390);
+    await page.getByRole("button", { name: "切换到黑夜模式" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await page.screenshot({
+        path: "test-results/monitoring-mobile-dark.png",
+        fullPage: true,
+        animations: "disabled",
+    });
+    await page.getByRole("button", { name: "切换到浅色模式" }).click();
+    await page.setViewportSize(desktop);
+    const record = await page
+        .getByRole("link", { name: "查看当前停机" })
+        .getAttribute("href");
+    expect(record).toMatch(/\/equipment\?view=downtimes&record=/);
+    await page
+        .getByRole("region", { name: "班次停机" })
+        .locator(`a[href="${record}"]`)
+        .click();
+    await expect(
+        page.getByRole("dialog", { name: "停机", exact: true }),
+    ).toBeVisible();
+
+    const fallback = await page.context().newPage();
+    try {
+        await fallback.route("**/api/v1/workbench/live/negotiate?**", (route) =>
+            route.abort(),
+        );
+        await fallback.clock.install();
+        await fallback.goto("/monitoring");
+        await expect(
+            fallback.getByText("轮询同步", { exact: true }),
+        ).toBeVisible();
+        await expect(
+            fallback.getByRole("link", {
+                name: new RegExp(`EXEC-${suffix}.*查看班次监控`),
+            }),
+        ).toBeVisible();
+        const refresh = fallback.waitForResponse((response) =>
+            response.url().includes("/api/v1/workbench/plant-board?"),
+        );
+        await fallback.clock.fastForward(31_000);
+        expect((await refresh).ok()).toBeTruthy();
+    } finally {
+        await fallback.close();
+    }
 }

@@ -74,6 +74,9 @@ public static class PermissionCatalog
 {
     public static readonly string[] All =
     [
+        WebsiteSettingsAccess.Read,
+        WebsiteSettingsAccess.ManageAppearance,
+        WebsiteSettingsAccess.ManageSchedule,
         ReliabilityAccess.Audit,
         ReliabilityAccess.OutboxRead,
         ReliabilityAccess.OutboxReplay,

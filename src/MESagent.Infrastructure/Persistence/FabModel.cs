@@ -20,5 +20,6 @@ internal static partial class FabModel
         ConfigureQualityLifecycle(modelBuilder);
         ConfigureEquipmentResources(modelBuilder);
         ConfigureWorkbench(modelBuilder);
+        ConfigureWebsiteSettings(modelBuilder);
     }
 }

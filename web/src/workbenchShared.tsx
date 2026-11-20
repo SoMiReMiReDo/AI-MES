@@ -61,12 +61,14 @@ export function useWorkbench<T>(
     resource: string,
     params: Record<string, string> = {},
     enabled = true,
+    refetchInterval: number | false = false,
 ) {
     const path = `workbench/${resource}?${new URLSearchParams(params)}`;
     return useQuery({
         queryKey: ["workbench", path],
         queryFn: () => api<T>(path),
         enabled,
+        refetchInterval,
     });
 }
 

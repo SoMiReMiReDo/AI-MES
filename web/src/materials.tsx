@@ -377,7 +377,7 @@ export function Materials({ me }: { me: Me }) {
     return (
         <>
             <Typography.Title level={2}>硅片来料</Typography.Title>
-            <Space wrap className="table-toolbar">
+            <Space wrap className="materials-toolbar">
                 <Input.Search
                     aria-label="检索来料批"
                     allowClear

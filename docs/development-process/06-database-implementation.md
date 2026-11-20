@@ -1,6 +1,12 @@
 # Fab 数据库实施说明
 
-更新：2026-11-18（Asia/Shanghai）。当前结构以字段字典和最新迁移为准。
+更新：2026-11-19（Asia/Shanghai）。当前结构以字段字典和最新迁移为准。
+
+## 2026-11-19 网站设置增量更新
+
+第 14 条迁移 `20261119113118_WebsiteSettings` 新增 `settings.site_appearance` 和 `settings.fab_schedule_preferences`，在已有库中保留原站点品牌并加入设置权限。已有站点或厂区保存记录时，迁移会阻止降级。
+
+本地开发库备份后执行 `python3 scripts/database.py migrate`，再用 `python3 scripts/app.py provision-settings` 增量授予现有运行角色设置表的读取和必要写入权限。Docker 交付会随迁移完成授权。见 [网站设置开发计划](11-website-settings-plan.md)。
 
 ## 2026-11-18 F12 增量更新
 
@@ -42,7 +48,7 @@
 
 技术组合：.NET SDK **10.0.401**、EF Core / Identity **10.0.12**、Npgsql EF Provider **10.0.3**、PostgreSQL **18.6**。NuGet 精确版本在根目录 `Directory.Packages.props` 管理，各项目提交 `packages.lock.json`；本地 `dotnet-ef` 固定为 10.0.12。数据库镜像在 `compose.yaml` 固定版本及 SHA256 摘要。
 
-共 **134 张应用表**：127 张业务/支撑表 + 7 张 Identity 表；另有 EF 迁移历史表和 2 个派生视图。
+共 **136 张应用表**，包括 129 张业务与支撑表、7 张 Identity 表。另有 EF 迁移历史表和 2 个派生视图。
 
 | schema | 表数 | 主要对象 |
 | --- | ---: | --- |
@@ -56,6 +62,7 @@
 | integration | 9 | 外部系统、设备连接/消息/测点、API Key、导入映射/任务、标签、自定义字段定义 |
 | audit | 5 | 审计、业务事件、附件、幂等请求回执、Outbox |
 | workbench | 4 | 理想产速、生产计划块、订阅与回执 |
+| settings | 2 | 站点外观、厂区排程默认视图 |
 
 完整字段、类型、可空性与外键目标见 [数据库字段字典](05-database-catalog.md)。筛选依据仍是 [Fab 字段保留清单](04-fab-data-field-retention.md)，不是把 OpenMES 的 132 张表全部照搬。
 
