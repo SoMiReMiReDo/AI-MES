@@ -498,7 +498,7 @@
     width: 9px;
     height: 9px;
     margin-right: 5px;
-    background: color-mix(in srgb, var(--brand-to) 32%, transparent);
+    background: color-mix(in srgb, var(--eyebrow) 32%, transparent);
     border-radius: 3px;
     content: "";
 }
@@ -511,7 +511,7 @@
 }
 
 .workbench-shift-band {
-    background: color-mix(in srgb, var(--brand-to) 21%, transparent);
+    background: color-mix(in srgb, var(--eyebrow) 21%, transparent);
 }
 
 .workbench-plan-pill {
@@ -533,7 +533,7 @@
 }
 
 .workbench-plan-pill.conflict {
-    outline: 1px solid var(--brand-to);
+    outline: 1px solid var(--eyebrow);
     outline-offset: 1px;
 }
 

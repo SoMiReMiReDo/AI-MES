@@ -7545,8 +7545,8 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("DefaultTheme")
                         .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("character varying(5)")
+                        .HasMaxLength(6)
+                        .HasColumnType("character varying(6)")
                         .HasColumnName("default_theme");
 
                     b.Property<string>("Name")
@@ -7574,7 +7574,7 @@ namespace MESagent.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_site_appearance_singleton", "id = '67c6f063-676d-452b-bdd1-3a4556b9a35c'::uuid");
 
-                            t.HasCheckConstraint("ck_site_appearance_theme", "default_theme IN ('light', 'dark')");
+                            t.HasCheckConstraint("ck_site_appearance_theme", "default_theme IN ('light', 'dark', 'system')");
                         });
 
                     b.HasData(

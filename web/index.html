@@ -11,6 +11,11 @@
             (function () {
                 try {
                     var theme = localStorage.getItem("mesagent.theme");
+                    if (theme === "system")
+                        theme = matchMedia("(prefers-color-scheme: dark)")
+                            .matches
+                            ? "dark"
+                            : "light";
                     if (theme === "dark" || theme === "light")
                         document.documentElement.dataset.theme = theme;
                 } catch (e) {}

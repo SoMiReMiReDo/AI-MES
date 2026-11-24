@@ -43,6 +43,21 @@ public sealed class WebsiteSettingsTests(OrganizationIdentityAccessControlFixtur
         Assert.Equal("晶圆工作台", publicAppearance.GetProperty("name").GetString());
         Assert.Equal("dark", publicAppearance.GetProperty("defaultTheme").GetString());
 
+        var darkEtag = (await Get(admin, "settings/appearance")).GetProperty("etag").GetString();
+        Assert.Equal(HttpStatusCode.BadRequest, (await Send(admin, "settings/appearance",
+            new { name = "晶圆工作台", subtitle = "FAB", defaultTheme = "auto" }, "PUT", darkEtag)).StatusCode);
+        var followSystem = await Send(admin, "settings/appearance",
+            new { name = "晶圆工作台", subtitle = "FAB", defaultTheme = "system" }, "PUT", darkEtag);
+        Assert.True(followSystem.IsSuccessStatusCode, await followSystem.Content.ReadAsStringAsync());
+        Assert.Equal("system",
+            (await Get(anonymous, "site/appearance")).GetProperty("defaultTheme").GetString());
+        var restored = await Send(admin, "settings/appearance",
+            new { name = "晶圆工作台", subtitle = "FAB", defaultTheme = "dark" },
+            "PUT", (await Get(admin, "settings/appearance")).GetProperty("etag").GetString());
+        Assert.True(restored.IsSuccessStatusCode, await restored.Content.ReadAsStringAsync());
+        Assert.Equal("dark",
+            (await Get(anonymous, "site/appearance")).GetProperty("defaultTheme").GetString());
+
         var traceId = saved.Headers.GetValues("X-Trace-Id").Single();
         var audit = await Get(admin, "reliability/audit-logs?correlationId=" + traceId);
         var change = Assert.Single(audit.GetProperty("items").EnumerateArray());

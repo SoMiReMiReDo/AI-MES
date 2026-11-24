@@ -622,8 +622,8 @@ function Application() {
 }
 
 function Root() {
-    const { mode } = useTheme();
-    const dark = mode === "dark";
+    const { resolved } = useTheme();
+    const dark = resolved === "dark";
     return (
         <ConfigProvider
             locale={zhCN}

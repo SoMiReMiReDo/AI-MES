@@ -6,7 +6,13 @@ import {
     type ReactNode,
 } from "react";
 
-export type ThemeMode = "light" | "dark";
+export type ThemeMode = "light" | "dark" | "system";
+
+const themeModes: readonly string[] = ["light", "dark", "system"];
+
+export function isThemeMode(value: unknown): value is ThemeMode {
+    return typeof value === "string" && themeModes.includes(value);
+}
 
 export type SiteAppearance = {
     name: string;
@@ -41,8 +47,7 @@ export function SiteAppearanceProvider({ children }: { children: ReactNode }) {
                     !request.signal.aborted &&
                     typeof value?.name === "string" &&
                     typeof value.subtitle === "string" &&
-                    (value.defaultTheme === "light" ||
-                        value.defaultTheme === "dark")
+                    isThemeMode(value.defaultTheme)
                 ) {
                     updateAppearance(value);
                 }

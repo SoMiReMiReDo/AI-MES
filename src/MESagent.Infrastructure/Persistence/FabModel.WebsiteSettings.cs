@@ -13,13 +13,13 @@ internal static partial class FabModel
             {
                 t.HasCheckConstraint("ck_site_appearance_singleton", $"id = '{SiteAppearance.SingletonId}'::uuid");
                 t.HasCheckConstraint("ck_site_appearance_name", "char_length(btrim(name)) BETWEEN 1 AND 60");
-                t.HasCheckConstraint("ck_site_appearance_theme", "default_theme IN ('light', 'dark')");
+                t.HasCheckConstraint("ck_site_appearance_theme", "default_theme IN ('light', 'dark', 'system')");
             });
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
             e.Property(x => x.Name).HasColumnName("name").HasMaxLength(60);
             e.Property(x => x.Subtitle).HasColumnName("subtitle").HasMaxLength(100);
-            e.Property(x => x.DefaultTheme).HasColumnName("default_theme").HasMaxLength(5);
+            e.Property(x => x.DefaultTheme).HasColumnName("default_theme").HasMaxLength(6);
             e.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken();
             e.HasData(new SiteAppearance());
         });

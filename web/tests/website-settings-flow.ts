@@ -76,8 +76,13 @@ export async function websiteSettingsFlow(page: Page, browser: Browser) {
     await page
         .getByRole("textbox", { name: "副标题" })
         .fill("晶圆产线 · 制造执行");
-    await page.getByRole("radio", { name: "深色" }).check();
     const preview = page.locator(".settings-preview");
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.getByRole("radio", { name: "跟随系统" }).check();
+    await expect(preview).toHaveAttribute("data-preview-theme", "dark");
+    await page.emulateMedia({ colorScheme: "light" });
+    await expect(preview).toHaveAttribute("data-preview-theme", "light");
+    await page.getByRole("radio", { name: "深色" }).check();
     await expect(
         preview.getByText("晶圆制造工作台", { exact: true }),
     ).toBeVisible();

@@ -184,7 +184,7 @@
 | 数据表 / C# 对象 | 数据字段与类型 | 外键目标 |
 | --- | --- | --- |
 | `settings.fab_schedule_preferences` / `FabSchedulePreference` | `default_view: character varying(4)`、`fab_id: uuid`、`version: uuid` | `fab_id → organization.fabs` |
-| `settings.site_appearance` / `SiteAppearance` | `default_theme: character varying(5)`、`id: uuid`、`name: character varying(60)`、`subtitle: character varying(100)`、`version: uuid` |  |
+| `settings.site_appearance` / `SiteAppearance` | `default_theme: character varying(6)`、`id: uuid`、`name: character varying(60)`、`subtitle: character varying(100)`、`version: uuid` |  |
 
 ## workbench（4 张表）
 

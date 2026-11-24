@@ -1,6 +1,10 @@
 # Fab 数据库实施说明
 
-更新：2026-11-19（Asia/Shanghai）。当前结构以字段字典和最新迁移为准。
+更新：2026-11-24（Asia/Shanghai）。当前结构以字段字典和最新迁移为准。
+
+## 2026-11-24 默认主题跟随系统
+
+第 15 条迁移 `20261124053529_SiteAppearanceFollowSystemTheme` 把 `settings.site_appearance.default_theme` 扩为 `character varying(6)`，检查约束改为 `light`、`dark` 或 `system`。`system` 表示跟随访问者操作系统的浅色／深色偏好，浏览器已保存的个人主题仍优先。本地开发库备份后执行迁移，既有站点设置保持不变，未新增表或授权对象。
 
 ## 2026-11-19 网站设置增量更新
 

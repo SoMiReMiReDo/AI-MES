@@ -7541,3 +7541,35 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261124053529_SiteAppearanceFollowSystemTheme') THEN
+    ALTER TABLE settings.site_appearance DROP CONSTRAINT ck_site_appearance_theme;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261124053529_SiteAppearanceFollowSystemTheme') THEN
+    ALTER TABLE settings.site_appearance ALTER COLUMN default_theme TYPE character varying(6);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261124053529_SiteAppearanceFollowSystemTheme') THEN
+    ALTER TABLE settings.site_appearance ADD CONSTRAINT ck_site_appearance_theme CHECK (default_theme IN ('light', 'dark', 'system'));
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM public.__ef_migrations_history WHERE "MigrationId" = '20261124053529_SiteAppearanceFollowSystemTheme') THEN
+    INSERT INTO public.__ef_migrations_history ("MigrationId", "ProductVersion")
+    VALUES ('20261124053529_SiteAppearanceFollowSystemTheme', '10.0.12');
+    END IF;
+END $EF$;
+COMMIT;
+

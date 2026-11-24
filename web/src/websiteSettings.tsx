@@ -16,6 +16,7 @@ import { api, ApiError } from "./api";
 import type { components } from "./generated/api";
 import { Brand, fmt, Heading } from "./shared";
 import { useSiteAppearance, type SiteAppearance } from "./siteAppearance";
+import { resolveTheme } from "./theme";
 import "./websiteSettings.css";
 
 type Schemas = components["schemas"];
@@ -55,6 +56,7 @@ function AppearanceForm({
     const watched = Form.useWatch([], form);
     const appearance = settings.appearance as SiteAppearance;
     const draft = { ...appearance, ...watched };
+    const previewTheme = resolveTheme(draft.defaultTheme);
     const { updateAppearance } = useSiteAppearance();
     const { message } = App.useApp();
     const query = useQueryClient();
@@ -98,11 +100,16 @@ function AppearanceForm({
                 <Form.Item label="副标题" name="subtitle">
                     <Input maxLength={100} showCount />
                 </Form.Item>
-                <Form.Item label="默认主题" name="defaultTheme">
+                <Form.Item
+                    label="默认主题"
+                    name="defaultTheme"
+                    extra="「跟随系统」按访问者操作系统的浅色／深色偏好显示；浏览器已保存的个人主题仍优先。"
+                >
                     <Radio.Group
                         options={[
                             { label: "浅色", value: "light" },
                             { label: "深色", value: "dark" },
+                            { label: "跟随系统", value: "system" },
                         ]}
                     />
                 </Form.Item>
@@ -121,10 +128,7 @@ function AppearanceForm({
                     </Button>
                 )}
             </Form>
-            <div
-                className="settings-preview"
-                data-preview-theme={draft.defaultTheme}
-            >
+            <div className="settings-preview" data-preview-theme={previewTheme}>
                 <span>品牌预览</span>
                 <Brand preview={draft} />
             </div>

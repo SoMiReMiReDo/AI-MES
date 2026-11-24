@@ -55,8 +55,8 @@ public sealed partial class OrganizationIdentityAccessControlBackend
                 Fail(400, "ValidationFailed", "副标题必须为文本");
             var subtitle = SettingsText(S(request.Body, "subtitle"), 100, "副标题");
             var theme = S(request.Body, "defaultTheme");
-            if (theme is not ("light" or "dark"))
-                Fail(400, "ValidationFailed", "默认主题必须为浅色或深色");
+            if (theme is not ("light" or "dark" or "system"))
+                Fail(400, "ValidationFailed", "默认主题必须为浅色、深色或跟随系统");
             site.Name = name;
             site.Subtitle = subtitle;
             site.DefaultTheme = theme;
