@@ -2,6 +2,14 @@
 
 更新：2026-11-24（Asia/Shanghai）｜阶段：生产分析首版已验收｜版本：v1.10
 
+## 2026-11-24 开发环境 Docker 化
+
+- 按用户要求，开发 Compose `mesagent` 统一运行 PostgreSQL、ASP.NET Core API 和 Vite。已停止原宿主机 API/Vite 进程，继续用 `5173` 访问 WebUI、`5080` 访问 API。沿用现有数据库卷、运行账号、登录密钥与工艺文档。
+- 三个容器健康，已验证前端到 API 的代理、Vite CSS 热更新和 C# 文件变更生效。开发环境命令见 [README](README.md#本地网页启动与验证)，交付环境仍由独立 Compose 管理。
+- 2026-11-24 开发容器无主动压测：启动约 1 分钟时 API／Web／PostgreSQL 约 1.06 GiB／809 MiB／74 MiB，约 5 分钟时为 1.10–1.11 GiB／505–507 MiB／102 MiB。API 热更新与构建工具合计约 805 MiB PSS，服务进程约 200–230 MiB；Web 的 Vite、npm、esbuild 合计约 211 MiB PSS，容器口径还含部分文件缓存等开销。
+- 隔离 Chrome 登录页各三次采样，GC 后 JS 堆为 Vite 16.3 MiB、现有静态构建 4.9 MiB。完整交付容器、登录后重页面及业务峰值待测；建议保留热更新开发模式，先对照验证免热更新运行，再按热点优化。
+- 已编写 [MESagent 内存优化开发文档](docs/development-process/14-memory-optimization.md)；先测交付基线，再评估路由懒加载和工单查询／导出，未实施优化。
+
 ## 2026-11-24 默认主题跟随系统
 
 - 系统设置-站点外观-默认主题新增「跟随系统」：按访问者操作系统的浅色／深色偏好解析，系统偏好变化时已打开的页面同步切换，浏览器已保存的个人主题仍优先。

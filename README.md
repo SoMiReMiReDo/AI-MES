@@ -6,7 +6,25 @@ Docker 空实例、演示数据和备份恢复见 [部署操作](deploy/README.m
 
 ## 本地网页启动与验证
 
-先打开 Docker Desktop。当前本地已配置数据库和管理员，使用两个终端启动后端与网页。
+先打开 Docker Desktop。在已完成数据库和管理员初始化的开发环境中，从项目根目录运行：
+
+```sh
+docker compose up -d --wait
+```
+
+在 Docker Desktop 的 `mesagent` 项目中统一管理 `postgres`、`api` 和 `web`。浏览器打开 [网页工作台](http://127.0.0.1:5173)，API 可通过 [就绪检查](http://127.0.0.1:5080/health/ready) 验证。保存前端代码会触发 Vite 热更新，保存 C# 代码会触发 `dotnet watch` 热更新或重启。
+
+```sh
+docker compose ps
+docker compose logs -f api web
+docker compose stop
+```
+
+开发 Compose 沿用现有 PostgreSQL 数据卷、`.env` 中的 API 运行账号和厂区配置，以及 `.local` 下的登录密钥和工艺文档。数据库迁移和运行账号授权仍通过现有脚本执行。首次切换时，先关闭占用 `5080` 和 `5173` 的本机开发服务。
+
+### 在宿主机运行 API 和 Web
+
+需要在宿主机调试时，先执行 `docker compose stop api web` 释放端口，再用两个终端启动：
 
 **终端 1：启动数据库和后端**
 
@@ -23,7 +41,7 @@ cd /Users/seal/Desktop/myNote/MESagent
 npm run dev --prefix web
 ```
 
-浏览器打开 [网页工作台](http://127.0.0.1:5173)。前端将 API 请求代理到 `127.0.0.1:5080`。两个终端保持运行，停止服务时分别按 `Ctrl+C`。
+浏览器使用同一网页入口。两个终端保持运行，停止服务时分别按 `Ctrl+C`。
 
 本地 F5 迁移与增量权限已应用，重启后端即可加载新代码。其他已有环境升级时运行 `python3 scripts/database.py migrate` 和 `python3 scripts/app.py provision-execution`；详细步骤见 [F5 实现与本地验收](docs/feature-development/dispatch-and-production-execution-implementation.md)。
 

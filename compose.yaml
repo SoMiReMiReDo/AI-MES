@@ -16,5 +16,81 @@ services:
       timeout: 3s
       retries: 20
     restart: unless-stopped
+
+  api:
+    image: mcr.microsoft.com/dotnet/sdk:10.0.401@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317
+    working_dir: /workspace
+    command:
+      ["dotnet", "watch", "--non-interactive", "--project", "src/MESagent.Api", "run", "--no-launch-profile"]
+    init: true
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__Mes: Host=postgres;Database=mesagent;Username=mesagent_app;Password=${MES_APP_DB_PASSWORD:-}
+      Mes__DeploymentFabId: ${MES_FAB_ID:-}
+      DataProtection__Path: /state/keys
+      MES_DOCUMENT_ROOT: /state/documents
+      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+      DOTNET_WATCH_RESTART_ON_RUDE_EDIT: "true"
+      DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER: "1"
+      ArtifactsPath: /artifacts
+      DefaultItemExcludes: "bin/**;obj/**"
+      RestoreLockedMode: "true"
+    volumes:
+      - ./src:/workspace/src:ro
+      - ./global.json:/workspace/global.json:ro
+      - ./Directory.Build.props:/workspace/Directory.Build.props:ro
+      - ./Directory.Packages.props:/workspace/Directory.Packages.props:ro
+      - ./.local/keys:/state/keys
+      - ./.local/engineering-documents:/state/documents
+      - api_artifacts:/artifacts
+      - nuget_packages:/root/.nuget/packages
+    ports:
+      - "127.0.0.1:5080:8080"
+    depends_on:
+      postgres: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "3", "http://127.0.0.1:8080/health/ready"]
+      interval: 5s
+      timeout: 5s
+      start_period: 3m
+      retries: 12
+
+  web:
+    image: node:24-alpine@sha256:a34ab6d7f6f4813f4d0c5469d74685604b962fbdbf5793a7bc7b4998ecb867c8
+    working_dir: /workspace/web
+    command:
+      - sh
+      - -ec
+      - npm ci --prefer-offline --no-audit --no-fund && exec npm run dev -- --host 0.0.0.0 --strictPort
+    init: true
+    environment:
+      MES_API_TARGET: http://api:8080
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./web:/workspace/web
+      - web_node_modules:/workspace/web/node_modules
+      - npm_cache:/root/.npm
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:5173/
+      interval: 5s
+      timeout: 5s
+      start_period: 2m
+      retries: 12
+
 volumes:
   postgres_data:
+  api_artifacts:
+  nuget_packages:
+  web_node_modules:
+  npm_cache:
